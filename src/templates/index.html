@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+<link rel="icon" href="/favicon.ico">
+<meta charset="utf-8">
+<style>
+html {
+	font-family: sans-serif;
+}
+body {
+	margin: 0;
+	padding: 0;
+}
+#form {
+	left: 0;
+	position: absolute;
+	right: 0;
+	text-align: center;
+	top: 50%;
+	transform: translate(0, -50%);
+}
+#amount {
+	width: 5em;
+}
+header {
+	background-color: #44e;
+	color: white;
+	padding: 1em;
+}
+footer {
+	background-color: #eee;
+	bottom: 0;
+	color: #444;
+	left: 0;
+	padding: 1em;
+	position: absolute;
+	right: 0;
+	text-align: right;
+}
+</style>
+<title>Donation Swap</title>
+</head>
+<body>
+<header>
+	<h1>Donation Swap</h1>
+</header>
+<form action="/start" id="form" method="POST">
+	<p>
+		I live in
+		<select id="country" name="country">
+			{%COUNTRIES%}
+		</select>
+		and I would like to donate <span id="currency">$</span>
+		<input id="amount" min="0" name="amount" value="100" type="number">
+		to
+		<select name="charity">
+			<option selected value="gfi">The Good Food Institute</option>
+			<option value="amf">Against Malaria Foundation</option>
+		</select>
+	</p>
+	<p>
+		<input type="submit" value="Find a Swap">
+	</p>
+</form>
+<footer>
+	<p>
+		  <a href="/contact">Contact Us</a>
+		| <a href="/about">About Us</a>
+		| <a href="/terms">Terms and Conditions</a>
+	</p>
+	<p>
+		This website uses GeoLite2 data created by MaxMind, available from
+		<a href="http://www.maxmind.com" target="_blank">http://www.maxmind.com</a>.
+	</p>
+</footer>
+<script>
+/* jshint esversion: 6 */
+(function () {
+	const ui = {};
+
+	Array.prototype.forEach.call(
+		document.querySelectorAll('body [id]'),
+		v => ui[v.getAttribute('id')] = v
+	);
+
+	ui.country.onchange = () => {
+		ui.currency.textContent = ui.country.selectedOptions[0].getAttribute('data');
+	};
+
+	ui.country.onchange();
+}());
+</script>
+</body>
+</html>
