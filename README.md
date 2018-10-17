@@ -11,6 +11,13 @@ This is the repository of the Donationswap project.
 	mkdir deployed
 	cd deployed
 	../src/deploy.py deployed
+
+Put the right passwords and such into app-config.json
+
+	pico app-config.json
+
+Start the server
+
 	sudo ./main.py
 
 ## Database
