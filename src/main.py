@@ -80,7 +80,12 @@ class MainHandler(Handler):
 class StartHandler(Handler):
 
 	def get(self, *args, **kwargs):
-		page = self.logic.get_start_page(self.request.remote_ip)
+		page = self.logic.get_start_page(
+			self.request.remote_ip,
+			country=self.get_argument('country', None),
+			amount=self.get_argument('amount', None),
+			charity=self.get_argument('charity', None)
+		)
 
 		self.set_header('Content-Type', 'text/html; charset=utf-8')
 		self.write(page)
@@ -97,13 +102,21 @@ class StartHandler(Handler):
 		self.write(page)
 
 
-def start(port=443, daemonize=True, http_redirect_port=None):
-	setup_logging()
-	print(http_redirect_port)
+class PostHandler(Handler):
 
+	def post(self, *args, **kwargs):
+		page = self.logic.create_post()
+
+		self.set_header('Content-Type', 'text/html; charset=utf-8')
+		self.write('xxx TODO')
+
+
+def start(port=443, daemonize=True, http_redirect_port=None):
 	if port < 1024 and not os.getuid() == 0:
 		print('Port %s requires root permissions.' % port, file=sys.stderr)
 		sys.exit(1)
+
+	setup_logging()
 
 	if http_redirect_port is not None:
 		logging.info('Redirecting http://:%s to https://:%s', http_redirect_port, port)
@@ -119,6 +132,7 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 		[
 			(r'/', MainHandler, dependencies),
 			(r'/start/?', StartHandler, dependencies),
+			(r'/post/?', PostHandler, dependencies),
 		],
 		static_path=os.path.join(os.path.dirname(__file__), 'static'),
 	)

@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+</style>
+<title>Donation Swap</title>
+</head>
+<body>
+{%FILE=header.snippet.html%}
+<form action="/post" method="POST">
+	<table>
+		<tbody>
+			<tr>
+				<td>Country:</td>
+				<td>
+					<select id="country" name="country">
+						{%COUNTRIES%}
+					</select>
+				<td>
+			</tr>
+			<tr>
+				<td>Amount:</td>
+				<td>
+					<span id="currency">$</span>
+					<input min="0" name="amount" value="{%AMOUNT%}" type="number">
+				</td>
+			</tr>
+			<tr>
+				<td>Charity:</td>
+				<td>
+					<select id="charity" name="charity">
+						{%CHARITIES%}
+					</select>
+				</td>
+			</tr>
+			<tr>
+				<td>Email Address:</td>
+				<td>
+					<input name="email" type="email">
+				</td>
+			</tr>
+			<!-- xxx captcha -->
+			<tr>
+				<!-- xxx checkbox with explanation text -->
+			</tr>
+			<tr>
+				<td></td>
+				<td>
+					<input type="submit" value="Send">
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</form>
+{%FILE=footer.snippet.html%}
+<script>
+/* globals getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	const ui = getElementsById();
+
+	ui.country.onchange = () => {
+		ui.currency.textContent = ui.country.selectedOptions[0].getAttribute('data');
+	};
+
+	ui.country.onchange();
+
+	function selectSelected(control) {
+		// `<option selected></option>` isn't always selected by default,
+		// so we need to enforce it here
+
+		Array.prototype.every.call(
+			control.options,
+			(option, idx) => {
+				if (option.hasAttribute('selected')) {
+					control.selectedIndex = idx;
+					control.onchange();
+					return false;
+				}
+				return true;
+			}
+		);
+	}
+
+	selectSelected(ui.country);
+	selectSelected(ui.charity);
+}());
+</script>
+</body>
+</html>

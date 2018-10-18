@@ -63,6 +63,9 @@ def drop_privileges(user='nobody', group='nogroup'):
 	os.setgid(group.gr_gid)
 	os.setuid(user.pw_uid)
 
+def html_escape(txt):
+	return txt.replace('<', '&lt;').replace('>', '&gt;')
+
 class Template:
 
 	def __init__(self, filename):
