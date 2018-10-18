@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 
-'''This is where global variables go.'''
+'''This is where "global" configuration variables live.'''
 
 import json
 import logging
-
-db_connection_string = None
-email_password = None
-email_sender = None
-email_user = None
-geoip_datafile = None
+import sys
 
 def initialize(filename):
 	logging.info('Loading configuration from "%s".', filename)
@@ -18,17 +13,7 @@ def initialize(filename):
 		content = f.read()
 	data = json.loads(content)
 
-	global db_connection_string
-	db_connection_string = data.get('db_connection_string', None)
+	module = sys.modules[__name__]
 
-	global email_password
-	email_password = data.get('email_password', None)
-
-	global email_sender
-	email_sender = data.get('email_sender', None)
-
-	global email_user
-	email_user = data.get('email_user', None)
-
-	global geoip_datafile
-	geoip_datafile = data.get('geoip_datafile', None)
+	for k, v in data.items():
+		setattr(module, k, v)
