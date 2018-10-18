@@ -59,7 +59,6 @@ class HttpRedirectHandler(tornado.web.RequestHandler):
 			url = 'https://%s' % self.request.host
 			if self.https_port != 443:
 				url += ':%s' % self.https_port
-			print(url, self.https_port)
 			self.redirect(url, permanent=False)
 
 
