@@ -1,6 +1,6 @@
-# Donationswap
+# Effective Altruist Donation Swap
 
-This is the repository of the Donationswap project.
+This is the repository of the Effective Altruist Donation Swap project.
 
 ## Deployment for development on Linux
 
