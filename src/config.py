@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
-'''This is where "global" configuration variables live.'''
+'''
+This is where "global" configuration variables live.
+
+A variable goes here if
+* the value should not be checked in (like passwords), or
+* developers/testers may want to use different value (like data paths)
+'''
 
 import json
 import logging

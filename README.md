@@ -94,7 +94,7 @@ Get help like this:
 Install
 
 	sudo apt-get install certbot
-	sudo certbot certonly --standalone --email marc.spoor@gmail.com --agree-tos --domain donationswap.eahub.org
+	sudo certbot certonly --standalone --email [email_address] --agree-tos --domain donationswap.eahub.org
 
 Note that the second command will use port 80 -- stop the webserver first
 
