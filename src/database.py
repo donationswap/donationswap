@@ -72,8 +72,3 @@ class Database:
 	def write(self, cmd, **args):
 		self._cursor.execute(cmd, args)
 		self._written = True
-
-if __name__ == '__main__':
-	with Database('marc') as db:
-		for i in db.read('SELECT * FROM foobar WHERE id < %(max_id)s', max_id=4200):
-			print(i['id'], i['name'])
