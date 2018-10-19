@@ -38,7 +38,7 @@ class Currency:
 		if data.get('success', False):
 			self._data = data
 		else:
-			logging.error('Failed to download currency exchange rates from fixer.io: %s', content)
+			logging.error('Failed to download currency exchange rates from fixer.io: %s', content, exc_info=True)
 
 	def _get_data(self):
 		if self._data is None:

@@ -39,5 +39,5 @@ class GeoIpCountry:
 		except geoip2.errors.AddressNotFoundError:
 			return None
 		except Exception: # pylint: disable=broad-except
-			logging.error('Error looking up country by IP address "%s".', ip_address)
+			logging.error('Error looking up country by IP address "%s".', ip_address, exc_info=True)
 			return None

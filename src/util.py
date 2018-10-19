@@ -76,11 +76,8 @@ class Template:
 	def _load_file(filename):
 		filename = os.path.join('templates', filename)
 
-		if os.path.isfile(filename):
-			with open(filename, encoding='utf-8', mode='r') as f:
-				return f.read()
-
-		return ''
+		with open(filename, encoding='utf-8', mode='r') as f:
+			return f.read()
 
 	def populate_file_references(self):
 		'''Replace all occurrences of `{%FILE=...%}` with the content of that file.

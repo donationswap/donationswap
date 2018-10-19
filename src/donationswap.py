@@ -13,6 +13,7 @@ import config
 import currency
 import database
 import geoip
+import mail
 import util
 
 class Donationswap:
@@ -22,6 +23,7 @@ class Donationswap:
 		self._captcha = captcha.Captcha(config.captcha_secret)
 		self._currency = currency.Currency(config.currency_cache, config.fixer_apikey)
 		self._geoip = geoip.GeoIpCountry(config.geoip_datafile)
+		self._mail = mail.Mail(config.email_user, config.email_password, config.email_smtp)
 
 	@staticmethod
 	def _get_countries():
@@ -65,6 +67,42 @@ class Donationswap:
 		})
 
 		return tmp.content
+
+	def get_contact_page(self):
+		return util.Template('contact.html').content
+
+	def send_contact_message(self, ip_address, message, name=None, email=None):
+		message = message.strip()
+		if not message:
+			return 'message is empty'
+
+		tmp = util.Template('contact-email.txt')
+		tmp.replace({
+			'{%IP_ADDRESS%}': ip_address,
+			'{%COUNTRY%}': self._geoip.lookup(ip_address),
+			'{%NAME%}': name or 'n/a',
+			'{%EMAIL%}': email or 'n/a',
+			'{%MESSAGE%}': message,
+		})
+
+		success = self._mail.send(
+			'Message for donationswap.eahub.org',
+			tmp.content,
+			to=config.contact_message_receivers.get('to', []),
+			cc=config.contact_message_receivers.get('cc', []),
+			bcc=config.contact_message_receivers.get('bcc', [])
+		)
+
+		if not success:
+			return 'Something unexpected happened on our server. Your message could not be sent. Sorry.'
+
+		return None
+
+	def get_contact_success_page(self):
+		return 'xxx'
+
+	def get_contact_error_page(self, error, message=None, name=None, email=None):
+		return error #xxx
 
 	def get_start_page(self, ip_address, country=None, amount=None, charity=None):
 		country = country or self._geoip.lookup(ip_address)
