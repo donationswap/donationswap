@@ -6,7 +6,9 @@ import os
 import shutil
 
 FILE_LIST = [
+	('captcha.py', 0o444),
 	('config.py', 0o444),
+	('currency.py', 0o444),
 	('database.py', 0o444),
 	('donationswap.py', 0o444),
 	('geoip.py', 0o444),

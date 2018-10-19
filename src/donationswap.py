@@ -8,9 +8,9 @@ Abstracting this out makes it easier to change to a different
 web server in the future.
 '''
 
-import logging
-
+import captcha
 import config
+import currency
 import database
 import geoip
 import util
@@ -19,6 +19,8 @@ class Donationswap:
 
 	def __init__(self):
 		config.initialize('app-config.json')
+		self._captcha = captcha.Captcha(config.captcha_secret)
+		self._currency = currency.Currency(config.currency_cache, config.fixer_apikey)
 		self._geoip = geoip.GeoIpCountry(config.geoip_datafile)
 
 	@staticmethod
@@ -99,5 +101,21 @@ class Donationswap:
 
 		return tmp.content
 
-	def create_post(self):
-		pass #xxx
+	def create_post(self, ip_address, captcha_response, country, amount, charity, email):
+		is_legit = self._captcha.is_legit(ip_address, captcha_response)
+
+		if not is_legit:
+			return None
+
+		#xxx insert into database
+
+		#xxx send email
+
+		print(ip_address)
+		print(captcha_response)
+		print(country)
+		print(amount)
+		print(charity)
+		print(email)
+
+		#xxx return whether or not there are matches
