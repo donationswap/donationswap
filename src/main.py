@@ -70,16 +70,49 @@ class Handler(tornado.web.RequestHandler):
 
 class MainHandler(Handler):
 
-	def get(self, *args, **kwargs):
+	def get(self):
 		page = self.logic.get_home_page(self.request.remote_ip)
 
 		self.set_header('Content-Type', 'text/html; charset=utf-8')
 		self.write(page)
 
 
+class ContactHandler(Handler):
+
+	def get(self):
+		page = self.logic.get_contact_page()
+
+		self.set_header('Content-Type', 'text/html; charset=utf-8')
+		self.write(page)
+
+	def post(self):
+		message = self.get_body_argument('message')
+		name = self.get_body_argument('name')
+		email = self.get_body_argument('email')
+
+		error = self.logic.send_contact_message(
+			self.request.remote_ip,
+			message,
+			name=name,
+			email=email
+		)
+
+		if error:
+			page = self.logic.get_contact_error_page(
+				error,
+				message=message,
+				name=name,
+				email=email
+			)
+		else:
+			page = self.logic.get_contact_success_page()
+
+		self.set_header('Content-Type', 'text/html; charset=utf-8')
+		self.write(page)
+
 class StartHandler(Handler):
 
-	def get(self, *args, **kwargs):
+	def get(self):
 		page = self.logic.get_start_page(
 			self.request.remote_ip,
 			country=self.get_argument('country', None),
@@ -90,7 +123,7 @@ class StartHandler(Handler):
 		self.set_header('Content-Type', 'text/html; charset=utf-8')
 		self.write(page)
 
-	def post(self, *args, **kwargs):
+	def post(self):
 		page = self.logic.get_start_page(
 			self.request.remote_ip,
 			country=self.get_body_argument('country'),
@@ -104,7 +137,7 @@ class StartHandler(Handler):
 
 class PostHandler(Handler):
 
-	def post(self, *args, **kwargs):
+	def post(self):
 
 		result = self.logic.create_post(
 			self.request.remote_ip,
@@ -139,6 +172,7 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 	application = tornado.web.Application(
 		[
 			(r'/', MainHandler, dependencies),
+			(r'/contact/?', ContactHandler, dependencies),
 			(r'/start/?', StartHandler, dependencies),
 			(r'/post/?', PostHandler, dependencies),
 		],

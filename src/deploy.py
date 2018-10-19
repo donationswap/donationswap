@@ -21,7 +21,7 @@ FILE_LIST = [
 	('static', 0o777),
 	('static/*', 0o444),
 	('templates', 0o777),
-	('templates/*.html', 0o444),
+	('templates/*', 0o444),
 ]
 
 def deploy(target):

@@ -1,7 +1,7 @@
 {
 	"db_connection_string": "how to get to the database",
 	"email_password": "password for SMTP server authentication",
-	"email_sender": "name:port of SMTP server",
+	"email_smtp": "name:port of SMTP server",
 	"email_user": "email address for SMTP server authentication",
 	"geoip_datafile": "path to GeoLite2-Country.mmdb"
 }

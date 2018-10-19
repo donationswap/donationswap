@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<!-- script src='https://www.google.com/recaptcha/api.js'></script -->
+<style>
+</style>
+<title>Donation Swap</title>
+</head>
+<body>
+{%FILE=header.snippet.html%}
+<form action="/contact" method="POST">
+	<table>
+		<tbody>
+			<tr>
+				<td>Name:</td>
+				<td>
+					<input name="name">
+				<td>
+			</tr>
+			<tr>
+				<td>Your Email Address:</td>
+				<td>
+					<input name="email" type="email">
+				</td>
+			</tr>
+			<tr>
+				<td>Message:</td>
+				<td>
+					<textarea name="message"></textarea>
+				</td>
+			</tr>
+			<!--
+			<tr>
+				<td></td>
+				<td>
+					<div class="g-recaptcha" data-sitekey="6LctxXUUAAAAAOcIxh6rm8KYTemy-zUIPspp-52P" data-callback="enableSubmitButton" data-expired-callback="disableSubmitButton"></div>
+				</td>
+			</tr>
+			-->
+			<tr>
+				<td></td>
+				<td>
+					<input type="submit" value="Send">
+				</td>
+			</tr>
+		</tbody>
+	</table>
+</form>
+{%FILE=footer.snippet.html%}
+</body>
+</html>

@@ -1,0 +1,10 @@
+Someone sent a message using the "Contact Us" form on donationswap.eahub.org
+
+IP Address: {%IP_ADDRESS%}
+Country: {%COUNTRY%}
+Name: {%NAME%}
+Email: {%EMAIL%}
+
+Message:
+
+{%MESSAGE%}
