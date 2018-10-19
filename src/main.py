@@ -105,7 +105,15 @@ class StartHandler(Handler):
 class PostHandler(Handler):
 
 	def post(self, *args, **kwargs):
-		page = self.logic.create_post()
+
+		result = self.logic.create_post(
+			self.request.remote_ip,
+			captcha_response=self.get_body_argument('g-recaptcha-response'),
+			country=self.get_body_argument('country'),
+			amount=int(self.get_body_argument('amount')),
+			charity=self.get_body_argument('charity'),
+			email=self.get_body_argument('email')
+		)
 
 		self.set_header('Content-Type', 'text/html; charset=utf-8')
 		self.write('xxx TODO')

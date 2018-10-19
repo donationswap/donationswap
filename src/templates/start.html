@@ -5,6 +5,7 @@
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <meta charset="utf-8">
 <script src="/static/code.js"></script>
+<script src='https://www.google.com/recaptcha/api.js'></script>
 <style>
 </style>
 <title>Donation Swap</title>
@@ -43,14 +44,19 @@
 					<input name="email" type="email">
 				</td>
 			</tr>
-			<!-- xxx captcha -->
+			<tr>
+				<td></td>
+				<td>
+					<div class="g-recaptcha" data-sitekey="6LctxXUUAAAAAOcIxh6rm8KYTemy-zUIPspp-52P" data-callback="enableSubmitButton" data-expired-callback="disableSubmitButton"></div>
+				</td>
+			</tr>
 			<tr>
 				<!-- xxx checkbox with explanation text -->
 			</tr>
 			<tr>
 				<td></td>
 				<td>
-					<input type="submit" value="Send">
+					<input disabled id="btnSubmit" type="submit" value="Send">
 				</td>
 			</tr>
 		</tbody>
@@ -60,34 +66,29 @@
 <script>
 /* globals getElementsById */
 /* jshint esversion: 6 */
+function disableSubmitButton() {
+	document.getElementById('btnSubmit').setAttribute('disabled', 'disabled');
+}
+
+function enableSubmitButton() {
+	document.getElementById('btnSubmit').removeAttribute('disabled');
+}
+
 (function () {
+	'use strict';
+
 	const ui = getElementsById();
+
+	disableSubmitButton();
+
+	ui.country.selectedIndex = ui.country.options.item(i => i.hasAttribute('selected')).index;
+	ui.charity.selectedIndex = ui.charity.options.item(i => i.hasAttribute('selected')).index;
 
 	ui.country.onchange = () => {
 		ui.currency.textContent = ui.country.selectedOptions[0].getAttribute('data');
 	};
 
 	ui.country.onchange();
-
-	function selectSelected(control) {
-		// `<option selected></option>` isn't always selected by default,
-		// so we need to enforce it here
-
-		Array.prototype.every.call(
-			control.options,
-			(option, idx) => {
-				if (option.hasAttribute('selected')) {
-					control.selectedIndex = idx;
-					control.onchange();
-					return false;
-				}
-				return true;
-			}
-		);
-	}
-
-	selectSelected(ui.country);
-	selectSelected(ui.charity);
 }());
 </script>
 </body>
