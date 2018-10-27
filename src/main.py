@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import json
 import logging
 import os
 import ssl
@@ -13,43 +14,32 @@ import tornado.web
 import donationswap
 import util
 
-
-def setup_logging():
-	LOG_MAX_FILESIZE = 2**20 # 1 MB
-
-	class CustomFormatter(logging.Formatter):
-		def __init__(self):
-			super(CustomFormatter, self).__init__(fmt='%(asctime)s', datefmt='%Y-%m-%d %H:%M:%S')
-
-		def formatMessage(self, record):
-			fmt = '%(asctime)s %(levelname)-8s %(pathname)s:%(lineno)s %(message)s'
-			return fmt % record.__dict__
-
-	logger = logging.getLogger()
-	logger.setLevel(level=logging.DEBUG)
-	formatter = CustomFormatter()
-
-	file_handler = logging.handlers.RotatingFileHandler('log/web.txt', maxBytes=LOG_MAX_FILESIZE, backupCount=10)
-	file_handler.setFormatter(formatter)
-	file_handler.setLevel(level=logging.INFO)
-	logger.addHandler(file_handler)
-
-	console_handler = logging.StreamHandler()
-	console_handler.setFormatter(formatter)
-	console_handler.setLevel(level=logging.INFO)
-	logger.addHandler(console_handler)
-
-
 def _set_default_headers(self):
 	# Don't reveal which webserver we're using. It's a security thing.
 	# This way (as opposed to overriding `set_default_headers()`)
-	# also works for error handlers.
+	# also works for the default error handlers.
 	self.set_header('Server', 'DonationSwapServer')
 
 tornado.web.RequestHandler.set_default_headers = _set_default_headers
 
+class BaseHandler(tornado.web.RequestHandler):
 
-class HttpRedirectHandler(tornado.web.RequestHandler):
+	def initialize(self, logic):
+		self.logic = logic # pylint: disable=attribute-defined-outside-init
+
+class CertbotHandler(BaseHandler):
+	'''
+	sudo certbot renew --webroot --webroot-path /srv/web/static/
+	'''
+
+	def get(self, secret):
+		filename = os.path.join('static', '.well-known', 'acme-challenge', secret)
+		with open(filename, 'rb') as f:
+			response = f.read()
+		self.set_header('Content-Type', 'text/plain')
+		self.write(response)
+
+class HttpRedirectHandler(BaseHandler):
 
 	def initialize(self, https_port):
 		self.https_port = https_port
@@ -61,120 +51,64 @@ class HttpRedirectHandler(tornado.web.RequestHandler):
 				url += ':%s' % self.https_port
 			self.redirect(url, permanent=False)
 
+class AjaxHandler(BaseHandler):
 
-class Handler(tornado.web.RequestHandler):
+	def post(self, action):
+		payload = json.loads(self.request.body.decode('utf-8'))
 
-	def initialize(self, logic):
-		self.logic = logic # pylint: disable=attribute-defined-outside-init
+		result = self.logic.run_ajax(action, self.request.remote_ip, payload)
 
+		self.set_header('Content-Type', 'application/json; charset=utf-8')
+		self.write(json.dumps(result))
 
-class MainHandler(Handler):
+class TemplateHandler(BaseHandler):
+
+	def initialize(self, logic, page_name):
+		# pylint: disable=attribute-defined-outside-init
+		self.logic = logic
+		self._page_name = page_name
 
 	def get(self):
-		page = self.logic.get_home_page(self.request.remote_ip)
-
-		self.set_header('Content-Type', 'text/html; charset=utf-8')
-		self.write(page)
-
-
-class ContactHandler(Handler):
-
-	def get(self):
-		page = self.logic.get_contact_page()
-
-		self.set_header('Content-Type', 'text/html; charset=utf-8')
-		self.write(page)
-
-	def post(self):
-		message = self.get_body_argument('message')
-		name = self.get_body_argument('name')
-		email = self.get_body_argument('email')
-
-		error = self.logic.send_contact_message(
-			self.request.remote_ip,
-			message,
-			name=name,
-			email=email
-		)
-
-		if error:
-			page = self.logic.get_contact_error_page(
-				error,
-				message=message,
-				name=name,
-				email=email
-			)
+		page = self.logic.get_page(self._page_name)
+		if page:
+			self.set_header('Content-Type', 'text/html; charset=utf-8')
+			self.write(page)
 		else:
-			page = self.logic.get_contact_success_page()
-
-		self.set_header('Content-Type', 'text/html; charset=utf-8')
-		self.write(page)
-
-class StartHandler(Handler):
-
-	def get(self):
-		page = self.logic.get_start_page(
-			self.request.remote_ip,
-			country=self.get_argument('country', None),
-			amount=self.get_argument('amount', None),
-			charity=self.get_argument('charity', None)
-		)
-
-		self.set_header('Content-Type', 'text/html; charset=utf-8')
-		self.write(page)
-
-	def post(self):
-		page = self.logic.get_start_page(
-			self.request.remote_ip,
-			country=self.get_body_argument('country'),
-			amount=self.get_body_argument('amount'),
-			charity=self.get_body_argument('charity')
-		)
-
-		self.set_header('Content-Type', 'text/html; charset=utf-8')
-		self.write(page)
-
-
-class PostHandler(Handler):
-
-	def post(self):
-
-		result = self.logic.create_post(
-			self.request.remote_ip,
-			captcha_response=self.get_body_argument('g-recaptcha-response'),
-			country=self.get_body_argument('country'),
-			amount=int(self.get_body_argument('amount')),
-			charity=self.get_body_argument('charity'),
-			email=self.get_body_argument('email')
-		)
-
-		self.set_header('Content-Type', 'text/html; charset=utf-8')
-		self.write('xxx TODO')
-
+			self.set_status(404)
+			self.write('404 File Not Found')
 
 def start(port=443, daemonize=True, http_redirect_port=None):
 	if port < 1024 and not os.getuid() == 0:
 		print('Port %s requires root permissions.' % port, file=sys.stderr)
 		sys.exit(1)
 
-	setup_logging()
+	util.setup_logging('log/web.txt')
 
 	if http_redirect_port is not None:
 		logging.info('Redirecting http://:%s to https://:%s', http_redirect_port, port)
 		tornado.web.Application([
+			(r'/.well-known/acme-challenge/(.+)', CertbotHandler),
 			(r'/.*', HttpRedirectHandler, {'https_port': port})
 		]).listen(http_redirect_port)
 
-	dependencies = {
-		'logic': donationswap.Donationswap(),
-	}
+	logic = donationswap.Donationswap('app-config.json')
+
+	def args(kv=None):
+		result = {
+			'logic': logic,
+		}
+		if kv:
+			result.update(kv)
+		return result
 
 	application = tornado.web.Application(
 		[
-			(r'/', MainHandler, dependencies),
-			(r'/contact/?', ContactHandler, dependencies),
-			(r'/start/?', StartHandler, dependencies),
-			(r'/post/?', PostHandler, dependencies),
+			(r'/', TemplateHandler, args({'page_name': 'index.html'})),
+			(r'/ajax/(.+)', AjaxHandler, args()),
+			(r'/contact/?', TemplateHandler, args({'page_name': 'contact.html'})),
+			(r'/faq/?', TemplateHandler, args({'page_name': 'faq.html'})),
+			(r'/match/?', TemplateHandler, args({'page_name': 'match.html'})),
+			(r'/offer/?', TemplateHandler, args({'page_name': 'offer.html'})),
 		],
 		static_path=os.path.join(os.path.dirname(__file__), 'static'),
 	)

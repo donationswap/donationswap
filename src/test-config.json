@@ -1,0 +1,15 @@
+{
+	"captcha_secret": "irrelevant",
+	"contact_message_receivers": {
+		"to": ["to@test.test"],
+		"bcc": ["bcc@test.test"]
+	},
+	"currency_cache": "irrelevant",
+	"db_connection_string": "dbname=test host=127.0.0.1 user=postgres password='databasepassword'",
+	"email_password": "irrelevant",
+	"email_sender_name": "Donation Swap",
+	"email_smtp": "irrelevant",
+	"email_user": "irrelevant",
+	"fixer_apikey": "irrelevant",
+	"geoip_datafile": "irrelevant"
+}
