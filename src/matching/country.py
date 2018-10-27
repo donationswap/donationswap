@@ -2,8 +2,9 @@
 
 class Country:
 
-	def __init__(self, name, charities, taxReturn, exchangeRateVsUSA, valueToCharityMultiplier = 1):
+	def __init__(self, name, currency, charities, taxReturn, exchangeRateVsUSA, valueToCharityMultiplier = 1):
 		self.name = name
+		self.currency = currency
 		self.charities = charities
 		self.taxReturn = taxReturn
 		self.exchangeRateVsUSA = exchangeRateVsUSA

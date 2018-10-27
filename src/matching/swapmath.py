@@ -7,11 +7,12 @@ from offer import *
 
 class SwapMath():
 
-	def __init__(self, charityA4B, charityB4A, amountCharitiesGet, offerA, offerB):
+	def __init__(self, charityA4B, charityB4A, amountCharitiesGet, baseCurrency, offerA, offerB):
 		self.charityADonatingToForB = charityA4B
 		self.charityBDonatingToForA = charityB4A
 
 		self.amountCharitiesGet = amountCharitiesGet
+		self.baseCurrency = baseCurrency
 
 		self.offerA = offerA
 		self.offerB = offerB
@@ -34,20 +35,20 @@ class SwapMath():
 			charity1 = self.charityADonatingToForB.name,
 			charity2 = self.charityBDonatingToForA.name,
 			totalBase = self.amountCharitiesGet,
-			baseCurrency = "USD"
+			baseCurrency = self.baseCurrency
 		)
 
 		personTemplate1 = "{name} will pay {pay} {currency} to {charity}.\n"
 		summary += personTemplate1.format(
 			name = self.offerA.donor.email,
 			pay = self.amountAPays,
-			currency = "NZD",
+			currency = self.offerA.donor.country.currency,
 			charity = self.charityADonatingToForB
 		)
 		summary += personTemplate1.format(
 			name = self.offerB.donor.email,
 			pay = self.amountBPays,
-			currency = "USD",
+			currency = self.offerB.donor.country.currency,
 			charity = self.charityBDonatingToForA
 		)
 
@@ -55,12 +56,12 @@ class SwapMath():
 		summary += personTemplate2.format(
 			name = self.offerA.donor.email,
 			taxBack = self.taxReturnForA,
-			currency = "NZD"
+			currency = self.offerA.donor.country.currency
 		)
 		summary += personTemplate2.format(
 			name = self.offerB.donor.email,
-			pay = self.taxReturnForB,
-			currency = "USD"
+			taxBack = self.taxReturnForB,
+			currency = self.offerB.donor.country.currency
 		)
 
 		return summary
@@ -72,15 +73,17 @@ class SwapMath():
 			template = f.read()
 		return template.format(
 			totalBase = self.amountCharitiesGet,
-			baseCurrency = "USD",
+			baseCurrency = self.baseCurrency,
 			person1 = self.offerA.donor.email,
 			person2 = self.offerB.donor.email,
+			charity1 = self.charityADonatingToForB,
+			charity2 = self.charityBDonatingToForA,
 			country1ExchangeRate = self.countryAExchangeVsUSA,
 			country2ExchangeRate = self.countryBExchangeVsUSA,
 			amount1Pays = self.amountAPays,
 			amount2Pays = self.amountBPays,
-			country1Currency = "C1D",
-			country2Currency = "C2D",
+			country1Currency = self.offerA.donor.country.currency,
+			country2Currency = self.offerB.donor.country.currency,
 			country1TaxReturn = self.offerA.donor.country.taxReturn,
 			country2TaxReturn = self.offerB.donor.country.taxReturn,
 			taxReturnForDonor1 = self.taxReturnForA,
@@ -88,7 +91,7 @@ class SwapMath():
 		)
 
 	def __str__(self):
-		return "Swap for " + str(self.amountCharitiesGet)
+		return "Swap for " + str(self.amountCharitiesGet) + " " + self.baseCurrency
 
 	def __repr__(self):
 		return self.__str__()
@@ -98,6 +101,7 @@ class SwapMath():
 			self.amountAPays == other.amountAPays and \
 			self.amountBPays == other.amountBPays and \
 			self.amountCharitiesGet == other.amountCharitiesGet and \
+			self.baseCurrency == other.baseCurrency and \
 			self.charityADonatingToForB == other.charityADonatingToForB and \
 			self.charityBDonatingToForA == other.charityBDonatingToForA and \
 			self.countryAExchangeVsUSA == other.countryAExchangeVsUSA and \

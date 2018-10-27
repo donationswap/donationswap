@@ -8,6 +8,9 @@ from swapmath import *
 
 class Matcher:
 
+	def __init__(self, baseCurrency):
+		self.baseCurrency = baseCurrency
+
 	def match(self, offer, all_offers):
 		for existing in sorted(all_offers, key=lambda o : o.timeOffered):
 			ourCountry = offer.donor.country
@@ -30,12 +33,12 @@ class Matcher:
 				if ourTarget in theirCountry.charities:
 					charityTheyDonateToForUs = ourTarget
 					if charityTheyDonateToForUs not in ourCountry.charities:
-						break;
+						break
 			for theirTarget in existing.targetCharities:
 				if theirTarget in ourCountry.charities:
 					charityWeDonateToForThem = theirTarget
 					if charityWeDonateToForThem not in theirCountry.charities:
-						break;
+						break
 			if charityTheyDonateToForUs == None or charityWeDonateToForThem == None:
 				continue
 
@@ -47,6 +50,7 @@ class Matcher:
 				charityA4B = charityWeDonateToForThem,
 				charityB4A = charityTheyDonateToForUs,
 				amountCharitiesGet = min(ourMultiplier * offer.amountMax, theirMultiplier * existing.amountMax),
+				baseCurrency = self.baseCurrency,
 				offerA = offer,
 				offerB = existing
 			)
