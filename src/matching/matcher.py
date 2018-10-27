@@ -4,6 +4,7 @@ from charity import *
 from country import *
 from donor import *
 from offer import *
+from swapmath import *
 
 class Matcher:
 
@@ -42,5 +43,11 @@ class Matcher:
 			if charityTheyDonateToForUs in ourCountry.charities and charityWeDonateToForThem in theirCountry.charities:
 				continue
 
-			return ((charityWeDonateToForThem, charityTheyDonateToForUs), min(ourMultiplier * offer.amountMax, theirMultiplier * existing.amountMax), existing)
+			return SwapMath(
+				charityA4B = charityWeDonateToForThem,
+				charityB4A = charityTheyDonateToForUs,
+				amountCharitiesGet = min(ourMultiplier * offer.amountMax, theirMultiplier * existing.amountMax),
+				offerA = offer,
+				offerB = existing
+			)
 		return None

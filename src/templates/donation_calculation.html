@@ -1,0 +1,33 @@
+<table>
+	<tbody>
+		<th>Maths</th>
+		<tr>
+			<td>Total to Charity:</td>
+			<td>{totalBase} {baseCurrency}</td>
+		</tr>
+		<tr>
+			<td></td>
+			<th>{person1}</th>
+			<th>{person2}</th>
+		</tr>
+		<tr>
+			<td>Exchange Rates</td>
+			<td>{country1ExchangeRate}</td>
+			<td>{country2ExchangeRate}</td>
+		</tr>
+		<tr>
+			<td>Amount To Pay</td>
+			<td>total {baseCurrency} * exchange rate = total to pay in {country1Currency}<br />
+				{totalBase} {baseCurrency} * {country1ExchangeRate} = {amount1Pays} {country1Currency}</td>
+			<td>total {baseCurrency} * exchange rate = total to pay in {country2Currency}<br />
+				{totalBase} {baseCurrency} * {country2ExchangeRate} = {amount2Pays} {country2Currency}</td>
+		</tr>
+		<tr>
+			<td>Tax Return</td>
+			<td>amount to pay * tax rate = tax return<br />
+				{amount1Pays} {country1Currency} * {country1TaxReturn} = {taxReturnForDonor1} {country1Currency}</td>
+			<td>amount to pay * tax rate = tax return<br />
+				{amount2Pays} {country2Currency} * {country2TaxReturn} = {taxReturnForDonor2} {country2Currency}</td>
+		</tr>
+	</tbody>
+</table>

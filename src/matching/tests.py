@@ -7,6 +7,7 @@ from country import *
 from donor import *
 from matcher import *
 from offer import *
+from swapmath import *
 
 def secondsSinceEpoch():
 	return (datetime.datetime.utcnow() - datetime.datetime.utcfromtimestamp(0)).total_seconds()
@@ -36,12 +37,12 @@ class Tests(unittest.TestCase):
 	def test_trivialMatch(self):
 		offer = Offer(self.donor_USA, 150, 150, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(offer, [self.trivial_offer_NZ])
-		self.assertEqual(match, ((self.charity_gfi, self.charity_amf), 150, self.trivial_offer_NZ))
+		self.assertEqual(match, SwapMath(self.charity_gfi, self.charity_amf, 150, offer, self.trivial_offer_NZ))
 
 	def test_trivialMatchTheOtherWay(self):
 		offer = Offer(self.donor_USA, 150, 150, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(self.trivial_offer_NZ, [offer])
-		self.assertEqual(match, ((self.charity_amf, self.charity_gfi), 150, offer))
+		self.assertEqual(match, SwapMath(self.charity_amf, self.charity_gfi, 150, self.trivial_offer_NZ, offer))
 
 	def test_dontMatchIfNoTaxSaving(self):
 		someOtherCharity = Charity("Some Other Charity")
@@ -91,7 +92,7 @@ class Tests(unittest.TestCase):
 		offer2 = Offer(self.donor_NZ, 150, 150, [self.charity_gfi], secondsSinceEpoch())
 		offer3 = Offer(self.donor_NZ, 150, 150, [self.charity_gfi], secondsSinceEpoch() - 1)
 		match = Matcher().match(offer1, [offer2, offer3])
-		self.assertEqual(match, ((self.charity_gfi, self.charity_amf), 150, offer3))
+		self.assertEqual(match, SwapMath(self.charity_gfi, self.charity_amf, 150, offer1, offer3))
 
 	def test_dontMatchIfDIYJustAsGood(self):
 		offer1 = Offer(self.donor_USA, 100, 200, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
@@ -104,24 +105,24 @@ class Tests(unittest.TestCase):
 		offer2 = Offer(self.donor_UK, 100, 200, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
 		offer3 = Offer(self.donor_NZ, 100, 200, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(offer1, [offer2, offer3])
-		self.assertEqual(match, ((self.charity_gfi, self.charity_amf), 200, offer3))
+		self.assertEqual(match, SwapMath(self.charity_gfi, self.charity_amf, 200, offer1, offer3))
 
 	def test_matchAfterNoMatch(self):
 		offer1 = Offer(self.donor_USA, 150, 150, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
 		offer2 = Offer(self.donor_NZ, 151, 151, [self.charity_gfi], secondsSinceEpoch())
 		offer3 = Offer(self.donor_NZ, 150, 150, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(offer1, [offer2, offer3])
-		self.assertEqual(match, ((self.charity_gfi, self.charity_amf), 150, offer3))
+		self.assertEqual(match, SwapMath(self.charity_gfi, self.charity_amf, 150, offer1, offer3))
 
 	def test_trivialMatchWithUKFunk(self):
 		offer = Offer(self.donor_UK, 120, 120, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(offer, [self.trivial_offer_NZ])
-		self.assertEqual(match, ((self.charity_gfi, self.charity_amf), 150, self.trivial_offer_NZ))
+		self.assertEqual(match, SwapMath(self.charity_gfi, self.charity_amf, 150, offer, self.trivial_offer_NZ))
 
 	def test_trivialMatchWithUKFunkTheOtherWay(self):
 		offer = Offer(self.donor_UK, 120, 120, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(self.trivial_offer_NZ, [offer])
-		self.assertEqual(match, ((self.charity_amf, self.charity_gfi), 150, offer))
+		self.assertEqual(match, SwapMath(self.charity_amf, self.charity_gfi, 150, self.trivial_offer_NZ, offer))
 
 	def test_noMatchBecauseUKFunk(self):
 		offer = Offer(self.donor_UK, 180, 180, [self.charity_amf, self.charity_gfi], secondsSinceEpoch())
@@ -152,14 +153,15 @@ class Tests(unittest.TestCase):
 		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 200, 200, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(offer, [self.trivial_offer_USA])
-		self.assertEqual(match, ((self.charity_amf, self.charity_gfi), 130, self.trivial_offer_USA))
+		self.assertEqual(match, SwapMath(self.charity_amf, self.charity_gfi, 130, offer, self.trivial_offer_USA))
 
 	def test_matchRespectsExchangeRatesTheOtherWay(self):
 		someNZParrelell = Country('New Zealand3', [self.charity_amf], 0.33, 0.65)
 		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 200, 200, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher().match(self.trivial_offer_USA, [offer])
-		self.assertEqual(match, ((self.charity_gfi, self.charity_amf), 130, offer))
+		self.assertEqual(match, SwapMath(self.charity_gfi, self.charity_amf, 130, self.trivial_offer_USA, offer))
+		print(match.GetMathHtml())
 
 	def test_noMatchBecauseUSADoesntLikeAMF(self):
 		offer = Offer(self.donor_USA, 150, 150, [self.charity_gfi], secondsSinceEpoch())
