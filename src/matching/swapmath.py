@@ -30,7 +30,7 @@ class SwapMath():
 		self.taxReturnForB = self.amountBPays * offerB.donor.country.taxReturn
 
 	def GetSummary(self):
-		maths = "Charities {charity1} and {charity2} get {totalBase} {baseCurrency} each.\n".format(
+		summary = "Charities {charity1} and {charity2} get {totalBase} {baseCurrency} each.\n".format(
 			charity1 = self.charityADonatingToForB.name,
 			charity2 = self.charityBDonatingToForA.name,
 			totalBase = self.amountCharitiesGet,
@@ -38,13 +38,13 @@ class SwapMath():
 		)
 
 		personTemplate1 = "{name} will pay {pay} {currency} to {charity}.\n"
-		maths += personTemplate1.format(
+		summary += personTemplate1.format(
 			name = self.donorA.email,
 			pay = self.amountAPays,
 			currency = "NZD",
 			charity = self.charityADonatingToForB
 		)
-		maths += personTemplate1.format(
+		summary += personTemplate1.format(
 			name = self.donorB.email,
 			pay = self.amountBPays,
 			currency = "USD",
@@ -52,18 +52,36 @@ class SwapMath():
 		)
 
 		personTemplate2 = "{name} should recieve about {taxBack} {currency} in Tax Returns.\n"
-		maths += personTemplate2.format(
+		summary += personTemplate2.format(
 			name = self.donorA.email,
 			taxBack = self.taxReturnForA,
 			currency = "NZD"
 		)
-		maths += personTemplate2.format(
+		summary += personTemplate2.format(
 			name = self.donorB.email,
 			pay = self.taxReturnForB,
 			currency = "USD"
 		)
 
-		return maths
+		return summary
+
+	def GetMathHtml(self):
+		template = ""
+		# todo handle UK stuff
+		with open("../templates/donation_amount.html") as f:
+			template = f.read()
+		return template.format(
+			totalBase = self.amountCharitiesGet,
+			baseCurrency = "USD",
+			person1 = self.donorA.email,
+			person2 = self.donorB.email,
+			country1ExchangeRate = self.countryAExchangeVsUSA,
+			country2ExchangeRate = self.countryBExchangeVsUSA,
+			amount1Pays = self.amountAPays,
+			amount2Pays = self.amountBPays,
+			country1TaxReturn = self.taxReturnForA,
+			country2TaxReturn = self.taxReturnForB
+		)
 
 	def __str__(self):
 		return "Swap for " + str(self.amountCharitiesGet)
