@@ -21,11 +21,16 @@
 			<td>{country2ExchangeRate} {baseCurrency} to 1 {country2Currency}</td>
 		</tr>
 		<tr>
+			<td>Gift Aid:</td>
+			<td>{giftAid1}</td>
+			<td>{giftAid2}</td>
+		</tr>
+		<tr>
 			<td>Amount To Pay</td>
-			<td>total {baseCurrency} * exchange rate = total to pay in {country1Currency}<br />
-				{totalBase} {baseCurrency} * {country1ExchangeRate} = {amount1Pays} {country1Currency}</td>
-			<td>total {baseCurrency} * exchange rate = total to pay in {country2Currency}<br />
-				{totalBase} {baseCurrency} * {country2ExchangeRate} = {amount2Pays} {country2Currency}</td>
+			<td>total {baseCurrency} * exchange rate / gift aid = total to pay in {country1Currency}<br />
+				{totalBase} {baseCurrency} * {country1ExchangeRate} / {giftAid1} = {amount1Pays} {country1Currency}</td>
+			<td>total {baseCurrency} * exchange rate / gift aid = total to pay in {country2Currency}<br />
+				{totalBase} {baseCurrency} * {country2ExchangeRate} / {giftAid2} = {amount2Pays} {country2Currency}</td>
 		</tr>
 		<tr>
 			<td>Tax Return</td>
