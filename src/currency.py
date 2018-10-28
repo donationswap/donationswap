@@ -27,7 +27,8 @@ class Currency:
 		with self._file_lock:
 			with open(self._cache_filename, 'w') as f:
 				f.write(content)
-			os.chmod(self._cache_filename, 0o666)
+			if os.stat(self._cache_filename).st_mode & 0o777 != 0o666:
+				os.chmod(self._cache_filename, 0o666)
 
 	def _read_live(self):
 		logging.info('Downloading currency exchange rates from fixer.io...')

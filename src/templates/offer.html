@@ -58,7 +58,7 @@
 	ajax('confirm_offer', { secret })
 		.then(offer => {
 			if (offer) {
-				ui.confirmed.classList.toggle('hidden', offer.confirmed);
+				ui.confirmed.classList.toggle('hidden', offer.was_confirmed);
 				ui.currency.textContent = offer.currency;
 				ui.amount.textContent = offer.amount;
 				ui.charity.textContent = offer.charity;

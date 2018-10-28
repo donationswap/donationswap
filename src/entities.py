@@ -123,3 +123,18 @@ class Entities:
 		'''
 		with self._database.connect() as db:
 			return db.read_one(query, secret=secret)
+
+	def _update_match_agree(self, match_id, column_name):
+		query = '''
+			UPDATE matches
+			SET %s = true
+			WHERE id = %%(id)s;
+		''' % column_name
+		with self._database.connect() as db:
+			db.write(query, id=match_id)
+
+	def update_match_agree_new(self, match_id):
+		self._update_match_agree(match_id, 'new_agrees')
+
+	def update_match_agree_old(self, match_id):
+		self._update_match_agree(match_id, 'old_agrees')

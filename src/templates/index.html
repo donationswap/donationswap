@@ -24,7 +24,7 @@
 {%FILE=header.snippet.html%}
 <div id="fastForm">
 	<p>
-		I live in
+		I pay taxes in
 		<select id="fastCountry"></select>
 		and I would like to donate
 		<input autofocus min="0" id="fastAmount" value="100" type="number">
@@ -39,7 +39,7 @@
 <table class="hidden" id="slowForm">
 	<tbody>
 		<tr>
-			<td>Country:</td>
+			<td>Country I pay taxes in:</td>
 			<td>
 				<select id="slowCountry"></select>
 			<td>
@@ -47,7 +47,7 @@
 		<tr>
 			<td>Amount:</td>
 			<td>
-				<input min="0" id="slowAmount" type="number">
+				<input min="0" id="slowAmount" type="number" value="100">
 				<span id="slowCurrency">$</span>
 			</td>
 		</tr>
@@ -68,7 +68,7 @@
 			</td>
 		</tr>
 		<tr>
-			<td>Your Email Address:</td>
+			<td>My Email Address:</td>
 			<td>
 				<input id="slowEmail" type="email">
 			</td>

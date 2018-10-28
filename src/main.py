@@ -130,7 +130,7 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 	server.listen(port)
 
 	if daemonize:
-		util.daemonize('/var/run/webserver.pid')
+		util.daemonize('/var/run/webserver.pid') #xxx move path to config file
 
 	if os.geteuid() == 0: # we don't need root privileges any more
 		util.drop_privileges()

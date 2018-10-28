@@ -1,2 +1,3 @@
 src/data/GeoLite2-Country.mmdb
 src/__pycache__/
+src/log/*
