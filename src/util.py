@@ -6,6 +6,32 @@ import os
 import pwd
 import re
 
+def setup_logging(path):
+	LOG_MAX_FILESIZE = 2**20 # 1 MB
+
+	class CustomFormatter(logging.Formatter):
+		def __init__(self):
+			super(CustomFormatter, self).__init__(fmt='%(asctime)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+		def formatMessage(self, record):
+			fmt = '%(asctime)s %(levelname)-8s %(pathname)s:%(lineno)s %(message)s'
+			return fmt % record.__dict__
+
+	logger = logging.getLogger()
+	logger.setLevel(level=logging.DEBUG)
+	formatter = CustomFormatter()
+
+	os.makedirs(os.path.dirname(path), mode=0o777, exist_ok=True)
+	file_handler = logging.handlers.RotatingFileHandler(path, maxBytes=LOG_MAX_FILESIZE, backupCount=10)
+	file_handler.setFormatter(formatter)
+	file_handler.setLevel(level=logging.INFO)
+	logger.addHandler(file_handler)
+
+	console_handler = logging.StreamHandler()
+	console_handler.setFormatter(formatter)
+	console_handler.setLevel(level=logging.INFO)
+	logger.addHandler(console_handler)
+
 def daemonize(pidfile=None):
 	'''Turns the current process into a daemon.
 	If pidfile is set, it writes the process id to it.
@@ -76,8 +102,11 @@ class Template:
 	def _load_file(filename):
 		filename = os.path.join('templates', filename)
 
-		with open(filename, encoding='utf-8', mode='r') as f:
-			return f.read()
+		if os.path.isfile(filename):
+			with open(filename, encoding='utf-8', mode='r') as f:
+				return f.read()
+		else:
+			return ''
 
 	def populate_file_references(self):
 		'''Replace all occurrences of `{%FILE=...%}` with the content of that file.

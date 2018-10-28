@@ -4,52 +4,84 @@
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <meta charset="utf-8">
+<script src="https://www.google.com/recaptcha/api.js"></script>
 <script src="/static/code.js"></script>
-<!-- script src='https://www.google.com/recaptcha/api.js'></script -->
 <style>
 </style>
 <title>Donation Swap</title>
 </head>
 <body>
 {%FILE=header.snippet.html%}
-<form action="/contact" method="POST">
-	<table>
-		<tbody>
-			<tr>
-				<td>Name:</td>
-				<td>
-					<input name="name">
-				<td>
-			</tr>
-			<tr>
-				<td>Your Email Address:</td>
-				<td>
-					<input name="email" type="email">
-				</td>
-			</tr>
-			<tr>
-				<td>Message:</td>
-				<td>
-					<textarea name="message"></textarea>
-				</td>
-			</tr>
-			<!--
-			<tr>
-				<td></td>
-				<td>
-					<div class="g-recaptcha" data-sitekey="6LctxXUUAAAAAOcIxh6rm8KYTemy-zUIPspp-52P" data-callback="enableSubmitButton" data-expired-callback="disableSubmitButton"></div>
-				</td>
-			</tr>
-			-->
-			<tr>
-				<td></td>
-				<td>
-					<input type="submit" value="Send">
-				</td>
-			</tr>
-		</tbody>
-	</table>
-</form>
+<h1>Contact Us</h1>
+<table>
+	<tbody>
+		<tr>
+			<td>Name:</td>
+			<td>
+				<input id="name">
+			<td>
+		</tr>
+		<tr>
+			<td>Your Email Address:</td>
+			<td>
+				<input id="email" type="email">
+			</td>
+		</tr>
+		<tr>
+			<td>Message:</td>
+			<td>
+				<textarea id="message"></textarea>
+			</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>
+				{%FILE=captcha.snippet.html%}
+			</td>
+		</tr>
+		<tr>
+			<td></td>
+			<td>
+				<button disabled id="btnSend">Send</button>
+			</td>
+		</tr>
+	</tbody>
+</table>
 {%FILE=footer.snippet.html%}
+<script>
+/* globals ajax, getElementsById */
+/* jshint esversion: 6 */
+
+function captchaGood() {
+	document.getElementById('btnSend').removeAttribute('disabled');
+}
+
+function captchaBad() {
+	document.getElementById('btnSend').setAttribute('disabled', 'disabled');
+}
+
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+
+	function handleError() {
+		alert('There was an error when we tried to send your message. Sorry. We\'re looking into it.');
+	}
+
+	ui.btnSend.onclick = () => {
+		ajax('send_contact_message', {
+			captcha_response: document.getElementsByName('g-recaptcha-response')[0].value,
+			message: ui.message.value,
+			name: ui.name.value,
+			email: ui.email.value,
+		}).then(() => {
+			alert('Your message has been sent. Thank you.');
+			window.location.pathname = '/';
+		})
+		.catch(handleError);
+	};
+}());
+</script>
 </body>
 </html>

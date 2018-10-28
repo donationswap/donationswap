@@ -11,6 +11,7 @@ FILE_LIST = [
 	('currency.py', 0o444),
 	('database.py', 0o444),
 	('donationswap.py', 0o444),
+	('entities.py', 0o444),
 	('geoip.py', 0o444),
 	('mail.py', 0o444),
 	('main.py', 0o544),

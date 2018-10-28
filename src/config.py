@@ -1,25 +1,37 @@
 #!/usr/bin/env python3
 
-'''
-This is where "global" configuration variables live.
-
-A variable goes here if
-* the value should not be checked in (like passwords), or
-* developers/testers may want to use different value (like data paths)
-'''
-
 import json
 import logging
-import sys
 
-def initialize(filename):
-	logging.info('Loading configuration from "%s".', filename)
+class Config:
+	# pylint: disable=too-few-public-methods
+	# pylint: disable=too-many-instance-attributes
+	'''
+	This is where "global" configuration variables live.
 
-	with open(filename, 'r') as f:
-		content = f.read()
-	data = json.loads(content)
+	A variable goes here if
+	* the value should not be checked in (like passwords), or
+	* developers/testers may want to use different value (like data paths)
+	'''
 
-	module = sys.modules[__name__]
+	def __init__(self, filename):
+		logging.info('Loading configuration from "%s".', filename)
 
-	for k, v in data.items():
-		setattr(module, k, v)
+		with open(filename, 'r') as f:
+			content = f.read()
+		data = json.loads(content)
+
+		self.captcha_secret = data['captcha_secret']
+		self.contact_message_receivers = data['contact_message_receivers']
+		self.currency_cache = data['currency_cache']
+		self.db_connection_string = data['db_connection_string']
+		self.email_password = data['email_password']
+		self.email_sender_name = data['email_sender_name']
+		self.email_smtp = data['email_smtp']
+		self.email_user = data['email_user']
+		self.fixer_apikey = data['fixer_apikey']
+		self.geoip_datafile = data['geoip_datafile']
+
+		# could just do this, but explicit is better than implicit
+		#for k, v in data.items():
+		#	setattr(self, k, v)

@@ -6,15 +6,21 @@ body {
 }
 header {
 	background-color: #7bb0a8;
+	margin: 0;
+	padding: 0.5em 1em;
+}
+header a {
 	color: white;
 	font-weight: bold;
 	font-size: 200%;
-	margin: 0;
-	padding: 0.5em 1em;
+	text-decoration: none;
 }
 footer {
 	background-color: #eee;
 	color: #444;
 	padding: 1em 1em 0.5em 1em;
 	text-align: right;
+}
+.hidden {
+	display: none;
 }
