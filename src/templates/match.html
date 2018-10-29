@@ -1,0 +1,86 @@
+<!doctype html>
+<html>
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+</style>
+<title>Donation Swap</title>
+</head>
+<body>
+{%FILE=header.snippet.html%}
+<table>
+	<tbody>
+		<tr>
+			<td>My Country:</td>
+			<td id="txtMyCountry"></td>
+		</tr>
+		<tr>
+			<td>My Charity:</td>
+			<td id="txtMyCharity"></td>
+		</tr>
+		<tr>
+			<td>My Amount:</td>
+			<td id="txtMyAmount"></td>
+		</tr>
+		<tr>
+			<td>Their Country:</td>
+			<td id="txtTheirCountry"></td>
+		</tr>
+		<tr>
+			<td>Their Charity:</td>
+			<td id="txtTheirCharity"></td>
+		</tr>
+		<tr>
+			<td>Their Amount:</td>
+			<td id="txtTheirAmount"></td>
+		</tr>
+	</tbody>
+</table>
+<button id="btnApprove">Approve</button>
+<button id="btnDecline">Decline</button>
+{%FILE=footer.snippet.html%}
+<script>
+/* globals ajax, getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+	const secret = window.location.hash.substr(1);
+
+	ajax('get_match', { secret })
+		.then(match => {
+			if (match === null) {
+				alert('We cannot find the requested offer. Maybe it expired or was declined.');
+				window.location.pathname = '/';
+				return;
+			}
+			ui.txtMyCountry.textContent = match.my_country;
+			ui.txtMyCharity.textContent = match.my_charity;
+			ui.txtMyAmount.textContent = `${match.my_amount} ${match.my_currency}`;
+			ui.txtTheirCountry.textContent = match.their_country;
+			ui.txtTheirCharity.textContent = match.their_charity;
+			ui.txtTheirAmount.textContent = (match.my_currency === match.their_currency)
+				? `${match.their_amount} ${match.their_currency}`
+				: `${match.their_amount} ${match.their_currency} (${match.their_amount_converted} ${match.my_currency})`
+		});
+
+	ui.btnApprove.onclick = () => {
+		ajax('approve_match', { secret })
+			.then(() => {
+				//xxx Say "we're waiting for the other person's response"
+				//xxx or say "we sent you an email"
+				alert('Thanks!');
+			});
+	};
+
+	ui.btnDecline.onclick = () => {
+		alert('Sorry, not this part is not implemented yet.');
+	};
+}());
+</script>
+</body>
+</html>

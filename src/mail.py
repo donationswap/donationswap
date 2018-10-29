@@ -2,15 +2,15 @@
 
 import email.mime.multipart
 import email.mime.text
-import logging
 import smtplib
 
-class Mail:
+class Mail: # pylint: disable=too-few-public-methods
 
-	def __init__(self, user, password, smtp_host):
+	def __init__(self, user, password, smtp_host, sender_name=None):
 		self._user = user
 		self._password = password
 		self._smtp_host = smtp_host
+		self._sender_name = sender_name
 
 	@staticmethod
 	def _populate(msg, key, value):
@@ -21,27 +21,24 @@ class Mail:
 				msg[key] = value
 
 	def send(self, subject, text, html=None, to=None, cc=None, bcc=None):
-		try:
-			if html is None:
-				msg = email.mime.text.MIMEText(text)
-			else:
-				msg = email.mime.multipart.MIMEMultipart('alternative')
-				msg.attach(email.mime.text.MIMEText(text, 'plain'))
-				msg.attach(email.mime.text.MIMEText(html, 'html'))
+		if html is None:
+			msg = email.mime.text.MIMEText(text)
+		else:
+			msg = email.mime.multipart.MIMEMultipart('alternative')
+			msg.attach(email.mime.text.MIMEText(text, 'plain'))
+			msg.attach(email.mime.text.MIMEText(html, 'html'))
 
+		if self._sender_name:
+			self._populate(msg, 'From', '%s <%s>' % (self._sender_name, self._user))
+		else:
 			self._populate(msg, 'From', self._user)
-			self._populate(msg, 'Subject', subject)
-			self._populate(msg, 'To', to)
-			self._populate(msg, 'Cc', cc)
-			self._populate(msg, 'Bcc', bcc)
 
-			with smtplib.SMTP(self._smtp_host) as s:
-				s.starttls()
-				s.login(user=self._user, password=self._password)
-				s.send_message(msg)
+		self._populate(msg, 'Subject', subject)
+		self._populate(msg, 'To', to)
+		self._populate(msg, 'Cc', cc)
+		self._populate(msg, 'Bcc', bcc)
 
-			return True
-
-		except Exception: # pylint: disable=broad-except
-			logging.error('Error sending email: subject="%s", text="%s", to="%s", cc="%s", bcc="%s".', subject, text, to, cc, bcc, exc_info=True)
-			return False
+		with smtplib.SMTP(self._smtp_host) as s:
+			s.starttls()
+			s.login(user=self._user, password=self._password)
+			s.send_message(msg)
