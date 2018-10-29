@@ -51,6 +51,29 @@ class HttpRedirectHandler(BaseHandler):
 				url += ':%s' % self.https_port
 			self.redirect(url, permanent=False)
 
+class AdminHandler(BaseHandler):
+
+	def get(self, page):
+		page = self.logic.get_page(page)
+		if page:
+			self.set_header('Content-Type', 'text/html; charset=utf-8')
+			self.write(page)
+		else:
+			self.set_status(404)
+			self.write('404 File Not Found')
+
+	def post(self, action):
+		payload = json.loads(self.request.body.decode('utf-8'))
+
+		success, result = self.logic.run_admin_ajax(action, payload)
+
+		self.set_header('Content-Type', 'application/json; charset=utf-8')
+		if success:
+			self.set_status(200)
+		else:
+			self.set_status(500)
+		self.write(json.dumps(result))
+
 class AjaxHandler(BaseHandler):
 
 	def post(self, action):
@@ -105,6 +128,7 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 		[
 			(r'/', TemplateHandler, args({'page_name': 'index.html'})),
 			(r'/ajax/(.+)', AjaxHandler, args()),
+			(r'/special-secret-admin/(.+)', AdminHandler, args()),
 			(r'/contact/?', TemplateHandler, args({'page_name': 'contact.html'})),
 			(r'/faq/?', TemplateHandler, args({'page_name': 'faq.html'})),
 			(r'/match/?', TemplateHandler, args({'page_name': 'match.html'})),
@@ -130,7 +154,7 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 	server.listen(port)
 
 	if daemonize:
-		util.daemonize('/var/run/webserver.pid') #xxx move path to config file
+		util.daemonize('/var/run/webserver-%s.pid' % port)
 
 	if os.geteuid() == 0: # we don't need root privileges any more
 		util.drop_privileges()

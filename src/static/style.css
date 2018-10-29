@@ -24,3 +24,92 @@ footer {
 .hidden {
 	display: none;
 }
+
+button {
+	appearance: none;
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	background-size: 110% 110%;
+	border-radius: 0.25em;
+	padding: 4px 21px 5px 21px;
+	vertical-align: middle;
+}
+
+button { /* default button: gray */
+	border: solid 1px #ccc !important;
+	background: #ddd !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#eee), to(#ccc)) !important;
+	background: -moz-linear-gradient(top,  #eee,  #ccc) !important;
+	color: black !important;
+}
+button:hover {
+	background: #ddd !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#ddd), to(#bbb)) !important;
+	background: -moz-linear-gradient(top,  #ddd,  #bbb) !important;
+}
+button:active,
+button.active {
+	background: #ddd !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#ccc), to(#eee)) !important;
+	background: -moz-linear-gradient(top,  #ccc, #eee) !important;
+}
+button:hover:disabled,
+button:active:disabled,
+button:disabled {
+	background: #ddd !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#eee), to(#ccc)) !important;
+	background: -moz-linear-gradient(top,  #eee,  #ccc) !important;
+	color: gray !important;
+}
+
+button.red {
+	border: solid 1px #980c10 !important;
+	background: #d81b21 !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#ed1c24), to(#aa1317)) !important;
+	background: -moz-linear-gradient(top,  #ed1c24,  #aa1317) !important;
+	color: #fff !important;
+}
+button.red:hover {
+	background: #b61318 !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#c9151b), to(#a11115)) !important;
+	background: -moz-linear-gradient(top,  #c9151b,  #a11115) !important;
+}
+button.red:active,
+button.red.active {
+	background: -webkit-gradient(linear, left top, left bottom, from(#aa1317), to(#ed1c24)) !important;
+	background: -moz-linear-gradient(top,  #aa1317,  #ed1c24) !important;
+}
+button.red:hover:disabled,
+button.red:active:disabled,
+button.red:disabled {
+	background: #d81b21 !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#ed1c24), to(#aa1317)) !important;
+	background: -moz-linear-gradient(top,  #ed1c24,  #aa1317) !important;
+	color: lightgray !important;
+}
+
+button.green {
+	border: solid 1px #538312 !important;
+	background: #64991e !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#7db72f), to(#4e7d0e)) !important;
+	background: -moz-linear-gradient(top,  #7db72f,  #4e7d0e) !important;
+	color: #fff !important;
+}
+button.green:hover {
+	background: #538018 !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#6b9d28), to(#436b0c)) !important;
+	background: -moz-linear-gradient(top,  #6b9d28,  #436b0c) !important;
+}
+button.green:active,
+button.green.active {
+	background: -webkit-gradient(linear, left top, left bottom, from(#4e7d0e), to(#7db72f)) !important;
+	background: -moz-linear-gradient(top,  #4e7d0e,  #7db72f) !important;
+}
+button.green:hover:disabled,
+button.green:active:disabled,
+button.green:disabled {
+	background: #64991e !important;
+	background: -webkit-gradient(linear, left top, left bottom, from(#7db72f), to(#4e7d0e)) !important;
+	background: -moz-linear-gradient(top,  #7db72f,  #4e7d0e) !important;
+	color: lightgray !important;
+}

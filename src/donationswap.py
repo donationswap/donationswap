@@ -37,6 +37,7 @@ import re
 import struct
 import time
 
+import admin
 import captcha
 import config
 import currency
@@ -55,13 +56,7 @@ def ajax(f):
 	f.allow_ajax = True
 	return f
 
-#xxx commit code (with deploy script)
-
-#xxx enter charities into database
-
 #xxx add name to offer
-
-#xxx write up workflow for Catherine
 
 #xxx custom validation
 #xxx minimum donation amount of 50 Euros (or equivalent),
@@ -83,6 +78,7 @@ class Donationswap:
 
 		self._database = database.Database(self._config.db_connection_string)
 
+		self._admin = admin.Admin(self._database)
 		self._captcha = captcha.Captcha(self._config.captcha_secret)
 		self._entities = entities.Entities(self._database)
 		self._currency = currency.Currency(self._config.currency_cache, self._config.fixer_apikey)
@@ -195,6 +191,8 @@ class Donationswap:
 		return match, old_offer, new_offer, my_offer, their_offer
 
 	def run_ajax(self, command, ip_address, args):
+		'''Ajax methods don't have their error messages exposed.'''
+
 		method = getattr(self, command, None)
 		if method is None:
 			return None # method does not exist
@@ -208,6 +206,21 @@ class Donationswap:
 		except Exception: # pylint: disable=broad-except
 			logging.error('Ajax Error', exc_info=True)
 			raise
+
+	def run_admin_ajax(self, command, args):
+		'''Admin ajax methods do ahve their error messages exposed.'''
+
+		if command.startswith('_'):
+			return False, 'method forbidden'
+		method = getattr(self._admin, command, None)
+		if method is None:
+			return False, 'method does not exist'
+
+		try:
+			return True, method(**args)
+		except Exception as e: # pylint: disable=broad-except
+			logging.error('Ajax Admin Error', exc_info=True)
+			return False, str(e)
 
 	@staticmethod
 	def get_page(name):
@@ -318,7 +331,6 @@ class Donationswap:
 		# Do NOT return the secret here.
 		# We've sent an email to verify the email address,
 		# and email should be the only way to receive the secret.
-		return None
 
 	@ajax
 	def confirm_offer(self, secret):
@@ -388,6 +400,7 @@ class Donationswap:
 
 		if match['old_agrees'] and match['new_agrees']:
 			#xxx send only one email, but to both
+			#xxx add precise instructions on how to donate (URL, ...)
 			self._send_mail_about_deal(old_offer, new_offer)
 			self._send_mail_about_deal(new_offer, old_offer)
 

@@ -111,7 +111,7 @@ function captchaBad() {
 
 	captchaBad();
 
-	ajax('get_info')
+	ajax('/ajax/get_info')
 		.then(info => {
 			const currencyByCountry = {};
 
@@ -165,7 +165,7 @@ function captchaBad() {
 
 			ui.btnSlow.onclick = () => {
 				captchaBad();
-				ajax('create_offer', {
+				ajax('/ajax/create_offer', {
 					captcha_response: document.getElementsByName('g-recaptcha-response')[0].value,
 					country: ui.slowCountry.value,
 					amount: ui.slowAmount.value,
