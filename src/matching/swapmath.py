@@ -30,6 +30,9 @@ class SwapMath():
 		self.taxReturnForA = self.amountAPays * offerA.donor.country.taxReturn
 		self.taxReturnForB = self.amountBPays * offerB.donor.country.taxReturn
 
+		self.valueFromMultiplier1 = (self.countryAValueToCharityMultipler - 1) * self.amountAPays
+		self.valueFromMultiplier2 = (self.countryBValueToCharityMultipler - 1) * self.amountBPays
+
 	def GetSummary(self):
 		summary = "Charities {charity1} and {charity2} get {totalBase} {baseCurrency} each.\n".format(
 			charity1 = self.charityADonatingToForB.name,
@@ -68,27 +71,39 @@ class SwapMath():
 
 	def GetMathHtml(self):
 		template = ""
-		# todo handle UK stuff
-		with open("../templates/donation_calculation.html") as f:
-			template = f.read()
-		return template.format(
-			totalBase = self.amountCharitiesGet,
-			baseCurrency = self.baseCurrency,
-			person1 = self.offerA.donor.email,
-			person2 = self.offerB.donor.email,
-			charity1 = self.charityADonatingToForB,
-			charity2 = self.charityBDonatingToForA,
-			country1ExchangeRate = self.countryAExchangeVsUSA,
-			country2ExchangeRate = self.countryBExchangeVsUSA,
-			amount1Pays = self.amountAPays,
-			amount2Pays = self.amountBPays,
-			country1Currency = self.offerA.donor.country.currency,
-			country2Currency = self.offerB.donor.country.currency,
-			country1TaxReturn = self.offerA.donor.country.taxReturn,
-			country2TaxReturn = self.offerB.donor.country.taxReturn,
-			taxReturnForDonor1 = self.taxReturnForA,
-			taxReturnForDonor2 = self.taxReturnForB
-		)
+
+		if (self.countryAValueToCharityMultipler != 1 or self.countryBValueToCharityMultipler != 1):
+			with open("../templates/donation_calculation_giftAid.html") as f:
+				template = f.read()
+		else:
+			with open("../templates/donation_calculation.html") as f:
+				template = f.read()
+
+		return template.format(**self.GetDataDictionary())
+
+	def GetDataDictionary(self):
+		return {
+			'totalBase': self.amountCharitiesGet,
+			'baseCurrency': self.baseCurrency,
+			'person1': self.offerA.donor.email,
+			'person2': self.offerB.donor.email,
+			'charity1': self.charityADonatingToForB,
+			'charity2': self.charityBDonatingToForA,
+			'country1ExchangeRate': self.countryAExchangeVsUSA,
+			'country2ExchangeRate': self.countryBExchangeVsUSA,
+			'amount1Pays': self.amountAPays,
+			'amount2Pays': self.amountBPays,
+			'country1Currency': self.offerA.donor.country.currency,
+			'country2Currency': self.offerB.donor.country.currency,
+			'country1TaxReturn': self.offerA.donor.country.taxReturn,
+			'country2TaxReturn': self.offerB.donor.country.taxReturn,
+			'taxReturnForDonor1': self.taxReturnForA,
+			'taxReturnForDonor2': self.taxReturnForB,
+			'giftAid1': self.countryAValueToCharityMultipler,
+			'giftAid2': self.countryBValueToCharityMultipler,
+			'giftAidPaid1': self.valueFromMultiplier1,
+			'giftAidPaid2': self.valueFromMultiplier2
+		}
 
 	def __str__(self):
 		return "Swap for " + str(self.amountCharitiesGet) + " " + self.baseCurrency
@@ -111,4 +126,6 @@ class SwapMath():
 			self.offerA == other.offerA and \
 			self.offerB == other.offerB and \
 			self.taxReturnForA == other.taxReturnForA and \
-			self.taxReturnForB == other.taxReturnForB
+			self.taxReturnForB == other.taxReturnForB and \
+			self.valueFromMultiplier1 == other.valueFromMultiplier1 and \
+			self.valueFromMultiplier2 == other.valueFromMultiplier2
