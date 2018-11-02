@@ -1,40 +1,6 @@
 #!/usr/bin/env python3
 
-#xxx merge this into the official db schema
-
-'''
-CREATE TABLE charities (
-	id SERIAL,
-	name varchar(100) UNIQUE NOT NULL,
-	category_id INT NOT NULL,
-	FOREIGN KEY (category_id) REFERENCES charity_categories (id)
-		ON DELETE NO ACTION ON UPDATE CASCADE,
-	PRIMARY KEY (id)
-);
-
-CREATE TABLE countries (
-	id SERIAL,
-	name varchar(100) NOT NULL,
-	live_in_name varchar(100),
-	iso_name varchar(2) UNIQUE NOT NULL,
-	currency_id INT NOT NULL,
-	FOREIGN KEY (currency_id) REFERENCES currencies (id)
-		ON DELETE NO ACTION ON UPDATE CASCADE,
-	PRIMARY KEY (id)
-);
-
-CREATE TABLE charities_in_countries (
-	charity_id INTEGER NOT NULL,
-	country_id INTEGER NOT NULL,
-	tax_factor FLOAT NOT NULL,
-	instructions TEXT,
-	FOREIGN KEY (charity_id) REFERENCES charities (id)
-		ON DELETE NO ACTION ON UPDATE CASCADE,
-	FOREIGN KEY (country_id) REFERENCES countries (id)
-		ON DELETE NO ACTION ON UPDATE CASCADE,
-	PRIMARY KEY (charity_id, country_id)
-);
-'''
+#xxx use entities instead of plain SQL
 
 class Admin:
 
@@ -141,12 +107,12 @@ class Admin:
 		with self._database.connect() as db:
 			db.write(query, id=id)
 
-	def create_country(self, name, live_in_name, iso_name, currency_id):
+	def create_country(self, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
 		query = '''
-			INSERT INTO countries (name, live_in_name, iso_name, currency_id)
-			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s);'''
+			INSERT INTO countries (name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
+			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s, %(min_donation_amount)s, %(min_donation_currency_id)s);'''
 		with self._database.connect() as db:
-			db.write(query, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id)
+			db.write(query, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
 
 	def read_countries(self):
 		query = '''
@@ -161,17 +127,19 @@ class Admin:
 					'live_in_name': i['live_in_name'],
 					'iso_name': i['iso_name'],
 					'currency_id': i['currency_id'],
+					'min_donation_amount': i['min_donation_amount'],
+					'min_donation_currency_id': i['min_donation_currency_id'],
 				}
 				for i in db.read(query)
 			]
 
-	def update_country(self, id, name, live_in_name, iso_name, currency_id):
+	def update_country(self, id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
 		query = '''
 			UPDATE countries
-			SET name = %(name)s, live_in_name = %(live_in_name)s, iso_name = %(iso_name)s, currency_id = %(currency_id)s
+			SET name = %(name)s, live_in_name = %(live_in_name)s, iso_name = %(iso_name)s, currency_id = %(currency_id)s, min_donation_amount = %(min_donation_amount)s, min_donation_currency_id = %(min_donation_currency_id)s
 			WHERE id = %(id)s;'''
 		with self._database.connect() as db:
-			db.write(query, id=id, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id)
+			db.write(query, id=id, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
 
 	def delete_country(self, id):
 		query = '''

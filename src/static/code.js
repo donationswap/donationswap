@@ -15,7 +15,7 @@ function ajax(action, payload) {
 				if (request.status < 300) {
 					resolve(JSON.parse(request.responseText));
 				} else {
-					reject(request);
+					reject(request.responseText);
 				}
 			}
 		};

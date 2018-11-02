@@ -71,3 +71,7 @@ class Connection:
 	def write(self, cmd, **args):
 		self._cursor.execute(cmd, args)
 		self._written = True
+
+	def write_read_one(self, query, **args):
+		self._written = True
+		return self.read_one(query, **args)

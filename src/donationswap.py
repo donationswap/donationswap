@@ -9,15 +9,12 @@ web server in the future.
 
 Dependency structure:
 
-.----------------------------------------------------------------------------------------------.
-| main                                                                                         |       web layer
-'----------------------------------------------------------------------------------------------'
-                .------------------------------------------------------------------------------.
-                | donationswap                                                                 |       "business logic"
-                '------------------------------------------------------------------------------'
-                                                                       .-----------------------------.
-                                                                       | matchmaker (transparent)    | (Conway's law)
-                                                                       '-----------------------------'
+.----------------------------------------------------------------------------------------------------.
+| main                                                                                               | web layer
+'----------------------------------------------------------------------------------------------------'
+                .------------------------------------------------------------------------------------.
+                | donationswap                                                                       | "business logic"
+                '------------------------------------------------------------------------------------'
                                                                                     .----------.
                                                                                     | entities |
                                                                                     '----------'
@@ -31,6 +28,7 @@ Dependency structure:
 '''
 
 import base64
+import datetime
 import logging
 import os
 import re
@@ -45,33 +43,25 @@ import database
 import entities
 import geoip
 import mail
-import matchmaker
 import util
-
-OFFER_TTL_ONE_WEEK = 0
-OFFER_TTL_ONE_MONTH = 1
-OFFER_TTL_THREE_MONTHS = 2
 
 def ajax(f):
 	f.allow_ajax = True
 	return f
 
-#xxx add name to offer
-
-#xxx custom validation
-#xxx minimum donation amount of 50 Euros (or equivalent),
-#xxx except for Ireland, where it's 250 Euros.
-
-#xxx expiration date input field
-
-#xxx delete expired offers that aren't part of a match
-#xxx delete unapproved matches after... dunno... a week?
-
 #xxx a donation offer is pointless if
 #    - it is to the only tax-deductible charity in the country OR
 #    - it is to a charity that is tax-decuctible everywhere
 
-class Donationswap:
+def create_secret():
+	timestamp_bytes = struct.pack('!d', time.time())
+	random_bytes = os.urandom(10)
+	return base64.b64encode(timestamp_bytes + random_bytes).decode('utf-8')
+
+class DonationException(Exception):
+	pass
+
+class Donationswap: # pylint: disable=too-many-instance-attributes
 
 	def __init__(self, config_path):
 		self._config = config.Config(config_path)
@@ -80,113 +70,48 @@ class Donationswap:
 
 		self._admin = admin.Admin(self._database)
 		self._captcha = captcha.Captcha(self._config.captcha_secret)
-		self._entities = entities.Entities(self._database)
 		self._currency = currency.Currency(self._config.currency_cache, self._config.fixer_apikey)
 		self._geoip = geoip.GeoIpCountry(self._config.geoip_datafile)
 		self._mail = mail.Mail(self._config.email_user, self._config.email_password, self._config.email_smtp, self._config.email_sender_name)
-		self._matchmaker = matchmaker.Matchmaker(self._database)
+
+		with self._database.connect() as db:
+			entities.load(db)
 
 		self._ip_address = None
 
 	@staticmethod
-	def _create_secret():
-		timestamp_bytes = struct.pack('!d', time.time())
-		random_bytes = os.urandom(10)
-		return base64.b64encode(timestamp_bytes + random_bytes).decode('utf-8')
+	def _int(number, msg):
+		try:
+			return int(number)
+		except ValueError:
+			raise DonationException(msg)
 
-	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		my_country = self._entities.get_country_by_abbreviation(my_offer['country'])
-		their_country = self._entities.get_country_by_abbreviation(their_offer['country'])
-
-		replacements = {
-			'{%YOUR_COUNTRY%}': my_country['name'],
-			'{%YOUR_CHARITY%}': self._entities.get_charity_by_abbreviation(my_offer['charity']),
-			'{%YOUR_AMOUNT%}': my_offer['amount'],
-			'{%YOUR_CURRENCY%}': my_country['currency'],
-			'{%THEIR_COUNTRY%}': their_country['name'],
-			'{%THEIR_CHARITY%}': self._entities.get_charity_by_abbreviation(their_offer['charity']),
-			'{%THEIR_AMOUNT%}': their_offer['amount'],
-			'{%THEIR_CURRENCY%}': their_country['currency'],
-			'{%THEIR_AMOUNT_CONVERTED%}': self._currency.convert(their_offer['amount'], their_country['currency'], my_country['currency']),
-			'{%SECRET%}': '%s%s' % (my_offer['secret'], match_secret),
-			# Do NOT put their email address here.
-			# Wait until both parties approved the match.
-		}
-		self._mail.send(
-			'We may have found a matching donation for you',
-			util.Template('match-suggested-email.txt').replace(replacements).content,
-			html=util.Template('match-suggested-email.html').replace(replacements).content,
-			to=my_offer['email']
-		)
-
-	def _send_mail_about_deal(self, my_offer, their_offer):
-		my_country = self._entities.get_country_by_abbreviation(my_offer['country'])
-		their_country = self._entities.get_country_by_abbreviation(their_offer['country'])
-
-		replacements = {
-			'{%YOUR_COUNTRY%}': my_country['name'],
-			'{%YOUR_CHARITY%}': self._entities.get_charity_by_abbreviation(my_offer['charity']),
-			'{%YOUR_AMOUNT%}': my_offer['amount'],
-			'{%YOUR_CURRENCY%}': my_country['currency'],
-			'{%THEIR_COUNTRY%}': their_country['name'],
-			'{%THEIR_CHARITY%}': self._entities.get_charity_by_abbreviation(their_offer['charity']),
-			'{%THEIR_AMOUNT%}': their_offer['amount'],
-			'{%THEIR_CURRENCY%}': their_country['currency'],
-			'{%THEIR_AMOUNT_CONVERTED%}': self._currency.convert(their_offer['amount'], their_country['currency'], my_country['currency']),
-			# This is where we include the email address
-			'{%THEIR_EMAIL%}': their_offer['email'],
-		}
-		self._mail.send(
-			'We may have found a matching donation for you',
-			util.Template('match-approved-email.txt').replace(replacements).content,
-			html=util.Template('match-approved-email.html').replace(replacements).content,
-			to=my_offer['email']
-		)
-
-	def _find_match_for_offer(self, offer_id):
-		matching_offer_id = self._matchmaker.find_match(offer_id)
-
-		if matching_offer_id is None:
-			return None
-
-		match_secret = self._create_secret()
-
-		self._entities.insert_match(
-			new_offer_id=offer_id,
-			old_offer_id=matching_offer_id,
-			secret=match_secret
-		)
-
-		new_offer = self._entities.get_offer_by_id(offer_id)
-		old_offer = self._entities.get_offer_by_id(matching_offer_id)
-
-		self._send_mail_about_match(old_offer, new_offer, match_secret)
-		self._send_mail_about_match(new_offer, old_offer, match_secret)
-
-		return match_secret
-
-	def _get_match_and_offers(self, secret):
+	@staticmethod
+	def _get_match_and_offers(secret):
 		if len(secret) != 48:
-			return None, None, None # invalid secret
+			logging.debug('invalid secret length.')
+			return None, None, None, None, None
 
 		offer_secret = secret[:24]
 		match_secret = secret[24:]
 
-		match = self._entities.get_match_by_secret(match_secret)
+		match = entities.Match.by_secret(match_secret)
 		if match is None:
-			return None, None, None # match not found
+			logging.debug('match with secret "%s" not found.', match_secret)
+			return None, None, None, None, None
 
-		new_offer = self._entities.get_offer_by_id(match['new_offer_id'])
-		old_offer = self._entities.get_offer_by_id(match['old_offer_id'])
+		new_offer = match.new_offer
+		old_offer = match.old_offer
 
-		if new_offer['secret'] == offer_secret:
+		if new_offer.secret == offer_secret:
 			my_offer = new_offer
 			their_offer = old_offer
-		elif old_offer['secret'] == offer_secret:
+		elif old_offer.secret == offer_secret:
 			my_offer = old_offer
 			their_offer = new_offer
 		else:
-			return None, None, None # offer not found
+			logging.debug('offer with secret "%s" not found.', offer_secret)
+			return None, None, None, None, None
 
 		return match, old_offer, new_offer, my_offer, their_offer
 
@@ -195,20 +120,22 @@ class Donationswap:
 
 		method = getattr(self, command, None)
 		if method is None:
-			return None # method does not exist
+			return False, None # method does not exist
 		if not getattr(method, 'allow_ajax', False):
-			return None # ajax not allowed
+			return False, None # ajax not allowed
 
 		self._ip_address = ip_address
 
 		try:
-			return method(**args)
+			return True, method(**args)
+		except DonationException as e:
+			return False, str(e)
 		except Exception: # pylint: disable=broad-except
 			logging.error('Ajax Error', exc_info=True)
-			raise
+			return False, None
 
 	def run_admin_ajax(self, command, args):
-		'''Admin ajax methods do ahve their error messages exposed.'''
+		'''Admin ajax methods do have their error messages exposed.'''
 
 		if command.startswith('_'):
 			return False, 'method forbidden'
@@ -227,37 +154,11 @@ class Donationswap:
 		return util.Template(name).content
 
 	@ajax
-	def get_info(self):
-		client_country = self._geoip.lookup(self._ip_address)
-
-		logging.info('Website visitor from %s with IP address "%s".', client_country, self._ip_address)
-
-		return {
-			'charities': [
-				{
-					'name': i['name'],
-					'abbreviation': i['abbreviation'],
-				}
-				for i in self._entities.charities
-			],
-			'client_country': client_country,
-			'countries': [
-				{
-					'currency': i['currency'],
-					'abbreviation': i['abbreviation'],
-					'live_in_name': i['live_in_name'] or i['name'],
-					'name': i['name']
-				}
-				for i in self._entities.countries
-			],
-		}
-
-	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
 		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
 
 		if not is_legit:
-			raise ValueError('bad captcha response')
+			raise DonationException('bad captcha response')
 
 		tmp = util.Template('contact-email.txt')
 		tmp.replace({
@@ -276,49 +177,110 @@ class Donationswap:
 			bcc=self._config.contact_message_receivers.get('bcc', [])
 		)
 
+	@staticmethod
+	def _get_charities_info():
+		return [
+			{
+				'id': i.id,
+				'name': i.name,
+				'category': i.category.name,
+			}
+			for i in sorted(entities.Charity.get_all(), key=lambda i: i.category.name + i.name)
+		]
+
+	def _get_countries_info(self):
+		return [
+			{
+				'id': i.id,
+				'name': i.name,
+				'live_in_name': i.live_in_name or i.name,
+				'currency_iso': i.currency.iso,
+				'currency_name': i.currency.name,
+				'min_donation_amount': self._currency.convert(
+					i.min_donation_amount,
+					i.min_donation_currency.iso,
+					i.currency.iso
+				)
+			}
+			for i in sorted(entities.Country.get_all(), key=lambda i: i.name)
+		]
+
 	@ajax
-	def create_offer(self, captcha_response, country, amount, charity, email, time_to_live):
-		# validate
+	def get_info(self):
+		client_country_iso = self._geoip.lookup(self._ip_address)
+		client_country = entities.Country.by_iso_name(client_country_iso)
+		if client_country:
+			client_country_id = client_country.id
+		else:
+			client_country_id = None
+
+		logging.info('Website visitor from %s with IP address "%s".', client_country_iso, self._ip_address)
+
+		today = datetime.datetime.utcnow()
+
+		return {
+			'charities': self._get_charities_info(),
+			'client_country': client_country_id,
+			'countries': self._get_countries_info(),
+			'today': {
+				'day': today.day,
+				'month': today.month,
+				'year': today.year,
+			},
+		}
+
+	def _validate_offer(self, captcha_response, country, amount, charity, email, expiration):
 		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
 
 		if not is_legit:
-			raise ValueError('bad captcha response')
+			raise DonationException('bad captcha response')
 
-		if self._entities.get_country_by_abbreviation(country) is None:
-			raise ValueError('country not found')
+		country = entities.Country.by_id(country)
+		if country is None:
+			raise DonationException('country not found')
 
-		amount = int(amount)
+		amount = self._int(amount, 'invalid amount')
 
 		if amount < 0:
-			raise ValueError('negative amount')
+			raise DonationException('negative amount')
 
-		if self._entities.get_charity_by_abbreviation(charity) is None:
-			raise ValueError('charity not found')
+		charity = entities.Charity.by_id(charity)
+		if charity is None:
+			raise DonationException('charity not found')
 
 		email = email.strip()
 		if not re.fullmatch(r'.+?@.+\..+', email):
-			raise ValueError('bad email address')
+			raise DonationException('bad email address')
 
-		time_to_live = int(time_to_live)
+		expires_ts = '%04i-%02i-%02i' % (
+			self._int(expiration['year'], 'invalid expiration date'),
+			self._int(expiration['month'], 'invalid expiration date'),
+			self._int(expiration['day'], 'invalid expiration date')
+		)
+		try:
+			expires_ts = datetime.datetime.strptime(expires_ts, '%Y-%m-%d')
+		except ValueError:
+			DonationException('invalid expiration date')
 
-		if 0 <= time_to_live <= 2:
-			time_to_live = [
-				'1 week',
-				'1 month',
-				'3 months',
-			][time_to_live]
-		else:
-			raise ValueError('bad ttl')
+		return country, amount, charity, email, expires_ts
 
-		secret = self._create_secret()
+	@ajax
+	def create_offer(self, captcha_response, country, amount, charity, email, expiration):
+		#xxx add name to offer (so we can start the email with "Dear <name>")
 
-		self._entities.insert_offer(email, secret, country, amount, charity, time_to_live)
+		country, amount, charity, email, expires_ts = self._validate_offer(captcha_response, country, amount, charity, email, expiration)
 
-		# send email
+		secret = create_secret()
+		# Do NOT return this secret to the client via this method.
+		# Only put it in the email, so that having the link acts as email address verification.
+
+		with self._database.connect() as db:
+			entities.Offer.create(db, secret, email, country.id, amount, charity.id, expires_ts)
+
 		replacements = {
-			'{%URL%}': 'https://donationswap.eahub.org/offer/#%s' % secret,
-			'{%CHARITY%}': self._entities.get_charity_by_abbreviation(charity)['name'],
-			'{%CURRENCY%}': self._entities.get_country_by_abbreviation(country)['currency'],
+			'{%SECRET%}': secret,
+			'{%CHARITY%}': charity.name,
+			'{%CURRENCY%}': country.currency.iso,
 			'{%AMOUNT%}': amount,
 		}
 		self._mail.send(
@@ -328,41 +290,40 @@ class Donationswap:
 			to=email
 		)
 
-		# Do NOT return the secret here.
-		# We've sent an email to verify the email address,
-		# and email should be the only way to receive the secret.
-
 	@ajax
 	def confirm_offer(self, secret):
-		offer = self._entities.get_offer_by_secret(secret)
+		offer = entities.Offer.by_secret(secret)
 		if offer is None:
 			return None
 
 		# caller knows the secret (which we emailed)
 		# => caller received email
 		# => email address is valid
-		# => offer is valid
-		# => mark it as confirmed, and try to find a match for it.
-		if not offer['confirmed']:
-			offer_id = offer['id']
-			self._entities.confirm_offer(offer_id)
-			match_secret = self._find_match_for_offer(offer_id)
-		else:
-			match_secret = None
+		# caller clicked on link we emailed
+		# => offer is confirmed
+		# => mark it as confirmed in db, and try to find a match for it.
+
+		was_confirmed = offer.confirmed
+
+		if not was_confirmed:
+			with self._database.connect() as db:
+				offer.confirm(db)
 
 		return {
-			'was_confirmed': offer['confirmed'],
-			'currency': offer['currency'],
-			'amount': offer['amount'],
-			'charity': offer['charity'],
-			'created_ts': offer['created_ts'].isoformat(' '),
-			'expires_ts': offer['expires_ts'].isoformat(' '),
-			'match_secret': match_secret,
+			'was_confirmed': was_confirmed,
+			'currency': offer.country.currency.iso,
+			'amount': offer.amount,
+			'charity': offer.charity.name,
+			'created_ts': offer.created_ts.isoformat(' '),
+			'expires_ts': offer.expires_ts.isoformat(' '),
 		}
 
 	@ajax
 	def delete_offer(self, secret):
-		self._entities.delete_offer(secret)
+		offer = entities.Offer.by_secret(secret)
+		if offer is not None:
+			with self._database.connect() as db:
+				offer.delete(db)
 
 	@ajax
 	def get_match(self, secret):
@@ -370,19 +331,26 @@ class Donationswap:
 		if my_offer is None or their_offer is None:
 			return None
 
-		my_country = self._entities.get_country_by_abbreviation(my_offer['country'])
-		their_country = self._entities.get_country_by_abbreviation(their_offer['country'])
+		my_amount_converted = self._currency.convert(
+				my_offer.amount,
+				my_offer.country.currency.iso,
+				their_offer.country.currency.iso)
+		their_amount_converted = self._currency.convert(
+				their_offer.amount,
+				their_offer.country.currency.iso,
+				my_offer.country.currency.iso)
 
 		return {
-			'my_country': my_country['name'],
-			'my_charity': my_offer['charity'],
-			'my_amount': my_offer['amount'],
-			'my_currency': my_country['currency'],
-			'their_country': their_country['name'],
-			'their_charity': their_offer['charity'],
-			'their_amount': their_offer['amount'],
-			'their_currency': their_country['currency'],
-			'their_amount_converted': self._currency.convert(their_offer['amount'], their_country['currency'], my_country['currency']),
+			'my_country': my_offer.country.name,
+			'my_charity': my_offer.charity.name,
+			'my_amount': my_offer.amount,
+			'my_currency': my_offer.country.currency.iso,
+			'my_amount_converted': my_amount_converted,
+			'their_country': their_offer.country.name,
+			'their_charity': their_offer.charity.name,
+			'their_amount': their_offer.amount,
+			'their_currency': their_offer.country.currency.iso,
+			'their_amount_converted': their_amount_converted,
 			# Do NOT put their email address here.
 			# Wait until both parties approved the match.
 		}
@@ -391,19 +359,16 @@ class Donationswap:
 	def approve_match(self, secret):
 		match, old_offer, new_offer, my_offer, _ = self._get_match_and_offers(secret)
 
-		if my_offer == old_offer:
-			match['old_agrees'] = True
-			self._entities.update_match_agree_old(match['id'])
-		elif my_offer == new_offer:
-			match['new_agrees'] = True
-			self._entities.update_match_agree_new(match['id'])
+		if match is None:
+			raise DonationException('Could not find that match. Deleted? Declined? Expired?')
 
-		if match['old_agrees'] and match['new_agrees']:
-			#xxx send only one email, but to both
-			#xxx add precise instructions on how to donate (URL, ...)
-			self._send_mail_about_deal(old_offer, new_offer)
-			self._send_mail_about_deal(new_offer, old_offer)
+		if my_offer == old_offer:
+			with self._database.connect() as db:
+				match.agree_old(db)
+		elif my_offer == new_offer:
+			with self._database.connect() as db:
+				match.agree_new(db)
 
 	@ajax
 	def decline_match(self, secret, reason):
-		pass #xxx
+		pass #xxx (offers cannot get matched up if they are already in a pending match)

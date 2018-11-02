@@ -11,7 +11,7 @@ class Config:
 
 	A variable goes here if
 	* the value should not be checked in (like passwords), or
-	* developers/testers may want to use different value (like data paths)
+	* developers/testers may want to use a different value (like data paths)
 	'''
 
 	def __init__(self, filename):

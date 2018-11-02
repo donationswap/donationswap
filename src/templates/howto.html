@@ -1,0 +1,201 @@
+<!doctype html>
+<html>
+<head>
+<link rel="icon" href="/static/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<title>Donation Swap</title>
+</head>
+<body>
+{%FILE=header.snippet.html%}
+	<div class="body">
+		<h1>How EA Donation Swap works</h1>
+		<h2>Content</h2>
+		<ul>
+			<li><a href="#example">An example swap</a></li>
+			<li><a href="#process">The process</a></li>
+			<li><a href="#countries">Countries and charities</a></li>
+			<li><a href="#fees">Fees</a></li>
+			<li><a href="#privacy">Privacy</a></li>
+			<li><a href="#technical">Technical details</a></li>
+		</ul>
+
+		<a name="example"></a>
+		<h2>An example swap</h2>
+
+		<table class="visuals">
+			<tbody>
+				<tr>
+					<td>
+						<img src="/static/ava.png">
+					</td>
+					<td>
+						<img src="/static/buzz.png">
+					</td>
+				</tr>
+				<tr>
+					<td>
+						Ava from Animalia wishes to donate 5000 USD to the Good Food Institute.
+						But currently the Good Food Institute is not tax deductible in Animalia, so if she directly donates she doesn’t get tax back at the end of the year.
+						The Against Malaria Foundation is tax deductible in Animalia.
+					</td>
+					<td>
+						Buzz from Protozania wishes to donate 6000 USD to the Against Malaria Foundation.
+						Both the Good Food Institute and the Against Malaria Foundation are tax deductible in Protozania.
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<p>Ava and Buzz are matched together by the EA donation swap website, and receive an email from <a href="/">donationswap.eahub.org</a> which will let them know each other's email addresses, how much to donate (in their local currency), and what charity to donate to, and the best way to donate to minimise transfer costs.</p>
+		<p>Ava and Buzz communicate over email and agree to donate. Ava donates 5000 USD to the Against Malaria Foundation on behalf of Buzz.</p>
+		<img src="/static/buzz-donates.png">
+		<p>Ava and Buzz share their donation receipts.</p>
+		<p>Buzz can choose to donate the remainder of his 6000 USD to AMF, or he can enter that remaining amount back into the donation swap system to be matched with another donor.</p>
+		<p>Ava and Buzz are offered an opportunity to give feedback on the swap.</p>
+		<p>Then they both get their tax credit at the end of the financial year.</p>
+
+		<a name="process"></a>
+		<h2>The process</h2>
+
+		<h3>Fill out the form</h3>
+		<p>On the form you will be asked for</p>
+		<ul>
+			<li>Your country</li>
+			<li>How much you want to donate</li>
+			<li>The minimum sized swap you want to make (larger donors might want to specify this so they aren’t asked to do lots of swaps)</li>
+			<li>The last date for you to be matched. If you do not get matched by this date you will be notified and your information will be taken off the system. Then you can donate the money as you wish.</li>
+		</ul>
+
+		<h3>Matching check</h3>
+		<p>If there is a compatible donor already in the system you will get an email notifying you of the match within minutes. If there isn’t a compatible donor you will be emailed when you do get a match.</p>
+		<p>The email will tell you the charity your match wants to support, and the dollar amount (in your currency). The email will contain a button to accept or reject that swap (you will have 72 hours to decide, otherwise the swap will be rejected automatically).</p>
+		<p>If you and your match both accept the swap you will both be sent an email containing</p>
+		<ul>
+			<li>Details of the matched donor</li>
+			<li>Charity to donate to</li>
+			<li>Amount to donate</li>
+			<li>Instructions on how to donate</li>
+		</ul>
+		<p>If the match is for a smaller amount than your total donation, you will also be asked if you want to offer the remaining money back into the donation swap system.</p>
+
+		<h3>Personal contact</h3>
+		<p>Email your match to say hi and confirm the swap.</p>
+
+		<h3>Donate and confirm</h3>
+		<p>Your email will tell you how to go about donating, and how and when to get evidence of your donation (usually an email from the charity, but it might be a screenshot of your donation page).</p>
+		<p>Once you receive confirmation your money was received by the charity, forward the confirmation your match.</p>
+
+		<h3>Follow up</h3>
+		<p>A month after you are matched you will be emailed a very short form from <a href="/">donationswap.eahub.org</a> to let us know whether your swap happened, and any feedback you have.</p>
+		<p class="buttons">
+			<a class="purple button" href="/start/">Set up a swap</a>
+		</p>
+
+		<a name="countries"></a>
+		<h2>Countries and charities</h2>
+
+		<p>For this BETA version we have limited our charities to most of those featured on the websites of GiveWell, Animal Charity Evaluators, Effective Altruism Foundation and RC Forward. We plan to expand the list gradually. We have limited the countries to the countries where at least one of our charities is tax deductible, and have omitted donation options where the fees are high or the method of donating is complex. If you would like another EA charity, or another country, to be added to the list please <a href="/contact/">contact us</a>.</p>
+
+		<h3>Charities</h3>
+		<ul id="charities">
+			<li>Looks like we cannot load the list of supported charities from our server. That's embarrassing. Sorry.</li>
+		</ul>
+
+		<h3>Countries</h3>
+		<ul id="countries">
+			<li>Looks like we cannot load the list of supported countries from our server. That's embarrassing. Sorry.</li>
+		</ul>
+		<p class="buttons">
+			<a class="purple button" href="/start/">Set up a swap</a>
+		</p>
+
+		<a name="fees"></a>
+		<h2>Fees</h2>
+		<p>There is no cost for using the EA donation swap system, however, some methods of donating have transfer fees.</p>
+
+		<a name="privacy"></a>
+		<h2>Privacy</h2>
+		<p>The EA donation swap database is only viewable by the EA donation swap team. Your name and email address will only be revealed once you and your matched donor agree to proceed with the swap.</p>
+
+		<a name="technical"></a>
+		<h2>Technical details</h2>
+
+		<h3>Recurring donations</h3>
+		<p>The EA donation swap scheme does not yet support recurring donations, but we hope to set this up in the future. In the meantime you can put in a swap request each time you wish to donate.</p>
+		<h3>Languages</h3>
+		<p>Our system is currently only in English. We hope to support more languages in the future.</p>
+
+		<h3>Gift aid for UK and Irish donors</h3>
+		<p>In most countries the government incentivises donations to registered charities by offering tax credits at the end of the financial year. The UK and Ireland are exceptions:</p>
+		<h4>UK:</h4>
+		<p>In the UK the government incentivises donations partially by adding 25% to each donation (Gift Aid), and partially via tax credits. So if a UK taxpayer donates £1000, £1250 goes to the charity. The swaps are arranged so that equal amounts go to both charities, so UK donors will be donating a smaller amount than their donation swapping partners will.</p>
+		<h4>Ireland:</h4>
+		<p>In Ireland the government incentivises donations by adding 45% to each donation. So if an Irish tax payer donates €1000, €1450 goes to the charity.The swaps are arranged so that equal amounts go to both charities, so Irish donors will be donating a smaller amount than their donation swapping partners will.</p>
+
+		<h3>Donation minima and maxima</h3>
+		<h4>General:</h4>
+		<p>We have set the minimum amount for a swap to be €50, as this is the minimum amount that can be donated to a charity through the Effective Altruism Foundation. Having this minimum makes our algorithm simpler!</p>
+		<h4>Ireland:</h4>
+		<p>For the charity to claim the additional 45%, the donor must donate €250 or more to the charity over the financial year. As a result we have set the minimum donation for Irish taxpayers to be €250.</p>
+		<h4>Norway:</h4>
+		<p>For Norwegian donors to receive tax benefits, they must donate at least 500 kr to that particular charity over the financial year. As a result we have set the minimum donation for Norwegian taxpayers to be 500 kr. Norwegian donors can only receive tax benefits for donations up to 40,000 kr, so we have made the maximum donation at this amount. Norwegian donors may have to keep a count of their donations so they don’t trade above this amount.</p>
+
+		<h3>Tax rates</h3>
+		<p>We have chosen to calculate the swaps so that both charities get the same amount of money. This means we don’t need to know everyone’s tax rates. Donors are responsible for working out how much tax they will get back, and applying for the tax credit.</p>
+
+		<h3>Bank or credit card costs</h3>
+		<p>For simplicity we ignore transfer costs when calculating the amount to donate. We encourage people to donate using the method recommended by each charity.</p>
+
+		<h3>Currencies</h3>
+		<p>The EA donation scheme calculates the donation in the local currency of the donor. If you want to donate using cryptocurrency this is possible when donating to a charity that supports this. <a href="/contact/">Contact us</a> if you want your donation to use cryptocurrency.</p>
+		<p class="buttons">
+			<a class="purple button" href="/start/">Set up a swap</a>
+		</p>
+	</div>
+{%FILE=footer.snippet.html%}
+<script>
+/* globals ajax, createNode, getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+
+	ajax('/ajax/get_info')
+		.then(info => {
+			// populate charities
+			ui.charities.innerHTML = '';
+			const categories = [... new Set(info.charities.map(charity => charity.category))];
+			const categoryByName = {};
+			categories.forEach(category => {
+				ui.charities.appendChild(categoryByName[category] = createNode({
+					xtype: 'li',
+					children: [
+						category,
+						{
+							xtype: 'ul',
+						}
+					],
+				}));
+			});
+			info.charities.forEach(charity => {
+				categoryByName[charity.category].children[0].appendChild(createNode({
+					xtype: 'li',
+					p_textContent: charity.name,
+				}));
+			});
+
+			// populate countries
+			ui.countries.innerHTML = '';
+			info.countries.forEach(country => {
+				ui.countries.appendChild(createNode({
+					xtype: 'li',
+					p_textContent: country.name,
+				}));
+			});
+		});
+}());
+</script>
+</body>
+</html>

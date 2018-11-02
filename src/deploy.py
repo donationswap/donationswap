@@ -16,7 +16,7 @@ FILE_LIST = [
 	('geoip.py', 0o444),
 	('mail.py', 0o444),
 	('main.py', 0o544),
-	('matchmaker.py', 0o444),
+	('matchmaker.py', 0o544),
 	('util.py', 0o444),
 	('data', 0o777),
 	('data/*', 0o444),

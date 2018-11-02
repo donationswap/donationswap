@@ -30,7 +30,7 @@
 	background-color: rgba(0, 0, 0, 0.9);
 	bottom: 0;
 	left: 0;
-	position: absolute;
+	position: fixed;
 	right: 0;
 	top: 0;
 }
@@ -57,7 +57,17 @@
 <title>Donation Swap Admin</title>
 </head>
 <body>
-<h1>Donation Swap Charity Data Matrix</h1>
+<h1>Donation Swap Charity Data</h1>
+
+<p>
+	I fixed a bug that prevented countries from getting updated.
+	Also, the editor popups are now in the center of the screen,
+	even when scrolled down.
+	If you find other problems with this website,
+	please let me know!
+	<a href="mailto:marc.spoor@gmail.com" target="_blank">
+	marc.spoor@gmail.com</a>.
+</p>
 
 <h2>Country/Charity Matrix</h2>
 <button id="btnCreateCharity">Create New Charity...</button>
@@ -146,9 +156,15 @@
 			</tr>
 			<tr>
 				<td>Currency</td>
-				<td>
-					<select id="countryCurrency"></select>
-				</td>
+				<td><select id="countryCurrency"></select></td>
+			</tr>
+			<tr>
+				<td>Min Donation Amount</td>
+				<td><input id="countryMinDonationAmount" type="number"></td>
+			</tr>
+			<tr>
+				<td>Min Donation Currency</td>
+				<td><select id="countryMinDonationCurrencyId"></select></td>
 			</tr>
 		</tbody>
 		<tfoot>
@@ -232,6 +248,8 @@
 		ui.countryLiveInName.value = country.live_in_name || '';
 		ui.countryIsoName.value = country.iso_name;
 		ui.countryCurrency.value = country.currency_id;
+		ui.countryMinDonationAmount.value = country.min_donation_amount;
+		ui.countryMinDonationCurrencyId.value = country.min_donation_currency_id;
 
 		ui.editCountry.classList.remove('hidden');
 		ui.countryName.select();
@@ -293,6 +311,7 @@
 						xtype: 'td',
 						p_data: country,
 						a_class: 'edit',
+						a_title: JSON.stringify(country, null, 3),
 						p_textContent: country.name,
 					});
 					node.onclick = () => editCountry(country);
@@ -313,6 +332,7 @@
 							const node = createNode({
 								xtype: 'td',
 								a_class: 'edit',
+								a_title: JSON.stringify(charity, null, 3),
 								p_textContent: charity.name,
 							});
 							node.onclick = () => editCharity(charity);
@@ -340,11 +360,17 @@
 		data.charity_categories.forEach(cc => {
 			ui.categories.appendChild(createNode({
 				xtype: 'li',
-				a_class: 'edit',
-				p_textContent: cc.name,
-				p_onclick() {
-					editCharityCategory(cc);
-				},
+				children: [
+					{
+						xtype: 'span',
+						a_class: 'edit',
+						a_title: JSON.stringify(cc, null, 3),
+						p_textContent: cc.name,
+						p_onclick() {
+							editCharityCategory(cc);
+						},
+					},
+				],
 			}));
 		});
 
@@ -352,6 +378,7 @@
 			let cell = findCell(cic.charity_id, cic.country_id);
 			if (cic) {
 				cell.classList.remove('red');
+				cell.setAttribute('title', JSON.stringify(cic, null, 3));
 				cell.classList.add(cic.instructions ? 'green' : 'yellow');
 			}
 			cell.onclick = () => {
@@ -376,6 +403,15 @@
 				p_textContent: `${currency.iso} (${currency.name})`,
 			}));
 		});
+
+		ui.countryMinDonationCurrencyId.innerHTML = '';
+		data.currencies.forEach(currency => {
+			ui.countryMinDonationCurrencyId.appendChild(createNode({
+				xtype: 'option',
+				a_value: currency.id,
+				p_textContent: `${currency.iso} (${currency.name})`,
+			}));
+		});
 	}
 
 	ui.btnCreateCharity.onclick = () => {
@@ -389,6 +425,7 @@
 		editCountry({
 			id: '',
 			name: 'New Country',
+			iso_name: '',
 		});
 	};
 
@@ -474,6 +511,8 @@
 			live_in_name: ui.countryLiveInName.value.trim() ? ui.countryLiveInName.value.trim() : null,
 			iso_name: ui.countryIsoName.value.toUpperCase(),
 			currency_id: parseInt(ui.countryCurrency.value, 10),
+			min_donation_amount: parseInt(ui.countryMinDonationAmount.value, 10),
+			min_donation_currency_id: parseInt(ui.countryMinDonationCurrencyId.value, 10),
 		};
 
 		if (ui.countryId.textContent) {
