@@ -1,0 +1,582 @@
+<doctype html>
+<html>
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+.edit {
+	color: blue;
+	cursor: pointer;
+	text-decoration: underline;
+}
+.matrix {
+	border-collapse: collapse;
+}
+.matrix td {
+	border: 1px solid lightgray;
+}
+.matrix td.red {
+	background-color: red;
+}
+.matrix td.yellow {
+	background-color: yellow;
+}
+.matrix td.green {
+	background-color: green;
+}
+.background {
+	background-color: rgba(0, 0, 0, 0.9);
+	bottom: 0;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+}
+.editor {
+	background-color: white;
+	border-radius: 1em;
+	left: 50%;
+	padding: 1em;
+	position: absolute;
+	top: 50%;
+	transform: translate(-50%, -50%);
+}
+.editor td {
+	vertical-align: top;
+}
+.editor tfoot {
+	text-align: right;
+}
+.editor input {
+	border: 2px solid lightgray;
+}
+
+</style>
+<title>Donation Swap Admin</title>
+</head>
+<body>
+<h1>Donation Swap Charity Data</h1>
+
+<p>
+	I fixed a bug that prevented countries from getting updated.
+	Also, the editor popups are now in the center of the screen,
+	even when scrolled down.
+	If you find other problems with this website,
+	please let me know!
+	<a href="mailto:marc.spoor@gmail.com" target="_blank">
+	marc.spoor@gmail.com</a>.
+</p>
+
+<h2>Country/Charity Matrix</h2>
+<button id="btnCreateCharity">Create New Charity...</button>
+<button id="btnCreateCountry">Create New Country...</button>
+<table class="matrix" id="matrix">
+	<thead></thead>
+	<tbody></tbody>
+</table>
+
+<h2>Charity Categories</h2>
+<button id="btnCreateCharityCategory">Create New Charity Category...</button>
+<ul id="categories"></ul>
+
+<div id="editCharityCategory" class="background hidden">
+	<table class="editor">
+		<tbody>
+			<tr>
+				<td>ID</td>
+				<td id="charityCategoryId"></td>
+			</tr>
+			<tr>
+				<td>Name</td>
+				<td><input id="charityCategoryName" maxlength="100"></td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="2">
+					<button class="red" id="btnDeleteCharityCategory">Delete</button>
+					<button class="green" id="btnSaveCharityCategory">Save</button>
+					<button id="btnCancelCharityCategory">Cancel</button>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>
+
+<div id="editCharity" class="background hidden">
+	<table class="editor">
+		<tbody>
+			<tr>
+				<td>ID</td>
+				<td id="charityId"></td>
+			</tr>
+			<tr>
+				<td>Name</td>
+				<td><input id="charityName" maxlength="100"></td>
+			</tr>
+			<tr>
+				<td>Category</td>
+				<td>
+					<select id="charityCategory"></select>
+				</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="2">
+					<button class="red" id="btnDeleteCharity">Delete</button>
+					<button class="green" id="btnSaveCharity">Save</button>
+					<button id="btnCancelCharity">Cancel</button>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>
+
+<div id="editCountry" class="background hidden">
+	<table class="editor">
+		<tbody>
+			<tr>
+				<td>ID</td>
+				<td id="countryId"></td>
+			</tr>
+			<tr>
+				<td>Name</td>
+				<td><input id="countryName" maxlength="100"></td>
+			</tr>
+			<tr>
+				<td>"I Live In..." Name</td>
+				<td><input id="countryLiveInName" maxlength="100"></td>
+			</tr>
+			<tr>
+				<td><a href="https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements" target="_blank">ISO Name</a></td>
+				<td><input id="countryIsoName" maxlength="2"></td>
+			</tr>
+			<tr>
+				<td>Currency</td>
+				<td><select id="countryCurrency"></select></td>
+			</tr>
+			<tr>
+				<td>Min Donation Amount</td>
+				<td><input id="countryMinDonationAmount" type="number"></td>
+			</tr>
+			<tr>
+				<td>Min Donation Currency</td>
+				<td><select id="countryMinDonationCurrencyId"></select></td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="2">
+					<button class="red" id="btnDeleteCountry">Delete</button>
+					<button class="green" id="btnSaveCountry">Save</button>
+					<button id="btnCancelCountry">Cancel</button>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>
+
+<div id="editCharityInCountry" class="background hidden">
+	<table class="editor">
+		<tbody>
+			<tr>
+				<td>Charity</td>
+				<td id="charityInCountryCharity"></td>
+			</tr>
+			<tr>
+				<td>Country</td>
+				<td id="charityInCountryCountry"></td>
+			</tr>
+			<tr>
+				<td>Tax Factor</td>
+				<td><input id="charityInCountryTaxFactor" step="0.01" type="number"></td>
+			</tr>
+			<tr>
+				<td>Instructions</td>
+				<td>
+					<textarea id="charityInCountryInstructions"></textarea>
+				</td>
+			</tr>
+		</tbody>
+		<tfoot>
+			<tr>
+				<td colspan="2">
+					<button class="red" id="btnDeleteCharityInCountry">Delete</button>
+					<button class="green" id="btnSaveCharityInCountry">Save</button>
+					<button id="btnCancelCharityInCountry">Cancel</button>
+				</td>
+			</tr>
+		</tfoot>
+	</table>
+</div>
+<script>
+/* globals ajax, createNode, getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+
+	function handleError(response) {
+		console.error(response);
+		alert(`Error: ${response.responseText}`);
+	}
+
+	function editCharityCategory(charityCategory) {
+		ui.charityCategoryId.textContent = charityCategory.id;
+		ui.charityCategoryName.value = charityCategory.name;
+
+		ui.editCharityCategory.classList.remove('hidden');
+		ui.charityCategoryName.select();
+	}
+
+	function editCharity(charity) {
+		ui.charityId.textContent = charity.id;
+		ui.charityName.value = charity.name;
+		ui.charityCategory.value = charity.category_id;
+
+		ui.editCharity.classList.remove('hidden');
+		ui.charityName.select();
+	}
+
+	function editCountry(country) {
+		ui.countryId.textContent = country.id;
+		ui.countryName.value = country.name;
+		ui.countryLiveInName.value = country.live_in_name || '';
+		ui.countryIsoName.value = country.iso_name;
+		ui.countryCurrency.value = country.currency_id;
+		ui.countryMinDonationAmount.value = country.min_donation_amount;
+		ui.countryMinDonationCurrencyId.value = country.min_donation_currency_id;
+
+		ui.editCountry.classList.remove('hidden');
+		ui.countryName.select();
+	}
+
+	function editCharityInCountry(charityInCountry) {
+		ui.charityInCountryCharity.data = charityInCountry.charity_id;
+		ui.charityInCountryCharity.textContent = data.charities.filter(charity => charity.id === charityInCountry.charity_id)[0].name;
+		ui.charityInCountryCountry.data = charityInCountry.country_id;
+		ui.charityInCountryCountry.textContent = data.countries.filter(country => country.id === charityInCountry.country_id)[0].name;
+		ui.charityInCountryTaxFactor.value = charityInCountry.tax_factor || 0;
+		ui.charityInCountryInstructions.value = charityInCountry.instructions || '';
+
+		ui.editCharityInCountry.classList.remove('hidden');
+		ui.charityInCountryTaxFactor.focus();
+	}
+
+	function populateUi(data) {
+
+		function findCell(charityId, countryId) {
+			let countryIndex, result;
+
+			Array.prototype.every.call(
+				ui.matrix.querySelectorAll('thead tr td'),
+				(cell, index) => {
+					if (cell.data && cell.data.id === countryId) {
+						countryIndex = index;
+						return false;
+					}
+					return true;
+				}
+			);
+
+			Array.prototype.every.call(
+				ui.matrix.querySelectorAll('tbody tr'),
+				row => {
+					if (row.data.id === charityId) {
+						result = row.children[countryIndex];
+						return false;
+					}
+					return true;
+				}
+			);
+
+			return result;
+		}
+
+		function createHeader() {
+			const head = ui.matrix.querySelector('thead');
+			head.innerHTML = '';
+			head.appendChild(createNode({
+				xtype: 'tr',
+				children: [
+					{
+						xtype: 'td',
+					},
+				].concat(data.countries.map(country => {
+					const node = createNode({
+						xtype: 'td',
+						p_data: country,
+						a_class: 'edit',
+						a_title: JSON.stringify(country, null, 3),
+						p_textContent: country.name,
+					});
+					node.onclick = () => editCountry(country);
+					return node;
+				}))
+			}));
+		}
+
+		function createRows() {
+			const body = ui.matrix.querySelector('tbody');
+			body.innerHTML = '';
+			data.charities.forEach(charity => {
+				body.appendChild(createNode({
+					xtype: 'tr',
+					p_data: charity,
+					children:[
+						(function () {
+							const node = createNode({
+								xtype: 'td',
+								a_class: 'edit',
+								a_title: JSON.stringify(charity, null, 3),
+								p_textContent: charity.name,
+							});
+							node.onclick = () => editCharity(charity);
+							return node;
+						}()),
+					].concat(data.countries.map(country => {
+						const node = createNode({
+							xtype: 'td',
+							a_class: 'edit red',
+						});
+						node.onclick = () => editCharityInCountry({
+							charity_id: charity.id,
+							country_id: country.id,
+						});
+						return node;
+					})),
+				}));
+			});
+		}
+
+		createHeader();
+
+		createRows();
+
+		data.charity_categories.forEach(cc => {
+			ui.categories.appendChild(createNode({
+				xtype: 'li',
+				children: [
+					{
+						xtype: 'span',
+						a_class: 'edit',
+						a_title: JSON.stringify(cc, null, 3),
+						p_textContent: cc.name,
+						p_onclick() {
+							editCharityCategory(cc);
+						},
+					},
+				],
+			}));
+		});
+
+		data.charities_in_countries.forEach(cic => {
+			let cell = findCell(cic.charity_id, cic.country_id);
+			if (cic) {
+				cell.classList.remove('red');
+				cell.setAttribute('title', JSON.stringify(cic, null, 3));
+				cell.classList.add(cic.instructions ? 'green' : 'yellow');
+			}
+			cell.onclick = () => {
+				editCharityInCountry(cic);
+			};
+		});
+
+		ui.charityCategory.innerHTML = '';
+		data.charity_categories.forEach(category => {
+			ui.charityCategory.appendChild(createNode({
+				xtype: 'option',
+				a_value: category.id,
+				p_textContent: category.name,
+			}));
+		});
+
+		ui.countryCurrency.innerHTML = '';
+		data.currencies.forEach(currency => {
+			ui.countryCurrency.appendChild(createNode({
+				xtype: 'option',
+				a_value: currency.id,
+				p_textContent: `${currency.iso} (${currency.name})`,
+			}));
+		});
+
+		ui.countryMinDonationCurrencyId.innerHTML = '';
+		data.currencies.forEach(currency => {
+			ui.countryMinDonationCurrencyId.appendChild(createNode({
+				xtype: 'option',
+				a_value: currency.id,
+				p_textContent: `${currency.iso} (${currency.name})`,
+			}));
+		});
+	}
+
+	ui.btnCreateCharity.onclick = () => {
+		editCharity({
+			id: '',
+			name: 'New Charity',
+		});
+	};
+
+	ui.btnCreateCountry.onclick = () => {
+		editCountry({
+			id: '',
+			name: 'New Country',
+			iso_name: '',
+		});
+	};
+
+	ui.btnCreateCharityCategory.onclick = () => {
+		editCharityCategory({
+			id: '',
+			name: 'New Category',
+		});
+	};
+
+	ui.btnDeleteCharityCategory.onclick = () => {
+		if (window.confirm('Are you sure?')) {
+			ajax('/special-secret-admin/delete_charity_category', {
+				id: parseInt(ui.charityCategoryId.textContent, 10),
+			})
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnSaveCharityCategory.onclick = () => {
+		const args = {
+			name: ui.charityCategoryName.value,
+		};
+
+		if (ui.charityCategoryId.textContent) {
+			args.id = parseInt(ui.charityCategoryId.textContent, 10);
+			ajax('/special-secret-admin/update_charity_category', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		} else {
+			ajax('/special-secret-admin/create_charity_category', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnCancelCharityCategory.onclick = () => ui.editCharityCategory.classList.add('hidden');
+
+	ui.btnDeleteCharity.onclick = () => {
+		if (window.confirm('Are you sure?')) {
+			ajax('/special-secret-admin/delete_charity', {
+				id: parseInt(ui.charityId.textContent, 10),
+			})
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnSaveCharity.onclick = () => {
+		const args = {
+			name: ui.charityName.value,
+			category_id: parseInt(ui.charityCategory.value, 10),
+		};
+
+		if (ui.charityId.textContent) {
+			args.id = parseInt(ui.charityId.textContent, 10);
+			ajax('/special-secret-admin/update_charity', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		} else {
+			ajax('/special-secret-admin/create_charity', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnCancelCharity.onclick = () => ui.editCharity.classList.add('hidden');
+
+	ui.btnDeleteCountry.onclick = () => {
+		if (window.confirm('Are you sure?')) {
+			ajax('/special-secret-admin/delete_country', {
+				id: parseInt(ui.countryId.textContent, 10),
+			})
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnSaveCountry.onclick = () => {
+		const args = {
+			name: ui.countryName.value,
+			live_in_name: ui.countryLiveInName.value.trim() ? ui.countryLiveInName.value.trim() : null,
+			iso_name: ui.countryIsoName.value.toUpperCase(),
+			currency_id: parseInt(ui.countryCurrency.value, 10),
+			min_donation_amount: parseInt(ui.countryMinDonationAmount.value, 10),
+			min_donation_currency_id: parseInt(ui.countryMinDonationCurrencyId.value, 10),
+		};
+
+		if (ui.countryId.textContent) {
+			args.id = parseInt(ui.countryId.textContent, 10);
+			ajax('/special-secret-admin/update_country', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		} else {
+			ajax('/special-secret-admin/create_country', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnCancelCountry.onclick = () => ui.editCountry.classList.add('hidden');
+
+	ui.btnDeleteCharityInCountry.onclick = () => {
+		if (window.confirm('Are you sure?')) {
+			ajax('/special-secret-admin/delete_charity_in_country', {
+				charity_id: ui.charityInCountryCharity.data,
+				country_id: ui.charityInCountryCountry.data,
+			})
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnSaveCharityInCountry.onclick = () => {
+		const args = {
+			charity_id: ui.charityInCountryCharity.data,
+			country_id: ui.charityInCountryCountry.data,
+			tax_factor: ui.charityInCountryTaxFactor.value,
+			instructions: ui.charityInCountryInstructions.value.trim(),
+		};
+		if (data.charities_in_countries.find(cic => cic.charity_id === args.charity_id && cic.country_id === args.country_id)) {
+			ajax('/special-secret-admin/update_charity_in_country', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		} else {
+			ajax('/special-secret-admin/create_charity_in_country', args)
+				.then(() => window.location.reload())
+				.catch(handleError);
+		}
+	};
+
+	ui.btnCancelCharityInCountry.onclick = () => ui.editCharityInCountry.classList.add('hidden');
+
+	window.onkeydown = e => {
+		if (e.key === 'Escape') {
+			ui.btnCancelCharityCategory.click();
+			ui.btnCancelCharity.click();
+			ui.btnCancelCountry.click();
+			ui.btnCancelCharityInCountry.click();
+		}
+	};
+
+	let data = {};
+
+	ajax('/special-secret-admin/read_all')
+		.then(reply => {
+			data = reply;
+			populateUi(data);
+		});
+}());
+</script>
+</body>
+</html>

@@ -252,6 +252,27 @@ class confirm_offer(TestBase):
 		result = self.ds.confirm_offer('this-secret-does-not-exist')
 		self.assertEqual(result, None)
 
+class delete_offer(TestBase):
+
+	def test_happy_path(self):
+		self.ds.create_offer(
+			captcha_response='irrelevant',
+			country='nz',
+			amount=42,
+			charity='amf',
+			email='user@test.test',
+			time_to_live=donationswap.OFFER_TTL_THREE_MONTHS
+		)
+		with self.ds._database.connect() as db:
+			offer = db.read_one('SELECT * FROM offers;')
+		self.assertTrue(offer is not None)
+
+		self.ds.delete_offer(offer['secret'])
+
+		with self.ds._database.connect() as db:
+			offer = db.read_one('SELECT * FROM offers;')
+		self.assertTrue(offer is None)
+
 class Workflow(TestBase):
 
 	def test_happy_path(self):

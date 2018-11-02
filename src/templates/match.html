@@ -51,7 +51,7 @@
 	const ui = getElementsById();
 	const secret = window.location.hash.substr(1);
 
-	ajax('get_match', { secret })
+	ajax('/ajax/get_match', { secret })
 		.then(match => {
 			if (match === null) {
 				alert('We cannot find the requested offer. Maybe it expired or was declined.');
@@ -69,7 +69,7 @@
 		});
 
 	ui.btnApprove.onclick = () => {
-		ajax('approve_match', { secret })
+		ajax('/ajax/approve_match', { secret })
 			.then(() => {
 				//xxx Say "we're waiting for the other person's response"
 				//xxx or say "we sent you an email"

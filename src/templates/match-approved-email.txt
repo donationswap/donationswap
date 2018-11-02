@@ -1,21 +1,22 @@
 Success!
 
-Both you and the person we have matched your donation offer with have approved of the match.
+Both of you have approved our suggested match.
+Here are your details and instructions:
 
-Your offer:
-Country: {%YOUR_COUNTRY%}
-Charity: {%YOUR_CHARITY%}
-Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}
+{%OLD_EMAIL%}:
+Country: {%OLD_COUNTRY%}
+Charity: {%OLD_CHARITY%}
+Amount: {%OLD_AMOUNT%} {%OLD_CURRENCY%} (= {%OLD_AMOUNT_CONVERTED%} {%NEW_CURRENCY%})
+Instructions: {%OLD_INSTRUCTIONS%}
 
-Their offer:
-Country: {%THEIR_COUNTRY%}
-Charity: {%THEIR_CHARITY%}
-Amount: {%THEIR_AMOUNT%} {%THEIR_CURRENCY%}
-(This is around {%THEIR_AMOUNT_CONVERTED%} in {%YOUR_CURRENCY%}.)
+{%NEW_EMAIL%}:
+Country: {%NEW_COUNTRY%}
+Charity: {%NEW_CHARITY%}
+Amount: {%NEW_AMOUNT%} {%NEW_CURRENCY%} (={%NEW_AMOUNT_CONVERTED%} in {%OLD_CURRENCY%})
+Instructions: {%NEW_INSTRUCTIONS%}
 
-Now it is time for you to send them an email at
-{%THEIR_EMAIL%}
-and talk about your donation swap amongst yourself.
+Now it is time for you to introduce yourselves to each other,
+donate the money, send each other the receipts, and continue to be awesome.
 
 Go forth and do the most good!
 
