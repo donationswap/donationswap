@@ -1,46 +1,46 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <meta charset="utf-8">
 <script src="/static/code.js"></script>
-<style>
-</style>
 <title>Donation Swap</title>
 </head>
 <body>
 {%FILE=header.snippet.html%}
-<table>
-	<tbody>
-		<tr>
-			<td>My Country:</td>
-			<td id="txtMyCountry"></td>
-		</tr>
-		<tr>
-			<td>My Charity:</td>
-			<td id="txtMyCharity"></td>
-		</tr>
-		<tr>
-			<td>My Amount:</td>
-			<td id="txtMyAmount"></td>
-		</tr>
-		<tr>
-			<td>Their Country:</td>
-			<td id="txtTheirCountry"></td>
-		</tr>
-		<tr>
-			<td>Their Charity:</td>
-			<td id="txtTheirCharity"></td>
-		</tr>
-		<tr>
-			<td>Their Amount:</td>
-			<td id="txtTheirAmount"></td>
-		</tr>
-	</tbody>
-</table>
-<button id="btnApprove">Approve</button>
-<button id="btnDecline">Decline</button>
+	<div class="body">
+		<table>
+			<tbody>
+				<tr>
+					<td>My Country:</td>
+					<td id="txtMyCountry"></td>
+				</tr>
+				<tr>
+					<td>My Charity:</td>
+					<td id="txtMyCharity"></td>
+				</tr>
+				<tr>
+					<td>My Amount:</td>
+					<td id="txtMyAmount"></td>
+				</tr>
+				<tr>
+					<td>Their Country:</td>
+					<td id="txtTheirCountry"></td>
+				</tr>
+				<tr>
+					<td>Their Charity:</td>
+					<td id="txtTheirCharity"></td>
+				</tr>
+				<tr>
+					<td>Their Amount:</td>
+					<td id="txtTheirAmount"></td>
+				</tr>
+			</tbody>
+		</table>
+		<button id="btnApprove">Approve</button>
+		<button id="btnDecline">Decline</button>
+	</div>
 {%FILE=footer.snippet.html%}
 <script>
 /* globals ajax, getElementsById */

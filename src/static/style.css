@@ -45,12 +45,49 @@ table.visuals {
 .buttons {
 	text-align: center;
 }
-.button {
+a.button {
 	box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);
 	display: inline-block;
 	margin: 1em;
 	padding: 0.5em 1em;
 	text-decoration: none;
+}
+
+button.purple {
+	appearance: none;
+	-moz-appearance: none;
+	-webkit-appearance: none;
+	background-size: 110% 110%;
+	border-radius: 0;
+	padding: 4px 21px 5px 21px;
+	vertical-align: middle;
+}
+
+button.purple {
+	border: none !important;
+	color: white !important;
+}
+button.purple:disabled {
+	color: gray !important;
+}
+
+input,select {
+	background-color: white;
+	outline: none;
+}
+input:focus,select:focus {
+	background-color: rgba(81, 43, 82, 0.1);
+}
+.bordered {
+	border: 2px solid #512b52;
+	display: inline-block;
+	padding: 0.2em;
+}
+.bordered:focus {
+	background-color: rgba(81, 43, 82, 0.1);
+}
+.bordered * {
+	border: none;
 }
 
 header {

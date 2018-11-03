@@ -1,7 +1,7 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-<link rel="icon" href="/static/favicon.ico">
+<link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <meta charset="utf-8">
 <script src="/static/code.js"></script>
@@ -13,25 +13,24 @@
 		<h1>How EA Donation Swap works</h1>
 		<h2>Content</h2>
 		<ul>
-			<li><a href="#example">An example swap</a></li>
-			<li><a href="#process">The process</a></li>
-			<li><a href="#countries">Countries and charities</a></li>
-			<li><a href="#fees">Fees</a></li>
-			<li><a href="#privacy">Privacy</a></li>
-			<li><a href="#technical">Technical details</a></li>
+			<li><a href="#tocExample">An example swap</a></li>
+			<li><a href="#tocProcess">The process</a></li>
+			<li><a href="#tocCountries">Countries and charities</a></li>
+			<li><a href="#tocFees">Fees</a></li>
+			<li><a href="#tocPrivacy">Privacy</a></li>
+			<li><a href="#tocTechnical">Technical details</a></li>
 		</ul>
 
-		<a name="example"></a>
-		<h2>An example swap</h2>
+		<h2 id="tocExample">An example swap</h2>
 
 		<table class="visuals">
 			<tbody>
 				<tr>
 					<td>
-						<img src="/static/ava.png">
+						<img alt="Ava from Animalia" src="/static/ava.png">
 					</td>
 					<td>
-						<img src="/static/buzz.png">
+						<img alt="Buzz from Protozania" src="/static/buzz.png">
 					</td>
 				</tr>
 				<tr>
@@ -49,14 +48,13 @@
 		</table>
 		<p>Ava and Buzz are matched together by the EA donation swap website, and receive an email from <a href="/">donationswap.eahub.org</a> which will let them know each other's email addresses, how much to donate (in their local currency), and what charity to donate to, and the best way to donate to minimise transfer costs.</p>
 		<p>Ava and Buzz communicate over email and agree to donate. Ava donates 5000 USD to the Against Malaria Foundation on behalf of Buzz.</p>
-		<img src="/static/buzz-donates.png">
+		<img alt="Buzz donates to AMF" src="/static/buzz-donates.png">
 		<p>Ava and Buzz share their donation receipts.</p>
 		<p>Buzz can choose to donate the remainder of his 6000 USD to AMF, or he can enter that remaining amount back into the donation swap system to be matched with another donor.</p>
 		<p>Ava and Buzz are offered an opportunity to give feedback on the swap.</p>
 		<p>Then they both get their tax credit at the end of the financial year.</p>
 
-		<a name="process"></a>
-		<h2>The process</h2>
+		<h2 id="tocProcess">The process</h2>
 
 		<h3>Fill out the form</h3>
 		<p>On the form you will be asked for</p>
@@ -92,34 +90,30 @@
 			<a class="purple button" href="/start/">Set up a swap</a>
 		</p>
 
-		<a name="countries"></a>
-		<h2>Countries and charities</h2>
+		<h2 id="tocCountries">Countries and charities</h2>
 
 		<p>For this BETA version we have limited our charities to most of those featured on the websites of GiveWell, Animal Charity Evaluators, Effective Altruism Foundation and RC Forward. We plan to expand the list gradually. We have limited the countries to the countries where at least one of our charities is tax deductible, and have omitted donation options where the fees are high or the method of donating is complex. If you would like another EA charity, or another country, to be added to the list please <a href="/contact/">contact us</a>.</p>
 
 		<h3>Charities</h3>
-		<ul id="charities">
+		<ul id="lstCharities">
 			<li>Looks like we cannot load the list of supported charities from our server. That's embarrassing. Sorry.</li>
 		</ul>
 
 		<h3>Countries</h3>
-		<ul id="countries">
+		<ul id="lstCountries">
 			<li>Looks like we cannot load the list of supported countries from our server. That's embarrassing. Sorry.</li>
 		</ul>
 		<p class="buttons">
 			<a class="purple button" href="/start/">Set up a swap</a>
 		</p>
 
-		<a name="fees"></a>
-		<h2>Fees</h2>
+		<h2 id="tocFees">Fees</h2>
 		<p>There is no cost for using the EA donation swap system, however, some methods of donating have transfer fees.</p>
 
-		<a name="privacy"></a>
-		<h2>Privacy</h2>
+		<h2 id="tocPrivacy">Privacy</h2>
 		<p>The EA donation swap database is only viewable by the EA donation swap team. Your name and email address will only be revealed once you and your matched donor agree to proceed with the swap.</p>
 
-		<a name="technical"></a>
-		<h2>Technical details</h2>
+		<h2 id="tocTechnical">Technical details</h2>
 
 		<h3>Recurring donations</h3>
 		<p>The EA donation swap scheme does not yet support recurring donations, but we hope to set this up in the future. In the meantime you can put in a swap request each time you wish to donate.</p>
@@ -165,11 +159,11 @@
 	ajax('/ajax/get_info')
 		.then(info => {
 			// populate charities
-			ui.charities.innerHTML = '';
+			ui.lstCharities.innerHTML = '';
 			const categories = [... new Set(info.charities.map(charity => charity.category))];
 			const categoryByName = {};
 			categories.forEach(category => {
-				ui.charities.appendChild(categoryByName[category] = createNode({
+				ui.lstCharities.appendChild(categoryByName[category] = createNode({
 					xtype: 'li',
 					children: [
 						category,
@@ -187,9 +181,9 @@
 			});
 
 			// populate countries
-			ui.countries.innerHTML = '';
+			ui.lstCountries.innerHTML = '';
 			info.countries.forEach(country => {
-				ui.countries.appendChild(createNode({
+				ui.lstCountries.appendChild(createNode({
 					xtype: 'li',
 					p_textContent: country.name,
 				}));

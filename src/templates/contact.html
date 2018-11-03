@@ -1,52 +1,79 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <meta charset="utf-8">
-<script src="https://www.google.com/recaptcha/api.js"></script>
 <script src="/static/code.js"></script>
+<script src="https://www.google.com/recaptcha/api.js"></script>
 <style>
+table {
+	width: 100%;
+}
+td {
+	vertical-align: top;
+}
+td.label {
+	padding-right: 1em;
+	text-align: right;
+	white-space: nowrap;
+	width: 1%;
+}
+label::after {
+	content: ':';
+}
+#message {
+	height: 30em;
+	width: 100%;
+}
 </style>
 <title>Donation Swap</title>
 </head>
 <body>
 {%FILE=header.snippet.html%}
-<h1>Contact Us</h1>
-<table>
-	<tbody>
-		<tr>
-			<td>Name:</td>
-			<td>
-				<input id="name">
-			<td>
-		</tr>
-		<tr>
-			<td>Your Email Address:</td>
-			<td>
-				<input id="email" type="email">
-			</td>
-		</tr>
-		<tr>
-			<td>Message:</td>
-			<td>
-				<textarea id="message"></textarea>
-			</td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>
-				{%FILE=captcha.snippet.html%}
-			</td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>
-				<button disabled id="btnSend">Send</button>
-			</td>
-		</tr>
-	</tbody>
-</table>
+	<div class="body">
+		<h1>Contact Us</h1>
+		<table>
+			<tbody>
+				<tr>
+					<td class="label">
+						<label for="name">Name</label>
+					</td>
+					<td>
+						<input autofocus class="bordered" id="name">
+					</td>
+				</tr>
+				<tr>
+					<td class="label">
+						<label for="email">Your Email Address</label>
+					</td>
+					<td>
+						<input class="bordered" id="email" type="email">
+					</td>
+				</tr>
+				<tr>
+					<td class="label">
+						<label for="message">Message</label>
+					</td>
+					<td>
+						<textarea class="bordered" id="message"></textarea>
+					</td>
+				</tr>
+				<tr>
+					<td></td>
+					<td>
+						{%FILE=captcha.snippet.html%}
+					</td>
+				</tr>
+				<tr>
+					<td></td>
+					<td>
+						<button class="purple" disabled id="btnSend">Send</button>
+					</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
 {%FILE=footer.snippet.html%}
 <script>
 /* globals ajax, getElementsById */
