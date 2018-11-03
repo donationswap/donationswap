@@ -31,14 +31,14 @@ class GeoIpCountry: # pylint: disable=too-few-public-methods
 	def __init__(self, filename):
 		self._filename = filename
 		logging.info('Loading geoip data from "%s"...', filename)
-		self._read = None
+		self._reader = None
 
 	def lookup(self, ip_address):
 		try:
-			if self._read is None:
+			if self._reader is None:
 				self._reader = geoip2.database.Reader(self._filename)
 			match = self._reader.country(ip_address)
-			return match.country.iso_code.lower()
+			return match.country.iso_code.upper()
 		except geoip2.errors.AddressNotFoundError:
 			return None
 		except Exception: # pylint: disable=broad-except

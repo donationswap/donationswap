@@ -1,26 +1,116 @@
+html {
+	font-family: Open Sans, Arial, sans-serif;
+}
+
 body {
 	background-color: white;
-	font-family: sans-serif;
+	color: #512b52;
 	margin: 0;
 	padding: 0;
 }
-header {
-	background-color: #7bb0a8;
-	margin: 0;
-	padding: 0.5em 1em;
+h1 {
+	color: #437069;
+	font-size: 145%;
+	font-weight: 700;
 }
-header a {
+h2 {
+	color: #437069;
+	font-size: 130%;
+	font-weight: 500;
+}
+h3 {
+	color: #437069;
+	font-size: 115%;
+	font-weight: 400;
+}
+h4 {
+	color: #437069;
+	font-size: 100%;
+	font-weight: 400;
+}}
+
+table.visuals {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.purple {
+	background-color: #512b52;
 	color: white;
-	font-weight: bold;
-	font-size: 200%;
-	text-decoration: none;
-}
-footer {
-	background-color: #eee;
-	color: #444;
-	padding: 1em 1em 0.5em 1em;
-	text-align: right;
 }
 .hidden {
 	display: none;
+}
+
+.buttons {
+	text-align: center;
+}
+.button {
+	box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);
+	display: inline-block;
+	margin: 1em;
+	padding: 0.5em 1em;
+	text-decoration: none;
+}
+
+header {
+	background-color: #7bb0a8;
+	background-image: url('/static/logo-white.png');
+	background-position: 5px 5px;
+	background-repeat: no-repeat;
+	background-size: 4em;
+	color: #f4f4f4;
+	font-size: 130%;
+	font-weight: 400;
+	margin: 0;
+	padding: 0.5em;
+	text-align: center;
+}
+header b {
+	font-weight: 800;
+}
+header .beta-container {
+	display: table-cell;
+	height: 10em;
+	overflow: hidden;
+	position: absolute;
+	right: 0;
+	vertical-align: middle;
+	width: 10em;
+	top: 0;
+}
+header .beta {
+	font-size: 115%;
+	font-weight: 900;
+	padding: 0.5em 0;
+	text-align: center;
+	transform: translate(25%, 50%) rotate(45deg);
+}
+
+footer {
+	background-color: #437069;
+	color: #f4f4f4;
+	padding: 0.5em;
+	text-align: center;
+}
+footer>a {
+	color: #f4f4f4;
+	margin: 0 1em;
+}
+footer .right {
+	float: right;
+}
+footer .disclaimer {
+	color: lightgray;
+	font-size: 80%;
+	margin-top: 1em;
+	text-align: left;
+}
+footer .disclaimer a {
+	color: lightgray;
+}
+
+.body {
+	margin: 2em auto;
+	width: 50em;
 }

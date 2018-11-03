@@ -1,186 +1,55 @@
 <!doctype html>
 <html>
 <head>
-<link rel="icon" href="/favicon.ico">
+<link rel="icon" href="/static/favicon.ico" />
 <link rel="stylesheet" type="text/css" href="/static/style.css">
 <meta charset="utf-8">
-<script src="/static/code.js"></script>
-<script src='https://www.google.com/recaptcha/api.js'></script>
-<style>
-#fastForm {
-	margin: 10em 0;
-	text-align: center;
-}
-#fastForm p {
-	line-height: 250%;
-}
-#slowAmount {
-	width: 6em;
-}
-</style>
 <title>Donation Swap</title>
 </head>
 <body>
 {%FILE=header.snippet.html%}
-<div id="fastForm">
-	<p>
-		I pay taxes in
-		<select id="fastCountry"></select>
-		and I would like to donate
-		<input autofocus min="0" id="fastAmount" value="100" type="number">
-		<span id="fastCurrency">$</span>
-		to
-		<select id="fastCharity"></select>
-	</p>
-	<p>
-		<button id="btnFast">Find a Swap</button>
-	</p>
-</div>
-<table class="hidden" id="slowForm">
-	<tbody>
-		<tr>
-			<td>Country I pay taxes in:</td>
-			<td>
-				<select id="slowCountry"></select>
-			<td>
-		</tr>
-		<tr>
-			<td>Amount:</td>
-			<td>
-				<input min="0" id="slowAmount" type="number" value="100">
-				<span id="slowCurrency">$</span>
-			</td>
-		</tr>
-		<tr>
-			<td>Charity:</td>
-			<td>
-				<select id="slowCharity"></select>
-			</td>
-		</tr>
-		<tr>
-			<td>This offer is valid for:</td>
-			<td>
-				<select id="slowExpires">
-					<option value="0">one week</option>
-					<option value="1">one month</option>
-					<option selected value="2">three months</option>
-				</select>
-			</td>
-		</tr>
-		<tr>
-			<td>My Email Address:</td>
-			<td>
-				<input id="slowEmail" type="email">
-			</td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>
-				{%FILE=captcha.snippet.html%}
-			</td>
-		</tr>
-		<tr>
-			<td></td>
-			<td>
-				<button disabled id="btnSlow">Send</button>
-			</td>
-		</tr>
-	</tbody>
-</table>
+	<div class="body">
+		<p>The EA Donation Swap system makes it possible for many donors to get tax credits when donating, by matching donors together who donate to each other’s favourite charity or fund. The additional tax benefits will mean EAs will have more money in their pocket, or more money will be donated to effective charities.</p>
+		<table class="visuals">
+			<tbody>
+				<tr>
+					<td style="text-align: center; width: 50%;">
+						<img src="/static/ava.png">
+					</td>
+					<td>
+						<img src="/static/arrow-right.png">
+						<br>
+						<br>
+						<img src="/static/arrow-left.png">
+					</td>
+					<td style="text-align: center; width: 50%;">
+						<img src="/static/buzz.png">
+					</td>
+				</tr>
+				<tr>
+					<td>
+						Donation swaps help people who want to donate to a charity or fund that is not tax deductible in their country.
+					</td>
+					<td>
+					</td>
+					<td>
+						And swaps require donors from countries that have a large number of tax deductible charities or funds, especially AMF donors from the US, UK, Canada, Germany, Switzerland and the Netherlands.
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<p>The minimum donation is €50 (or equivalent amount in your currency) for all countries except Norway and Ireland. In Norway the minimum is 500 kr, and Ireland the minimum is €250 as these are the minimum donation amounts to receive tax deduction.</p>
+		<p class="buttons">
+			<a class="purple button" href="/howto/">How it works</a>
+			<br>
+			<a class="purple button" href="/start/">Set up a swap</a>
+		</p>
+		<h2>Disclaimers</h2>
+		<p>The EA donation swap is a trust system. This website will match you to another donor, but we can’t guarantee the donor you are matched with will go through with the donation.</p>
+		<p>The EA donation swap cannot guarantee your government will give you tax credits at the end of the year as a result of your donation. You are responsible for claiming your tax credits.</p>
+		<h2>EA Donation swap team</h2>
+		<p>EA donation swap is a volunteer project by EA Christchurch, with the assistance of a handful of EAs around the world who provided us with donation information. Thanks to Rethink Charity for allowing us to use the EA Hub.</p>
+	</div>
 {%FILE=footer.snippet.html%}
-<script>
-/* globals ajax, createNode, getElementsById */
-/* jshint esversion: 6 */
-
-function captchaGood() {
-	document.getElementById('btnSlow').removeAttribute('disabled');
-}
-
-function captchaBad() {
-	document.getElementById('btnSlow').setAttribute('disabled', 'disabled');
-}
-
-(function () {
-	'use strict';
-
-	const ui = getElementsById();
-
-	function handleError() {
-		alert('There was an error when we tried to post your offer. Sorry. We\'re looking into it.');
-	}
-
-	captchaBad();
-
-	ajax('get_info')
-		.then(info => {
-			const currencyByCountry = {};
-
-			info.countries.forEach(country => {
-				ui.fastCountry.appendChild(createNode({
-					xtype: 'option',
-					a_value: country.abbreviation,
-					p_textContent: country.live_in_name,
-				}));
-				ui.slowCountry.appendChild(createNode({
-					xtype: 'option',
-					a_value: country.abbreviation,
-					p_textContent: country.name,
-				}));
-				currencyByCountry[country.abbreviation] = country.currency;
-			});
-
-			ui.fastCountry.value = info.client_country;
-			ui.fastCountry.onchange = () => {
-				ui.fastCurrency.textContent = ui.slowCurrency.textContent = currencyByCountry[ui.fastCountry.value];
-				ui.slowCountry.value = ui.fastCountry.value;
-			};
-			ui.fastCountry.onchange();
-
-			ui.fastCharity.onchange = () => {
-				ui.slowCharity.value = ui.fastCharity.value;
-			};
-
-			ui.fastAmount.onchange = () => {
-				ui.slowAmount.value = ui.fastAmount.value;
-			};
-
-			info.charities.forEach(charity => {
-				ui.fastCharity.appendChild(createNode({
-					xtype: 'option',
-					a_value: charity.abbreviation,
-					p_textContent: charity.name,
-				}));
-				ui.slowCharity.appendChild(createNode({
-					xtype: 'option',
-					a_value: charity.abbreviation,
-					p_textContent: charity.name,
-				}));
-			});
-
-			ui.btnFast.onclick = () => {
-				fastForm.classList.add('hidden');
-				slowForm.classList.remove('hidden');
-				ui.slowEmail.focus();
-			};
-
-			ui.btnSlow.onclick = () => {
-				captchaBad();
-				ajax('create_offer', {
-					captcha_response: document.getElementsByName('g-recaptcha-response')[0].value,
-					country: ui.slowCountry.value,
-					amount: ui.slowAmount.value,
-					charity: ui.slowCharity.value,
-					email: ui.slowEmail.value,
-					time_to_live: parseInt(ui.slowExpires.value, 10),
-				})
-				.then(() => {
-					alert('Thank you. We have sent you an email with a confirmation link. Please open the link to activate your offer and verify your email address.');
-					window.location.pathname = '/';
-				})
-				.catch(handleError);
-			};
-		});
-}());
-</script>
 </body>
 </html>

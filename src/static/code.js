@@ -9,13 +9,13 @@ function ajax(action, payload) {
 		}
 
 		const request = new XMLHttpRequest();
-		request.open('POST', `/ajax/${action}`, true);
+		request.open('POST', `${action}`, true);
 		request.onreadystatechange = () => {
 			if (request.readyState === 4) {
 				if (request.status < 300) {
 					resolve(JSON.parse(request.responseText));
 				} else {
-					reject(request);
+					reject(request.responseText);
 				}
 			}
 		};

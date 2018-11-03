@@ -22,26 +22,26 @@ def _set_default_headers(self):
 
 tornado.web.RequestHandler.set_default_headers = _set_default_headers
 
-class BaseHandler(tornado.web.RequestHandler):
+class BaseHandler(tornado.web.RequestHandler): # pylint: disable=abstract-method
 
-	def initialize(self, logic):
+	def initialize(self, logic): # pylint: disable=arguments-differ
 		self.logic = logic # pylint: disable=attribute-defined-outside-init
 
-class CertbotHandler(BaseHandler):
+class CertbotHandler(BaseHandler): # pylint: disable=abstract-method
 	'''
 	sudo certbot renew --webroot --webroot-path /srv/web/static/
 	'''
 
-	def get(self, secret):
+	def get(self, secret): # pylint: disable=arguments-differ
 		filename = os.path.join('static', '.well-known', 'acme-challenge', secret)
 		with open(filename, 'rb') as f:
 			response = f.read()
 		self.set_header('Content-Type', 'text/plain')
 		self.write(response)
 
-class HttpRedirectHandler(BaseHandler):
+class HttpRedirectHandler(BaseHandler): # pylint: disable=abstract-method
 
-	def initialize(self, https_port):
+	def initialize(self, https_port): # pylint: disable=arguments-differ
 		self.https_port = https_port
 
 	def prepare(self):
@@ -51,24 +51,51 @@ class HttpRedirectHandler(BaseHandler):
 				url += ':%s' % self.https_port
 			self.redirect(url, permanent=False)
 
-class AjaxHandler(BaseHandler):
+class AdminHandler(BaseHandler): # pylint: disable=abstract-method
 
-	def post(self, action):
+	def get(self, page): # pylint: disable=arguments-differ
+		page = self.logic.get_page(page)
+		if page:
+			self.set_header('Content-Type', 'text/html; charset=utf-8')
+			self.write(page)
+		else:
+			self.set_status(404)
+			self.write('404 File Not Found')
+
+	def post(self, action): # pylint: disable=arguments-differ
 		payload = json.loads(self.request.body.decode('utf-8'))
 
-		result = self.logic.run_ajax(action, self.request.remote_ip, payload)
+		success, result = self.logic.run_admin_ajax(action, payload)
 
 		self.set_header('Content-Type', 'application/json; charset=utf-8')
+		if success:
+			self.set_status(200)
+		else:
+			self.set_status(500)
 		self.write(json.dumps(result))
 
-class TemplateHandler(BaseHandler):
+class AjaxHandler(BaseHandler): # pylint: disable=abstract-method
 
-	def initialize(self, logic, page_name):
+	def post(self, action): # pylint: disable=arguments-differ
+		payload = json.loads(self.request.body.decode('utf-8'))
+
+		success, result = self.logic.run_ajax(action, self.request.remote_ip, payload)
+
+		self.set_header('Content-Type', 'application/json; charset=utf-8')
+		if success:
+			self.set_status(200)
+		else:
+			self.set_status(400)
+		self.write(json.dumps(result))
+
+class TemplateHandler(BaseHandler): # pylint: disable=abstract-method
+
+	def initialize(self, logic, page_name): # pylint: disable=arguments-differ
 		# pylint: disable=attribute-defined-outside-init
 		self.logic = logic
 		self._page_name = page_name
 
-	def get(self):
+	def get(self): # pylint: disable=arguments-differ
 		page = self.logic.get_page(self._page_name)
 		if page:
 			self.set_header('Content-Type', 'text/html; charset=utf-8')
@@ -104,11 +131,13 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 	application = tornado.web.Application(
 		[
 			(r'/', TemplateHandler, args({'page_name': 'index.html'})),
-			(r'/ajax/(.+)', AjaxHandler, args()),
 			(r'/contact/?', TemplateHandler, args({'page_name': 'contact.html'})),
-			(r'/faq/?', TemplateHandler, args({'page_name': 'faq.html'})),
+			(r'/howto/?', TemplateHandler, args({'page_name': 'howto.html'})),
+			(r'/start/?', TemplateHandler, args({'page_name': 'start.html'})),
 			(r'/match/?', TemplateHandler, args({'page_name': 'match.html'})),
 			(r'/offer/?', TemplateHandler, args({'page_name': 'offer.html'})),
+			(r'/ajax/(.+)', AjaxHandler, args()),
+			(r'/special-secret-admin/(.+)', AdminHandler, args()),
 		],
 		static_path=os.path.join(os.path.dirname(__file__), 'static'),
 	)
@@ -130,7 +159,7 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 	server.listen(port)
 
 	if daemonize:
-		util.daemonize('/var/run/webserver.pid') #xxx move path to config file
+		util.daemonize('/var/run/webserver-%s.pid' % port)
 
 	if os.geteuid() == 0: # we don't need root privileges any more
 		util.drop_privileges()

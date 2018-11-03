@@ -70,7 +70,7 @@ function captchaBad() {
 	}
 
 	ui.btnSend.onclick = () => {
-		ajax('send_contact_message', {
+		ajax('/ajax/send_contact_message', {
 			captcha_response: document.getElementsByName('g-recaptcha-response')[0].value,
 			message: ui.message.value,
 			name: ui.name.value,
