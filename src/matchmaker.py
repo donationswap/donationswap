@@ -12,6 +12,12 @@ import entities
 import mail
 import util
 
+from matching.charity import Charity
+from matching.country import Country
+from matching.donor import Donor
+from matching.offer import Offer
+from matching.matcher import Matcher
+
 class Matchmaker:
 
 	def __init__(self, config_path, dry_run=False):
@@ -45,6 +51,7 @@ class Matchmaker:
 				match.delete(db)
 
 			# delete approved matches after four weeks
+			# TODO: consider storing the core data?
 			for match in entities.Match.get_all(lambda x: x.new_agrees is True and x.old_agrees is True and x.created_ts + four_weeks < now):
 				match.delete(db)
 
@@ -52,8 +59,7 @@ class Matchmaker:
 			# ... delete expired offers that aren't part of a match
 			# ... signal the web server to update its cache
 
-	@staticmethod
-	def _is_good_match(offer1, offer2):
+	def _is_good_match(self, offer1, offer2):
 		logging.info('Comparing %s and %s.', offer1.id, offer2.id)
 
 		if offer1.charity_id == offer2.charity_id:
@@ -66,9 +72,60 @@ class Matchmaker:
 			logging.info('same email.')
 			return False
 
+		dbCountry1 = offer1.country
+		dbCountry2 = offer2.country
+
+		# TODO: UK and ireland(?) GiftAid
+		multiplier1 = 1
+		multiplier2 = 1
+
+		# TODO: find?
+		country1TaxReturn = 0.2
+		country1TaxReturn = 0.2
+
+		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
+		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
+
+		# TODO: fill
+		country1Charities = []
+		country2Charities = []
+
+		charityCache = {}
+
+		for charity in entities.Charity.get_all():
+			if (charity.name not in charityCache):
+				charityCache[charity.name] = Charity(charity.name)
+
+			charityInCountry1 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry1.id)
+			charityInCountry2 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry2.id)
+			if (charityInCountry1 != None):
+				country1Charities.append(charityCache[charity.name])
+			if (charityInCountry2 != None):
+				country2Charities.append(charityCache[charity.name])
+
+		country1 = Country(dbCountry1.name, dbCountry1.currency.iso, country1Charities, country1TaxReturn, exchangeRate1VsUSA, multiplier1)
+		country2 = Country(dbCountry2.name, dbCountry2.currency.iso, country2Charities, country1TaxReturn, exchangeRate2VsUSA, multiplier2)
+
+		offer1Created = 0
+		offer2Created = 0
+		amount1 = offer1.amount
+		amount2 = offer2.amount
+		donor1 = Donor(offer1.email, country1)
+		donor2 = Donor(offer2.email, country2)
+
+		matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1 * 2, [charityCache[offer1.charity.name]], offer1Created)
+		matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2 * 2, [charityCache[offer2.charity.name]], offer2Created)
+
+		print(matchingOffer1)
+		print(matchingOffer2)
+
+		result = Matcher("USD").match(matchingOffer1, [matchingOffer2])
+
+		print(result)
+
 		#xxx offers SHOULD have approximately the same amount (taking tax benefits into account)
 		#    for development, however, everthing goes.
-		return True
+		return result != None
 
 	def find_matches(self):
 		'''Compares every offer to every other offer.'''
