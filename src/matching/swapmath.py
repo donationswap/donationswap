@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 
-from charity import *
-from country import *
-from donor import *
-from offer import *
-
 class SwapMath():
 
 	def __init__(self, charityA4B, charityB4A, amountCharitiesGet, baseCurrency, offerA, offerB):
@@ -112,6 +107,9 @@ class SwapMath():
 		return self.__str__()
 
 	def __eq__(self, other):
+		if (other == None):
+			return False
+
 		return \
 			self.amountAPays == other.amountAPays and \
 			self.amountBPays == other.amountBPays and \
