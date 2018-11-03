@@ -86,7 +86,6 @@ class Matchmaker:
 		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
 		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
 
-		# TODO: fill
 		country1Charities = []
 		country2Charities = []
 
@@ -116,12 +115,7 @@ class Matchmaker:
 		matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1 * 2, [charityCache[offer1.charity.name]], offer1Created)
 		matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2 * 2, [charityCache[offer2.charity.name]], offer2Created)
 
-		print(matchingOffer1)
-		print(matchingOffer2)
-
 		result = Matcher("USD").match(matchingOffer1, [matchingOffer2])
-
-		print(result)
 
 		#xxx offers SHOULD have approximately the same amount (taking tax benefits into account)
 		#    for development, however, everthing goes.
