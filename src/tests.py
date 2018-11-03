@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 
 import datetime
+import re
 import unittest
 
 import entities
 import donationswap
+import matchmaker
+import util
 
 class MockCaptcha:
 
@@ -27,21 +30,6 @@ class MockCurrency:
 		self.calls.setdefault('convert', []).append(locals())
 		return int(amount / self.from_factor * self.to_factor)
 
-class WrapEntities(entities.Entities):
-
-	def __init__(self, database):
-		super().__init__(database)
-		self.offers = []
-		self.matches = []
-
-	def insert_offer(self, email, secret, country, amount, charity, time_to_live):
-		super().insert_offer(email, secret, country, amount, charity, time_to_live)
-		self.offers.append(secret)
-
-	def insert_match(self, new_offer_id, old_offer_id, secret):
-		super().insert_match(new_offer_id, old_offer_id, secret)
-		self.matches.append(secret)
-
 class MockGeoIpCountry:
 
 	def __init__(self):
@@ -60,26 +48,39 @@ class MockMail:
 	def send(self, subject, text, html=None, to=None, cc=None, bcc=None):
 		self.calls.setdefault('send', []).append(locals())
 
-class MockMatchmaker:
-
-	def __init__(self):
-		self.calls = {}
-		self.match_result = None
-
-	def find_match(self, offer_id):
-		self.calls.setdefault('send', []).append(locals())
-		return self.match_result
-
 class TestBase(unittest.TestCase):
 
 	def setUp(self):
 		self.ds = donationswap.Donationswap('test-config.json')
 		self.captcha = self.ds._captcha = MockCaptcha()
 		self.currency = self.ds._currency = MockCurrency()
-		self.entities = self.ds._entities = WrapEntities(self.ds._database)
 		self.geoip = self.ds._geoip = MockGeoIpCountry()
 		self.mail = self.ds._mail = MockMail()
-		self.matchmaker = self.ds._matchmaker = MockMatchmaker()
+
+		with self.ds._database.connect() as db:
+			currency = db.read_one('''
+				SELECT min(id) AS id
+				FROM currencies;
+				''')['id']
+			db.write('''
+				INSERT INTO charity_categories (id, name)
+				VALUES
+				(1, 'category1'),
+				(2, 'category2');
+				''')
+			db.write('''
+				INSERT INTO charities (id, name, category_id)
+				VALUES
+				(1, 'charity1', 1),
+				(2, 'charity2', 2);
+				''')
+			db.write('''
+				INSERT INTO countries (id, name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
+				VALUES
+				(1, 'country1', 'c1', %(currency)s, 0, %(currency)s),
+				(2, 'country1', 'c2', %(currency)s, 0, %(currency)s);
+				''', currency=currency)
+			entities.load(db)
 
 	def tearDown(self):
 		if not self.ds._database._connection_string.startswith('dbname=test '):
@@ -87,23 +88,30 @@ class TestBase(unittest.TestCase):
 		with self.ds._database.connect() as db:
 			db.write('DELETE FROM matches;')
 			db.write('DELETE FROM offers;')
+			db.write('DELETE FROM charities_in_countries;')
+			db.write('DELETE FROM charities;')
+			db.write('DELETE FROM countries;')
+			db.write('DELETE FROM charity_categories;')
 
 class get_page(TestBase):
-
-	def test_index_exists(self):
-		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('index.html'))
-
-	def test_faq_exists(self):
-		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('faq.html'))
 
 	def test_contact_exists(self):
 		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('contact.html'))
 
-	def test_offer_exists(self):
-		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('offer.html'))
+	def test_howto_exists(self):
+		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('howto.html'))
+
+	def test_index_exists(self):
+		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('index.html'))
 
 	def test_match_exists(self):
 		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('match.html'))
+
+	def test_offer_exists(self):
+		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('offer.html'))
+
+	def test_start_exists(self):
+		self.assertTrue('<title>Donation Swap</title>' in self.ds.get_page('start.html'))
 
 	def test_bad_filename_should_not_raise_exception(self):
 		self.assertEqual('', self.ds.get_page('this-file-does-not-exist'))
@@ -112,12 +120,12 @@ class get_info(TestBase):
 
 	def test_all_information_must_be_included(self):
 		info = self.ds.get_info()
-		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries'])
+		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries', 'today'])
 
 	def test_client_country(self):
-		COUNTRY = datetime.datetime.utcnow() # any "random" value
-		self.geoip.country = COUNTRY
-		self.assertEqual(self.ds.get_info()['client_country'], COUNTRY)
+		self.geoip.country = 'c1'
+		result = self.ds.get_info()['client_country']
+		self.assertEqual(result, 1)
 
 class send_contact_message(TestBase):
 
@@ -141,19 +149,23 @@ class send_contact_message(TestBase):
 
 	def test_bad_captcha(self):
 		self.captcha.should_pass = False
-		with self.assertRaises(ValueError):
+		with self.assertRaises(donationswap.DonationException):
 			self._send_message()
 
 class create_offer(TestBase):
 
-	def _create_offer(self, country='nz', amount=42, charity='amf', email='user@test.test', time_to_live=donationswap.OFFER_TTL_THREE_MONTHS):
+	def _create_offer(self, country=1, amount=42, charity=1, email='user@test.test'):
 		return self.ds.create_offer(
 			captcha_response='irrelevant',
 			country=country,
 			amount=amount,
 			charity=charity,
 			email=email,
-			time_to_live=time_to_live
+			expiration={
+				'day': 28,
+				'month': 2,
+				'year': 2012,
+			}
 		)
 
 	def _get_offer(self):
@@ -175,50 +187,38 @@ class create_offer(TestBase):
 
 	def test_bad_captcha(self):
 		self.captcha.should_pass = False
-		with self.assertRaises(ValueError):
+		with self.assertRaises(donationswap.DonationException):
 			self._create_offer()
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
 	def test_bad_country(self):
-		with self.assertRaises(ValueError):
-			self._create_offer(country='this-country-does-not-exist')
+		with self.assertRaises(donationswap.DonationException):
+			self._create_offer(country=100)
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
 	def test_bad_amount(self):
-		with self.assertRaises(ValueError):
+		with self.assertRaises(donationswap.DonationException):
 			self._create_offer(amount='fourty-two')
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
 	def test_invalid_amount(self):
-		with self.assertRaises(ValueError):
+		with self.assertRaises(donationswap.DonationException):
 			self._create_offer(amount=-42)
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
 	def test_bad_charity(self):
-		with self.assertRaises(ValueError):
-			self._create_offer(charity='this-charity-does-not-exist')
+		with self.assertRaises(donationswap.DonationException):
+			self._create_offer(charity=100)
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
 	def test_bad_email_address(self):
-		with self.assertRaises(ValueError):
+		with self.assertRaises(donationswap.DonationException):
 			self._create_offer(email='user-at-test-dot-test')
-		self.assertEqual(self._get_offer(), None)
-		self.assertEqual(self.mail.calls, {})
-
-	def test_invalid_time_to_live(self):
-		with self.assertRaises(ValueError):
-			self._create_offer(time_to_live='one')
-		self.assertEqual(self._get_offer(), None)
-		self.assertEqual(self.mail.calls, {})
-
-	def test_bad_time_to_live(self):
-		with self.assertRaises(ValueError):
-			self._create_offer(time_to_live=3)
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
@@ -227,26 +227,25 @@ class confirm_offer(TestBase):
 	def test_happy_path_no_match(self):
 		self.ds.create_offer(
 			captcha_response='irrelevant',
-			country='nz',
+			country=1,
 			amount=42,
-			charity='amf',
+			charity=1,
 			email='user@test.test',
-			time_to_live=donationswap.OFFER_TTL_THREE_MONTHS
+			expiration={
+				'day': 28,
+				'month': 2,
+				'year': 2012,
+			}
 		)
-		with self.ds._database.connect() as db:
-			offer = db.read_one('SELECT * FROM offers;')
+		offer = entities.Offer.get_all(lambda x: x.email == 'user@test.test')[0]
 
-		result = self.ds.confirm_offer(offer['secret'])
+		result = self.ds.confirm_offer(offer.secret)
 		self.assertEqual(result['was_confirmed'], False)
-		self.assertEqual(result['currency'], 'NZD')
+		self.assertEqual(result['currency'], 'AED')
 		self.assertEqual(result['amount'], 42)
-		self.assertEqual(result['charity'], 'Against Malaria Foundation'),
-		# ignore created_ts and expires_ts
-		self.assertEqual(result['match_secret'], None)
+		self.assertEqual(result['charity'], 'charity1'),
 
-		with self.ds._database.connect() as db:
-			offer = db.read_one('SELECT * FROM offers;')
-		self.assertTrue(offer['confirmed'])
+		self.assertTrue(offer.confirmed)
 
 	def test_invalid_secret(self):
 		result = self.ds.confirm_offer('this-secret-does-not-exist')
@@ -257,93 +256,145 @@ class delete_offer(TestBase):
 	def test_happy_path(self):
 		self.ds.create_offer(
 			captcha_response='irrelevant',
-			country='nz',
+			country=1,
 			amount=42,
-			charity='amf',
+			charity=1,
 			email='user@test.test',
-			time_to_live=donationswap.OFFER_TTL_THREE_MONTHS
+			expiration={
+				'day': 28,
+				'month': 2,
+				'year': 2012,
+			}
 		)
-		with self.ds._database.connect() as db:
-			offer = db.read_one('SELECT * FROM offers;')
-		self.assertTrue(offer is not None)
+		offers = entities.Offer.get_all(lambda x: x.email == 'user@test.test')
+		self.ds.delete_offer(offers[0].secret)
 
-		self.ds.delete_offer(offer['secret'])
+		offers = entities.Offer.get_all(lambda x: x.email == 'user@test.test')
+		self.assertEqual(len(offers), 0)
 
-		with self.ds._database.connect() as db:
-			offer = db.read_one('SELECT * FROM offers;')
-		self.assertTrue(offer is None)
+class Templates(unittest.TestCase):
+	'''Make sure all templates exist and contain the expected placeholders.'''
 
-class Workflow(TestBase):
+	def _check_expected_placeholders(self, txt, placeholders):
+		for placeholder in placeholders:
+			self.assertTrue(placeholder in txt)
+		for found_placeholder in re.findall(r'{%.+?%}', txt):
+			self.assertTrue(found_placeholder in placeholders)
 
-	def test_happy_path(self):
-		# User A creates an offer.
-		self.ds.create_offer(
-			captcha_response='irrelevant',
-			country='nz',
-			amount=42,
-			charity='amf',
-			email='user1@test.test',
-			time_to_live=donationswap.OFFER_TTL_ONE_WEEK)
+	def test_contact_email(self):
+		placeholders = [
+			'{%IP_ADDRESS%}',
+			'{%COUNTRY%}',
+			'{%NAME%}',
+			'{%EMAIL%}',
+			'{%MESSAGE%}',
+		]
+		txt = util.Template('contact-email.txt').content
+		self._check_expected_placeholders(txt, placeholders)
 
-		# This triggers an email to the user.
-		self.assertEqual(self.mail.calls['send'][-1]['to'], 'user1@test.test')
+	def test_match_appoved_email(self):
+		placeholders = [
+			'{%OLD_COUNTRY%}',
+			'{%OLD_CHARITY%}',
+			'{%OLD_AMOUNT%}',
+			'{%OLD_CURRENCY%}',
+			'{%OLD_EMAIL%}',
+			'{%OLD_AMOUNT_CONVERTED%}',
+			'{%OLD_INSTRUCTIONS%}',
+			'{%NEW_COUNTRY%}',
+			'{%NEW_CHARITY%}',
+			'{%NEW_AMOUNT%}',
+			'{%NEW_CURRENCY%}',
+			'{%NEW_EMAIL%}',
+			'{%NEW_AMOUNT_CONVERTED%}',
+			'{%NEW_INSTRUCTIONS%}',
+		]
+		txt = util.Template('match-approved-email.txt').content
+		self._check_expected_placeholders(txt, placeholders)
+		txt = util.Template('match-approved-email.html').content
+		self._check_expected_placeholders(txt, placeholders)
 
-		# User A confirms the offer.
-		secret_a = self.entities.offers[-1]
-		offer = self.ds.confirm_offer(secret_a)
-		self.assertEqual(offer['amount'], 42)
+	def test_match_suggested_email(self):
+		placeholders = [
+			'{%YOUR_COUNTRY%}',
+			'{%YOUR_CHARITY%}',
+			'{%YOUR_AMOUNT%}',
+			'{%YOUR_CURRENCY%}',
+			'{%THEIR_COUNTRY%}',
+			'{%THEIR_CHARITY%}',
+			'{%THEIR_AMOUNT%}',
+			'{%THEIR_CURRENCY%}',
+			'{%THEIR_AMOUNT_CONVERTED%}',
+			'{%SECRET%}',
+		]
+		txt = util.Template('match-suggested-email.txt').content
+		self._check_expected_placeholders(txt, placeholders)
+		txt = util.Template('match-suggested-email.html').content
+		self._check_expected_placeholders(txt, placeholders)
 
-		# (hack it so this offer will be the match for the next offer)
-		self.matchmaker.match_result = self.entities.get_offer_by_secret(secret_a)['id']
+	def test_new_post_email(self):
+		placeholders = [
+			'{%SECRET%}',
+			'{%CHARITY%}',
+			'{%CURRENCY%}',
+			'{%AMOUNT%}',
+		]
+		txt = util.Template('new-post-email.txt').content
+		self._check_expected_placeholders(txt, placeholders)
+		txt = util.Template('new-post-email.html').content
+		self._check_expected_placeholders(txt, placeholders)
 
-		# User B creates an offer.
-		self.ds.create_offer(
-			captcha_response='irrelevant',
-			country='gb',
-			amount=27,
-			charity='hka',
-			email='user2@test.test',
-			time_to_live=donationswap.OFFER_TTL_ONE_WEEK)
+class Admin(unittest.TestCase):
 
-		# This triggers an email to the user.
-		self.assertEqual(self.mail.calls['send'][-1]['to'], 'user2@test.test')
+	def setUp(self):
+		ds = donationswap.Donationswap('test-config.json')
+		self.admin = ds._admin
+		self.db = ds._database
 
-		# User B confirms the offer.
-		secret_b = self.entities.offers[-1]
-		offer = self.ds.confirm_offer(secret_b)
-		self.assertEqual(offer['amount'], 27)
+	def tearDown(self):
+		if not self.db._connection_string.startswith('dbname=test '):
+			raise ValueError('Only ever clean up the test database.')
+		with self.db.connect() as db:
+			db.write('DELETE FROM matches;')
+			db.write('DELETE FROM offers;')
+			db.write('DELETE FROM charities_in_countries;')
+			db.write('DELETE FROM charities;')
+			db.write('DELETE FROM countries;')
+			db.write('DELETE FROM charity_categories;')
 
-		# This triggers a successful search for a match.
+	def test_read_currencies(self):
+		currencies = self.admin.read_currencies()
+		self.assertEqual(len(currencies), 168)
+		for currency in currencies:
+			self.assertEqual(currency['iso'], currency['iso'].upper())
+			self.assertEqual(len(currency['iso']), 3)
 
-		# Emails are sent to both users.
-		self.assertEqual(self.mail.calls['send'][-2]['to'], 'user1@test.test')
-		self.assertEqual(self.mail.calls['send'][-1]['to'], 'user2@test.test')
-		match_a = self.ds.get_match(secret_a + offer['match_secret'])
-		match_b = self.ds.get_match(secret_b + offer['match_secret'])
-		self.assertEqual(match_a['their_amount'], 27)
-		self.assertEqual(match_b['their_amount'], 42)
+	def test_charity_categories(self):
+		self.admin.create_charity_category('dogs')
+		self.admin.create_charity_category('cats')
+		categories = self.admin.read_charity_categories()
 
-		# User A approve the match.
-		self.ds.approve_match(secret_a + offer['match_secret'])
-		match = self.entities.get_match_by_secret(offer['match_secret'])
-		self.assertEqual(match['old_agrees'], True)
-		self.assertEqual(match['new_agrees'], None)
+		self.assertEqual(len(categories), 2)
+		cats = categories[0]
+		dogs = categories[1]
+		self.assertEqual(cats['name'], 'cats')
+		self.assertEqual(dogs['name'], 'dogs')
 
-		# No email is sent.
-		self.assertEqual(len(self.mail.calls['send']), 4)
+		self.admin.update_charity_category(cats['id'], 'cats and more cats')
+		categories = self.admin.read_charity_categories()
 
-		# User B approves the match.
-		self.ds.approve_match(secret_b + offer['match_secret'])
-		match = self.entities.get_match_by_secret(offer['match_secret'])
-		self.assertEqual(match['old_agrees'], True)
-		self.assertEqual(match['new_agrees'], True)
+		self.assertEqual(len(categories), 2)
+		cats = categories[0]
+		dogs = categories[1]
+		self.assertEqual(cats['name'], 'cats and more cats')
+		self.assertEqual(dogs['name'], 'dogs', 'only cat should have been renamed')
 
-		# Emails are sent to both users.
-		self.assertEqual(len(self.mail.calls['send']), 6)
-		self.assertEqual(self.mail.calls['send'][-2]['to'], 'user1@test.test')
-		self.assertEqual(self.mail.calls['send'][-1]['to'], 'user2@test.test')
-		self.assertTrue('user2@test.test' in self.mail.calls['send'][-2]['text'])
-		self.assertTrue('user1@test.test' in self.mail.calls['send'][-1]['text'])
+		self.admin.delete_charity_category(dogs['id'])
+		categories = self.admin.read_charity_categories()
+
+		self.assertEqual(len(categories), 1)
+		cats = categories[0]
+		self.assertEqual(cats['name'], 'cats and more cats')
 
 if __name__ == '__main__':
 	unittest.main(verbosity=2)

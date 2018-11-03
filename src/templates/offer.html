@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <link rel="icon" href="/favicon.ico">
 <link rel="stylesheet" type="text/css" href="/static/style.css">
@@ -9,31 +9,33 @@
 </head>
 <body>
 {%FILE=header.snippet.html%}
-<h1>Your Offer</h1>
-	<tbody>
-		<tr>
-			<td>Amount:</td>
-			<td><span id="currency"></span> <span id="amount"></span></td>
-		</tr>
-		<tr>
-			<td>Charity:</td>
-			<td><span id="charity"></span></td>
-		</tr>
-		<tr>
-			<td>Created:</td>
-			<td><span id="creationDate"></span></td>
-		</tr>
-		<tr>
-			<td>Expires:</td>
-			<td><span id="expirationDate"></span></td>
-		</tr>
-	</tbody>
-</table>
-<p class="hidden" id="confirmed">Thank you for activating your offer.</p>
-<p>We will send you an email when we find a match. You can create another post <a href="/">here</a>.</p>
-<table class="hidden" id="table">
-<button class="hidden" id="btnDelete">Delete</button>
-<div id="message">Loading...</div>
+	<div class="body">
+		<h1>Your Offer</h1>
+		<table id="table">
+			<tbody>
+				<tr>
+					<td>Amount:</td>
+					<td><span id="currency"></span> <span id="amount"></span></td>
+				</tr>
+				<tr>
+					<td>Charity:</td>
+					<td><span id="charity"></span></td>
+				</tr>
+				<tr>
+					<td>Created:</td>
+					<td><span id="creationDate"></span></td>
+				</tr>
+				<tr>
+					<td>Expires:</td>
+					<td><span id="expirationDate"></span></td>
+				</tr>
+			</tbody>
+		</table>
+		<p class="hidden" id="confirmed">Thank you for activating your offer.</p>
+		<p>We will send you an email when we find a match. You can create another post <a href="/">here</a>.</p>
+		<button class="hidden" id="btnDelete">Delete</button>
+		<div id="message">Loading...</div>
+	</div>
 {%FILE=footer.snippet.html%}
 <script>
 /* globals ajax, getElementsById */
