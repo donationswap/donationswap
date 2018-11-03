@@ -79,10 +79,6 @@ class Matchmaker:
 		multiplier1 = 1
 		multiplier2 = 1
 
-		# TODO: find?
-		country1TaxReturn = 0.2
-		country1TaxReturn = 0.2
-
 		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
 		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
 
@@ -90,6 +86,8 @@ class Matchmaker:
 		country2Charities = []
 
 		charityCache = {}
+		country1TaxReturn = 0
+		country2TaxReturn = 0
 
 		for charity in entities.Charity.get_all():
 			if (charity.name not in charityCache):
@@ -99,11 +97,16 @@ class Matchmaker:
 			charityInCountry2 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry2.id)
 			if (charityInCountry1 != None):
 				country1Charities.append(charityCache[charity.name])
+				if (offer1.charity == charity):
+					country1TaxReturn = charityInCountry1.tax_factor
+
 			if (charityInCountry2 != None):
 				country2Charities.append(charityCache[charity.name])
+				if (offer2.charity == charity):
+					country2TaxReturn = charityInCountry2.tax_factor
 
 		country1 = Country(dbCountry1.name, dbCountry1.currency.iso, country1Charities, country1TaxReturn, exchangeRate1VsUSA, multiplier1)
-		country2 = Country(dbCountry2.name, dbCountry2.currency.iso, country2Charities, country1TaxReturn, exchangeRate2VsUSA, multiplier2)
+		country2 = Country(dbCountry2.name, dbCountry2.currency.iso, country2Charities, country2TaxReturn, exchangeRate2VsUSA, multiplier2)
 
 		offer1Created = 0
 		offer2Created = 0
@@ -112,13 +115,12 @@ class Matchmaker:
 		donor1 = Donor(offer1.email, country1)
 		donor2 = Donor(offer2.email, country2)
 
-		matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1 * 2, [charityCache[offer1.charity.name]], offer1Created)
-		matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2 * 2, [charityCache[offer2.charity.name]], offer2Created)
-
-		result = Matcher("USD").match(matchingOffer1, [matchingOffer2])
-
 		#xxx offers SHOULD have approximately the same amount (taking tax benefits into account)
 		#    for development, however, everthing goes.
+		matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1, [charityCache[offer1.charity.name]], offer1Created)
+		matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2, [charityCache[offer2.charity.name]], offer2Created)
+
+		result = Matcher("USD").match(matchingOffer1, [matchingOffer2])
 		return result != None
 
 	def find_matches(self):
