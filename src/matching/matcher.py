@@ -1,10 +1,6 @@
 #!/usr/bin/env python3
 
-from charity import *
-from country import *
-from donor import *
-from offer import *
-from swapmath import *
+from .swapmath import SwapMath
 
 class Matcher:
 

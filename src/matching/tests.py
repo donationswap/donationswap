@@ -193,16 +193,16 @@ nz3.user@notAnEmail.com should recieve about 66.0 NZD in Tax Returns.
 			<td></td>
 			<th>us.user@notAnEmail.com</th>
 			<th>nz3.user@notAnEmail.com</th>
-		</tr>charity1
+		</tr>
 		<tr>
-			<td>Charty to Donate to</td>
+			<td>Charity to Donate to</td>
 			<td>Good Food Institute</td>
 			<td>Against Malaria Foundation</td>
 		</tr>
 		<tr>
 			<td>Exchange Rates</td>
-			<td>1</td>
-			<td>0.65</td>
+			<td>1 USD to 1 USD</td>
+			<td>0.65 USD to 1 NZD</td>
 		</tr>
 		<tr>
 			<td>Amount To Pay</td>
@@ -215,6 +215,50 @@ nz3.user@notAnEmail.com should recieve about 66.0 NZD in Tax Returns.
 			<td>Tax Return</td>
 			<td>amount to pay * tax rate = tax return<br />
 				130 USD * 0.3 = 39.0 USD</td>
+			<td>amount to pay * tax rate = tax return<br />
+				200.0 NZD * 0.33 = 66.0 NZD</td>
+		</tr>
+	</tbody>
+</table>"""
+
+		self.swapMathMathHtmlGiftAid = """<table>
+	<tbody>
+		<th>Maths</th>
+		<tr>
+			<td>Total to Charity:</td>
+			<td>195 USD</td>
+		</tr>
+		<tr>
+			<td></td>
+			<th>us.user@notAnEmail.com</th>
+			<th>nz4.user@notAnEmail.com</th>
+		</tr>
+		<tr>
+			<td>Charity to Donate to</td>
+			<td>Good Food Institute</td>
+			<td>Against Malaria Foundation</td>
+		</tr>
+		<tr>
+			<td>Exchange Rates</td>
+			<td>1 USD to 1 USD</td>
+			<td>0.65 USD to 1 NZD</td>
+		</tr>
+		<tr>
+			<td>Gift Aid:</td>
+			<td>1</td>
+			<td>1.5</td>
+		</tr>
+		<tr>
+			<td>Amount To Pay</td>
+			<td>total USD * exchange rate / gift aid = total to pay in USD<br />
+				195 USD * 1 / 1 = 195 USD</td>
+			<td>total USD * exchange rate / gift aid = total to pay in NZD<br />
+				195 USD * 0.65 / 1.5 = 200.0 NZD</td>
+		</tr>
+		<tr>
+			<td>Tax Return</td>
+			<td>amount to pay * tax rate = tax return<br />
+				195 USD * 0.3 = 58.5 USD</td>
 			<td>amount to pay * tax rate = tax return<br />
 				200.0 NZD * 0.33 = 66.0 NZD</td>
 		</tr>
@@ -234,6 +278,13 @@ nz3.user@notAnEmail.com should recieve about 66.0 NZD in Tax Returns.
 		offer = Offer(donorFromNZParrellell, 200, 200, [self.charity_gfi], secondsSinceEpoch())
 		swapMath = SwapMath(self.charity_gfi, self.charity_amf, 130, "USD", self.trivial_offer_USA, offer)
 		self.assertEqual(swapMath.GetMathHtml(), self.swapMathMathHtml)
+
+	def test_SwapMathMathHtmlGiftAid(self):
+		someNZParrelell = Country('New Zealand4', 'NZD', [self.charity_amf], 0.33, 0.65, 1.5)
+		donorFromNZParrellell = Donor('nz4.user@notAnEmail.com', someNZParrelell)
+		offer = Offer(donorFromNZParrellell, 100, 200, [self.charity_gfi], secondsSinceEpoch())
+		swapMath = SwapMath(self.charity_gfi, self.charity_amf, 195, "USD", self.trivial_offer_USA, offer)
+		self.assertEqual(swapMath.GetMathHtml(), self.swapMathMathHtmlGiftAid)
 
 if __name__ == '__main__':
 	unittest.main()
