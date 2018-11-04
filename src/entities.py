@@ -189,9 +189,10 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 		self.created_ts = row['created_ts']
 		self.expires_ts = row['expires_ts']
 		self.confirmed = row['confirmed']
+		self.name = row['name']
 
 	def __repr__(self):
-		return '{id}:{email}:{amount}'.format(**self.__dict__)
+		return '{id}:{name}:{email}:{amount}'.format(**self.__dict__)
 
 	@classmethod
 	def _load_entity_impl(cls, entity):
@@ -214,16 +215,17 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 		return Country.by_id(self.country_id)
 
 	@classmethod
-	def create(cls, db, secret, email, country_id, amount, charity_id, expires_ts):
+	def create(cls, db, secret, name, email, country_id, amount, charity_id, expires_ts):
 		query = '''
 			INSERT INTO offers
-			(secret, email, country_id, amount, charity_id, expires_ts, confirmed)
+			(secret, name, email, country_id, amount, charity_id, expires_ts, confirmed)
 			VALUES
-			(%(secret)s, %(email)s, %(country_id)s, %(amount)s, %(charity_id)s, %(expires_ts)s, false)
+			(%(secret)s, %(name)s, %(email)s, %(country_id)s, %(amount)s, %(charity_id)s, %(expires_ts)s, false)
 			RETURNING *;
 		'''
 		row = db.write_read_one(query,
 			secret=secret,
+			name=name,
 			email=email,
 			country_id=country_id,
 			amount=amount,

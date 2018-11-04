@@ -23,9 +23,9 @@ class Tests(unittest.TestCase):
 		self.country_USA = Country('USA', 'USD', [self.charity_amf, self.charity_gfi], 0.30, 1)
 		self.country_UK = Country('UK', 'GBP', [self.charity_amf, self.charity_gfi], 0.2, 1, 1.25)
 		
-		self.donor_NZ = Donor('nz.user@notAnEmail.com', self.country_NZ)
-		self.donor_USA = Donor('us.user@notAnEmail.com', self.country_USA)
-		self.donor_UK = Donor('uk.user@notAnEmail.com', self.country_UK)
+		self.donor_NZ = Donor('NZ Dude1', 'nz.user@notAnEmail.com', self.country_NZ)
+		self.donor_USA = Donor('USA Dudette1', 'us.user@notAnEmail.com', self.country_USA)
+		self.donor_UK = Donor('UK Dude1', 'uk.user@notAnEmail.com', self.country_UK)
 
 		self.trivial_offer_NZ = Offer(self.donor_NZ, 100, 200, [self.charity_amf, self.charity_gfi], 1539398365.377)
 		self.trivial_offer_USA = Offer(self.donor_USA, 100, 200, [self.charity_amf, self.charity_gfi], 1539398365.377)
@@ -49,7 +49,7 @@ class Tests(unittest.TestCase):
 	def test_dontMatchIfNoTaxSaving(self):
 		someOtherCharity = Charity("Some Other Charity")
 		someNZParrelell = Country('New Zealand2', 'NZD', [someOtherCharity], 0.33, 1)
-		donorFromNZParrellell = Donor('nz2.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dudette2', 'nz2.user@notAnEmail.com', someNZParrelell)
 		offer1 = Offer(self.donor_NZ, 150, 150, [self.charity_gfi], secondsSinceEpoch())
 		offer2 = Offer(donorFromNZParrellell, 150, 150, [self.charity_amf], secondsSinceEpoch())
 		match = Matcher("USD").match(offer1, [offer2])
@@ -58,7 +58,7 @@ class Tests(unittest.TestCase):
 	def test_dontMatchIfNoTaxSavingTheOtherWay(self):
 		someOtherCharity = Charity("Some Other Charity")
 		someNZParrelell = Country('New Zealand2', 'NZD', [someOtherCharity], 0.33, 1)
-		donorFromNZParrellell = Donor('nz2.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dude2', 'nz2.user@notAnEmail.com', someNZParrelell)
 		offer1 = Offer(self.donor_NZ, 150, 150, [self.charity_gfi], secondsSinceEpoch())
 		offer2 = Offer(donorFromNZParrellell, 150, 150, [self.charity_amf], secondsSinceEpoch())
 		match = Matcher("USD").match(offer2, [offer1])
@@ -138,28 +138,28 @@ class Tests(unittest.TestCase):
 
 	def test_noMatchBecauseExchangeRates(self):
 		someNZParrelell = Country('New Zealand3', 'NZD', [self.charity_amf], 0.33, 0.65)
-		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dudette3', 'nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 150, 150, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher("USD").match(offer, [self.trivial_offer_USA])
 		self.assertEqual(match, None)
 
 	def test_noMatchBecauseExchangeRatesTheOtherWay(self):
 		someNZParrelell = Country('New Zealand3', 'NZD', [self.charity_amf], 0.33, 0.65)
-		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dude3', 'nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 150, 150, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher("USD").match(self.trivial_offer_USA, [offer])
 		self.assertEqual(match, None)
 
 	def test_matchRespectsExchangeRates(self):
 		someNZParrelell = Country('New Zealand3', 'NZD', [self.charity_amf], 0.33, 0.65)
-		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dude3', 'nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 200, 200, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher("USD").match(offer, [self.trivial_offer_USA])
 		self.assertEqual(match, SwapMath(self.charity_amf, self.charity_gfi, 130, "USD", offer, self.trivial_offer_USA))
 
 	def test_matchRespectsExchangeRatesTheOtherWay(self):
 		someNZParrelell = Country('New Zealand3', 'NZD', [self.charity_amf], 0.33, 0.65)
-		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dudette3', 'nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 200, 200, [self.charity_gfi], secondsSinceEpoch())
 		match = Matcher("USD").match(self.trivial_offer_USA, [offer])
 		self.assertEqual(match, SwapMath(self.charity_gfi, self.charity_amf, 130, "USD", self.trivial_offer_USA, offer))
@@ -267,21 +267,21 @@ nz3.user@notAnEmail.com should recieve about 66.0 NZD in Tax Returns.
 
 	def test_SwapMathSummary(self):
 		someNZParrelell = Country('New Zealand3', 'NZD', [self.charity_amf], 0.33, 0.65)
-		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dude3', 'nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 200, 200, [self.charity_gfi], secondsSinceEpoch())
 		swapMath = SwapMath(self.charity_gfi, self.charity_amf, 130, "USD", self.trivial_offer_USA, offer)
 		self.assertEqual(swapMath.GetSummary(), self.swapMathSummary)
 
 	def test_SwapMathMathHtml(self):
 		someNZParrelell = Country('New Zealand3', 'NZD', [self.charity_amf], 0.33, 0.65)
-		donorFromNZParrellell = Donor('nz3.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dudette3', 'nz3.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 200, 200, [self.charity_gfi], secondsSinceEpoch())
 		swapMath = SwapMath(self.charity_gfi, self.charity_amf, 130, "USD", self.trivial_offer_USA, offer)
 		self.assertEqual(swapMath.GetMathHtml(), self.swapMathMathHtml)
 
 	def test_SwapMathMathHtmlGiftAid(self):
 		someNZParrelell = Country('New Zealand4', 'NZD', [self.charity_amf], 0.33, 0.65, 1.5)
-		donorFromNZParrellell = Donor('nz4.user@notAnEmail.com', someNZParrelell)
+		donorFromNZParrellell = Donor('NZ Dude4', 'nz4.user@notAnEmail.com', someNZParrelell)
 		offer = Offer(donorFromNZParrellell, 100, 200, [self.charity_gfi], secondsSinceEpoch())
 		swapMath = SwapMath(self.charity_gfi, self.charity_amf, 195, "USD", self.trivial_offer_USA, offer)
 		self.assertEqual(swapMath.GetMathHtml(), self.swapMathMathHtmlGiftAid)

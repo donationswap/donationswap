@@ -112,8 +112,8 @@ class Matchmaker:
 		offer2Created = 0
 		amount1 = offer1.amount
 		amount2 = offer2.amount
-		donor1 = Donor(offer1.email, country1)
-		donor2 = Donor(offer2.email, country2)
+		donor1 = Donor(offer1.name, offer1.email, country1)
+		donor2 = Donor(offer2.name, offer2.email, country2)
 
 		#xxx offers SHOULD have approximately the same amount (taking tax benefits into account)
 		#    for development, however, everthing goes.
