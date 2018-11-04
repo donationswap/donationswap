@@ -151,3 +151,6 @@ footer .disclaimer a {
 	margin: 2em auto;
 	width: 50em;
 }
+img {
+   max-width: 100%;
+}
