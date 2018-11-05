@@ -1,0 +1,11 @@
+Hello {%NAME%},
+
+You have not confirmed your offer to donate {%AMOUNT%} {%CURRENCY%} to {%CHARITY%}.
+
+We have removed it from our system.
+
+If you want to create another offer just like it
+(you're still going to have to confirm it by clicking on the link we're going to send you),
+you can go to https://donationswap.eahub.org/start/{%ARGS%} take it from there.
+
+Thanks!

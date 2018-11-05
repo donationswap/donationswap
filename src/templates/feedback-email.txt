@@ -1,0 +1,13 @@
+Hello {%NAME%},
+
+Four weeks ago our algorithm matched your donation offer with a similar offer made by {%NAME_OTHER%} ({%EMAIL_OTHER%}).
+
+{%NAME_OTHER%} was going to donate {%AMOUNT_OTHER%} {%CURRENCY_OTHER%} ({%AMOUNT_OTHER_CONVERTED%} {%CURRENCY%}) to {%CHARITY%}.
+
+You were going to donate {%AMOUNT%} {%CURRENCY%} ({%AMOUNT_CONVERTED%} {%CURRENCY_OTHER%}) to {%CHARITY_OTHER%}.
+
+If you have some time, we would like some feedback.
+
+Please visit https://donationswap.eahub.org/feedback/#{%MATCH_SECRET%} and let us know how it went and how we can do better.
+
+Thank you!
