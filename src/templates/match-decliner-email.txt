@@ -1,0 +1,7 @@
+Hello {%NAME%},
+
+You have declined a match of your offer.
+
+If you want to your offer to go back in the pool, please visit https://donationswap.eahub.org/offer/#{%OFFER_SECRET%} and re-confirm it.
+
+Thanks!

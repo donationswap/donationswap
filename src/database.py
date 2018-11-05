@@ -75,3 +75,6 @@ class Connection:
 	def write_read_one(self, query, **args):
 		self._written = True
 		return self.read_one(query, **args)
+
+	def execute_script(self, script):
+		self._cursor.execute(script)

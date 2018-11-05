@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+</style>
+<title>Donation Swap</title>
+</head>
+<body>
+{%FILE=header.snippet.html%}
+	<div class="body">
+		<div id="form">
+
+Radio buttons
+* I am not going to donate
+* I have not donated yet
+* I have already donated
+* We both donated, everything is done
+
+Textarea
+* Whatever they want to type.
+
+		</div>
+	</div>
+{%FILE=footer.snippet.html%}
+<script>
+/* globals ajax, createNode, getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+	const secret = window.location.hash.substr(1);
+
+	//xxx
+}());
+</script>
+</body>
+</html>
