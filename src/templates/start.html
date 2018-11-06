@@ -89,6 +89,14 @@ function captchaBad() {
 
 	ajax('/ajax/get_info')
 		.then(info => {
+			let args = {};
+			try {
+				args = JSON.parse(decodeURIComponent(window.location.hash.substr(1)));
+			}
+			catch(e) {
+				console.error(e);
+			}
+
 			const currencyByCountry = {};
 
 			// populate countries dropdown
@@ -103,7 +111,7 @@ function captchaBad() {
 					name: country.currency_name,
 				};
 			});
-			ui.idCountry.value = info.client_country;
+			ui.idCountry.value = args.hasOwnProperty('country') ? args.country : info.client_country;
 
 			// handle country changes
 			ui.idCountry.onchange = () => {
@@ -113,6 +121,10 @@ function captchaBad() {
 				ui.txtCurrency.setAttribute('title', currency.name);
 			};
 			ui.idCountry.onchange(); // to set currency
+
+			// populate amount
+			ui.intAmount.value = args.hasOwnProperty('amount') ? args.amount : 50;
+			// xxx minimum donation amount
 
 			// populate charities dropdown
 			const categories = [... new Set(info.charities.map(charity => charity.category))];
@@ -130,6 +142,9 @@ function captchaBad() {
 					p_textContent: charity.name,
 				}));
 			});
+			if (args.hasOwnProperty('charity')) {
+				ui.idCharity.value = args.charity;
+			}
 
 			// populate calendar
 			for (let day = 1; day <= 31; day++) {
@@ -157,10 +172,10 @@ function captchaBad() {
 					p_textContent: year,
 				}));
 			}
-			ui.intExpirationDay.value = info.today.day;
-			ui.intExpirationMonth.value = info.today.month;
-			ui.intExpirationYear.value = info.today.year + 1;
-			//xxx this allows "31. February" and such
+			ui.intExpirationDay.value = args.expires[0] || info.today.day;
+			ui.intExpirationMonth.value = args.expires[1] || info.today.month;
+			ui.intExpirationYear.value = args.expires[2] || info.today.year + 1;
+			ui.txtEmail.value = args.email || '';
 
 			// handle form submission
 			ui.btnSend.onclick = () => {
