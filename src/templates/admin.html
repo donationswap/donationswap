@@ -17,8 +17,8 @@
 .matrix td {
 	border: 1px solid lightgray;
 }
-.matrix td.red {
-	background-color: red;
+.matrix td.white {
+	background-color: white;
 }
 .matrix td.yellow {
 	background-color: yellow;
@@ -59,11 +59,8 @@
 <body>
 <h1>Donation Swap Charity Data</h1>
 
-<p>
-	I fixed a bug that prevented countries from getting updated.
-	Also, the editor popups are now in the center of the screen,
-	even when scrolled down.
-	If you find other problems with this website,
+<p style="max-width: 40em;">
+	If you find a problem with this website,
 	please let me know!
 	<a href="mailto:marc.spoor@gmail.com" target="_blank">
 	marc.spoor@gmail.com</a>.
@@ -341,7 +338,7 @@
 					].concat(data.countries.map(country => {
 						const node = createNode({
 							xtype: 'td',
-							a_class: 'edit red',
+							a_class: 'edit white',
 						});
 						node.onclick = () => editCharityInCountry({
 							charity_id: charity.id,
@@ -377,7 +374,7 @@
 		data.charities_in_countries.forEach(cic => {
 			let cell = findCell(cic.charity_id, cic.country_id);
 			if (cic) {
-				cell.classList.remove('red');
+				cell.classList.remove('white');
 				cell.setAttribute('title', JSON.stringify(cic, null, 3));
 				cell.classList.add(cic.instructions ? 'green' : 'yellow');
 			}
