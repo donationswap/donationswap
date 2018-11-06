@@ -57,9 +57,9 @@ CREATE TABLE offers (
 	created_ts timestamp NOT NULL DEFAULT now(),
 	expires_ts timestamp NOT NULL,
 	confirmed BOOLEAN NOT NULL DEFAULT false,
-	FOREIGN KEY (country_id) REFERENCES countries (id) 
+	FOREIGN KEY (country_id) REFERENCES countries (id)
 		ON DELETE NO ACTION ON UPDATE CASCADE,
-	FOREIGN KEY (charity_id) REFERENCES charities (id) 
+	FOREIGN KEY (charity_id) REFERENCES charities (id)
 		ON DELETE NO ACTION ON UPDATE CASCADE,
 	PRIMARY KEY (id)
 );
@@ -72,9 +72,9 @@ CREATE TABLE matches (
 	new_agrees BOOLEAN,
 	old_agrees BOOLEAN,
 	created_ts timestamp NOT NULL DEFAULT now(),
-	FOREIGN KEY (new_offer_id) REFERENCES offers (id) 
+	FOREIGN KEY (new_offer_id) REFERENCES offers (id)
 		ON DELETE CASCADE ON UPDATE CASCADE,
-	FOREIGN KEY (old_offer_id) REFERENCES offers (id) 
+	FOREIGN KEY (old_offer_id) REFERENCES offers (id)
 		ON DELETE CASCADE ON UPDATE CASCADE,
 	PRIMARY KEY (id)
 );
