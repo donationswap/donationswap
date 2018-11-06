@@ -1,0 +1,11 @@
+Hello {%NAME%},
+
+We recently sent you an email about a possible match.
+Since then, the other donor has declined that match.
+We're just letting you know that your match has gone back into the pool.
+
+Here's a link to your match, in case you want to make changes: https://donationswap.eahub.org/offer/#{%OFFER_SECRET%}
+
+Cheers,
+
+donationswap.eahub.org

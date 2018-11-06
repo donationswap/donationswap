@@ -27,7 +27,11 @@ h4 {
 	color: #437069;
 	font-size: 100%;
 	font-weight: 400;
-}}
+}
+img {
+   max-width: 100%;
+}
+
 
 table.visuals {
 	margin-left: auto;
@@ -126,8 +130,12 @@ header .beta {
 
 footer {
 	background-color: #437069;
+	bottom: 0;
 	color: #f4f4f4;
+	left: 0;
 	padding: 0.5em;
+	position: fixed;
+	right: 0;
 	text-align: center;
 }
 footer>a {
@@ -148,9 +156,6 @@ footer .disclaimer a {
 }
 
 .body {
-	margin: 2em auto;
+	margin: 2em auto 10em auto;
 	width: 50em;
-}
-img {
-   max-width: 100%;
 }
