@@ -2,7 +2,9 @@
 
 import argparse
 import datetime
+import json
 import logging
+import urllib.parse
 
 import config
 import currency
@@ -30,17 +32,54 @@ class Matchmaker:
 		with self._database.connect() as db:
 			entities.load(db)
 
+	def _send_mail_about_expired_offer(self, offer):
+		replacements = {
+			'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+			'{%AMOUNT%}': offer.amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%CHARITY%}': offer.charity.name,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'country': offer.country_id,
+				'amount': offer.amount,
+				'charity': offer.charity_id,
+				'expires': [
+					offer.expires_ts.day,
+					offer.expires_ts.month,
+					offer.expires_ts.year,
+				],
+				'email': offer.email,
+			}))
+		}
+
+		logging.info('Sending expiration email to %s.', offer.email)
+
+		self._mail.send(
+			'Your offer has expired',
+			util.Template('offer-expired-email.txt').replace(replacements).content,
+			html=util.Template('offer-expired-email.html').replace(replacements).content,
+			to=offer.email
+		)
+
+	def _delete_expired_offers(self):
+		'''An offer is considered expired if it has not been confirmed
+		for 24 hours. We delete it and send the donor an email.'''
+
+		one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+		with self._database.connect() as db:
+			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts < one_day_ago):
+				logging.info('Deleting expired offer.')
+				offer.delete(db)
+				self._send_mail_about_expired_offer(offer)
+
 	def clean(self):
+		self._delete_expired_offers()
+
 		now = datetime.datetime.utcnow()
 		two_days = datetime.timedelta(days=2)
 		one_week = datetime.timedelta(days=7)
 		four_weeks = datetime.timedelta(days=28)
 
 		with self._database.connect() as db:
-
-			# delete unconfirmed offers after 48 hours
-			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts + two_days < now):
-				offer.delete(db)
 
 			# delete declined matches immediately
 			for match in entities.Match.get_all(lambda x: x.new_agrees is False or x.old_agrees is False):
@@ -167,6 +206,7 @@ class Matchmaker:
 		}
 
 		logging.info('Sending match email to %s.', my_offer.email)
+
 		self._mail.send(
 			'We may have found a matching donation for you',
 			util.Template('match-suggested-email.txt').replace(replacements).content,
@@ -234,6 +274,7 @@ class Matchmaker:
 		}
 
 		logging.info('Sending deal email to %s and %s.', old_offer.email, new_offer.email)
+
 		self._mail.send(
 			'Here is your match!',
 			util.Template('match-approved-email.txt').replace(replacements).content,
