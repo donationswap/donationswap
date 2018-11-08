@@ -1,11 +1,13 @@
-Hello {%NAME%},
+Dear {%NAME%},
+You have not confirmed your offer to donate on the EA donation swap site.
 
-You have not confirmed your offer to donate {%AMOUNT%} {%CURRENCY%} to {%CHARITY%}.
+Details of your offer:
+Charity you wish to support: {%CHARITY%}
+Amount: {%CURRENCY%} {%AMOUNT%}
+Minimum swap amount: {%CURRENCY%} {%MINAMOUNT%}
 
-We have removed it from our system.
+We have removed your swap offer from our system.
 
-If you want to create another offer just like it
-(you're still going to have to confirm it by clicking on the link we're going to send you),
-you can go to https://donationswap.eahub.org/start/{%ARGS%} take it from there.
+If you want to create another offer just like it, please go to https://donationswap.eahub.org/start/{%ARGS%}. Remember to check your email to confirm your offer. 
 
-Thanks!
+Thanks from the EA donation swap team

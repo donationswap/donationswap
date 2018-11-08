@@ -10,29 +10,37 @@
 <body>
 {%FILE=header.snippet.html%}
 	<div class="body">
-		<h1>Your Offer</h1>
+		<h1>Your Donation Swap Offer</h1>
 		<table id="table">
 			<tbody>
+				<tr>
+					<td>Your Name:</td>
+					<td><span id="name"></span>
+				</tr>
+				<tr>
+					<td>Charity you wish to support:</td>
+					<td><span id="charity"></span></td>
+				</tr>
 				<tr>
 					<td>Amount:</td>
 					<td><span id="currency"></span> <span id="amount"></span></td>
 				</tr>
 				<tr>
-					<td>Charity:</td>
-					<td><span id="charity"></span></td>
+					<td>Minimum swap amount:</td>
+					<td><span id="currency"></span> <span id="minamount"></span></td>
 				</tr>
 				<tr>
-					<td>Created:</td>
+					<td>Swap offer created:</td>
 					<td><span id="creationDate"></span></td>
 				</tr>
 				<tr>
-					<td>Expires:</td>
+					<td>Swap offer expires:</td>
 					<td><span id="expirationDate"></span></td>
 				</tr>
 			</tbody>
 		</table>
 		<p class="hidden" id="confirmed">Thank you for activating your offer.</p>
-		<p>We will send you an email when we find a match. You can create another post <a href="/">here</a>.</p>
+		<p>We will send you an email when we find a match. You can create another offer <a href="/">here</a>.</p>
 		<button class="hidden" id="btnDelete">Delete</button>
 		<div id="message">Loading...</div>
 	</div>

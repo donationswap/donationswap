@@ -1,11 +1,7 @@
-Hello {%NAME%},
+Dear {%NAME%},
 
-We recently sent you an email about a possible match.
-Since then, the other donor has declined that match.
-We're just letting you know that your match has gone back into the pool.
+The donor you have matched with has chosen to decline the swap. Your information remains on our database and you will be matched with another compatible donor as soon as one arrives. 
 
 Here's a link to your match, in case you want to make changes: https://donationswap.eahub.org/offer/#{%OFFER_SECRET%}
 
-Cheers,
-
-donationswap.eahub.org
+Thanks from the EA donation swap team. 

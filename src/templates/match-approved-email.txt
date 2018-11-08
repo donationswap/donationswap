@@ -1,13 +1,23 @@
-Success!
+Dear {%OLD_NAME%} and {%NEW_NAME%}, 
 
-Both of you have approved our suggested match.
+Success! You have been matched by the EA donation swap site. 
+
 Here are your details and instructions:
 
-{%OLD_EMAIL%}:
-Country: {%OLD_COUNTRY%}
-Charity: {%OLD_CHARITY%}
-Amount: {%OLD_AMOUNT%} {%OLD_CURRENCY%} (= {%OLD_AMOUNT_CONVERTED%} {%NEW_CURRENCY%})
-Instructions: {%OLD_INSTRUCTIONS%}
+{%OLD_NAME%} is from {%OLD_COUNTRY%}, and wants to support {%NEW_CHARITY%}. Their email address is {%OLD_EMAIL%}.
+{%NEW_NAME%} is from {%NEW_COUNTRY%}, and wants to support {%OLD_CHARITY%}. Their email address is {%OLD_EMAIL%}.
+
+If you choose to proceed with your donation swap, here are your instructions
+
+{%OLD_NAME%}:
+
+{%OLD_NAME%} will donate {%OLD_AMOUNT%} {%OLD_CURRENCY%} to the charity {%OLD_CHARITY%}.
+Instructions to donate: {%OLD_INSTRUCTIONS%}
+
+{%NEW_NAME%}:
+
+{%NEW_NAME%} will donate {%NEW_AMOUNT%} {%NEW_CURRENCY%} to the charity {%NEW_CHARITY%}.
+Instructions to donate: {%NEW_INSTRUCTIONS%}
 
 {%NEW_EMAIL%}:
 Country: {%NEW_COUNTRY%}
@@ -15,9 +25,10 @@ Charity: {%NEW_CHARITY%}
 Amount: {%NEW_AMOUNT%} {%NEW_CURRENCY%} (={%NEW_AMOUNT_CONVERTED%} in {%OLD_CURRENCY%})
 Instructions: {%NEW_INSTRUCTIONS%}
 
-Now it is time for you to introduce yourselves to each other,
-donate the money, send each other the receipts, and continue to be awesome.
+Please get in contact with each other, and wait until you are both comfortable with the donation swap before donating. Once you have donated, please send each other the donation receipts.
 
-Go forth and do the most good!
+Please let us know if you have any questions. 
 
-Your friends from Donation Swap.
+Go forth and continue making the world a better place!
+
+Your friends from EA donation swap.
