@@ -49,9 +49,34 @@ def ajax(f):
 	f.allow_ajax = True
 	return f
 
-#xxx a donation offer is pointless if
-#    - it is to the only tax-deductible charity in the country OR
-#    - it is to a charity that is tax-decuctible everywhere
+#xxx name, min_amount
+#xxx add "show only tax-deductible charities" checkbox to /start/
+
+#xxx add declined_matches table with offer1_id and offer2_id column.
+#xxx add permanent record to database
+
+#xxx when a user declines a match, they should get asked if
+#    they want to delete their own (now suspended) offer.
+
+#xxx send feedback email after a month.
+
+#xxx add link to from /start/ to /readonlyadmin/ so potential donors
+#    can learn more about charities.
+
+#xxx make /start/ so that it can be pre-populated with ?country=42&charity=27
+#    so we can email URLs
+
+#xxx find a way for Catherine to get statistics out of the db
+#    (unmatched offers etc.)
+
+#xxx post MVP features:
+#- a donation offer is pointless if
+#  - it is to the only tax-deductible charity in the country OR
+#  - it is to a charity that is tax-decuctible everywhere
+# - add "never match me with any of these charity" blacklist button.
+# - add "blacklist charity" to offer.
+# - blacklist users who agreed to the match but didn't acutally donate.
+# - support crypto currencies.
 
 def create_secret():
 	timestamp_bytes = struct.pack('!d', time.time())
@@ -278,10 +303,12 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			entities.Offer.create(db, secret, email, country.id, amount, charity.id, expires_ts)
 
 		replacements = {
+			'{%NAME%}': 'xxx',
 			'{%SECRET%}': secret,
 			'{%CHARITY%}': charity.name,
 			'{%CURRENCY%}': country.currency.iso,
 			'{%AMOUNT%}': amount,
+			'{%MIN_AMOUNT%}': 'xxx',
 		}
 		self._mail.send(
 			'Please confirm your donation offer',
@@ -370,5 +397,43 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 				match.agree_new(db)
 
 	@ajax
-	def decline_match(self, secret, reason):
-		pass #xxx (offers cannot get matched up if they are already in a pending match)
+	def decline_match(self, secret, feedback):
+		match, old_offer, new_offer, my_offer, other_offer = self._get_match_and_offers(secret)
+
+		if match is None:
+			raise DonationException('Could not find that match. Deleted? Declined? Expired?')
+
+		with self._database.connect() as db:
+			query = '''
+				INSERT INTO declined_matches (new_offer_id, old_offer_id)
+				VALUES (%(id_old)s, %(id_new)s);
+			'''
+			db.write(query, id_old=old_offer.id, id_new=new_offer.id)
+			match.delete(db)
+			my_offer.suspend(db)
+
+			#xxx add to permanent record
+
+			#xxx feedback isn't actually used yet
+
+			replacements = {
+				'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+				'{%OFFER_SECRET%}': my_offer.secret,
+			}
+			self._mail.send(
+				'You declined a match',
+				util.Template('match-decliner-email.txt').replace(replacements).content,
+				html=util.Template('match-decliner-email.html').replace(replacements).content,
+				to=my_offer.email
+			)
+
+			replacements = {
+				'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+				'{%OFFER_SECRET%}': other_offer.secret,
+			}
+			self._mail.send(
+				'A match you approved has been declined',
+				util.Template('match-decliner-email.txt').replace(replacements).content,
+				html=util.Template('match-declined-email.html').replace(replacements).content,
+				to=other_offer.email
+			)

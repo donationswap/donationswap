@@ -36,6 +36,7 @@ class Matchmaker:
 		replacements = {
 			'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
 			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': 'xxx',
 			'{%CURRENCY%}': offer.country.currency.iso,
 			'{%CHARITY%}': offer.charity.name,
 			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
@@ -71,13 +72,38 @@ class Matchmaker:
 				offer.delete(db)
 				self._send_mail_about_expired_offer(offer)
 
+	def _send_mail_about_match_feedback(match):
+		replacements = {
+		}
+
+		logging.info('Sending match feedback email to %s and %s', (
+			match.old_offer.email,
+			match.new_offer.email,
+		))
+
+		pass #xxx
+
+	def _delete_old_matches(self):
+		'''Four weeks after a match was made we delete it and
+		send the two donors a feedback email.
+
+		(It only gets to be four weeks old if it was accepted by both
+		donors, otherwise it would have been deleted within 72 hours.)'''
+
+		four_weeks_ageo = datetime.datetime.utcnow() - datetime.timedelta(days=28)
+
+		with self._database.connect() as db:
+			for match in entities.Match.get_all(lambda x: x.new_agrees is True and x.old_agrees is True and x.created_ts < four_weeks_ago):
+				match.delete(db)
+				self._send_mail_about_match_feedback(match)
+
 	def clean(self):
 		self._delete_expired_offers()
+		self._delete_old_matches()
 
 		now = datetime.datetime.utcnow()
 		two_days = datetime.timedelta(days=2)
 		one_week = datetime.timedelta(days=7)
-		four_weeks = datetime.timedelta(days=28)
 
 		with self._database.connect() as db:
 
@@ -89,16 +115,18 @@ class Matchmaker:
 			for match in entities.Match.get_all(lambda x: x.new_agrees is None or x.old_agrees is None and x.created_ts + one_week < now):
 				match.delete(db)
 
-			# delete approved matches after four weeks
-			# TODO: consider storing the core data?
-			for match in entities.Match.get_all(lambda x: x.new_agrees is True and x.old_agrees is True and x.created_ts + four_weeks < now):
-				match.delete(db)
-
 			#xxx also...
 			# ... delete expired offers that aren't part of a match
 			# ... signal the web server to update its cache
 
 	def _is_good_match(self, offer1, offer2):
+
+		#xxx if (offer1, offer2) in declined_matches: return False
+
+		#xxx hack!!!
+		if set((offer1.id, offer2.id)) == set((18, 19)):
+			return True
+
 		logging.info('Comparing %s and %s.', offer1.id, offer2.id)
 
 		if offer1.charity_id == offer2.charity_id:
@@ -191,9 +219,11 @@ class Matchmaker:
 			my_offer.country.currency.iso)
 
 		replacements = {
+			'{%YOUR_NAME%}': 'xxx add name', #xxx my_offer.name,
 			'{%YOUR_COUNTRY%}': my_offer.country.name,
 			'{%YOUR_CHARITY%}': my_offer.charity.name,
 			'{%YOUR_AMOUNT%}': my_offer.amount,
+			'{%YOUR_MIN_AMOUNT%}': 'xxx',
 			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
 			'{%THEIR_COUNTRY%}': their_offer.country.name,
 			'{%THEIR_CHARITY%}': their_offer.charity.name,
@@ -257,6 +287,7 @@ class Matchmaker:
 			new_instructions = 'Sorry, there are no instructions available (yet).'
 
 		replacements = {
+			'{%OLD_NAME%}': '<xxx name not supported yet', #xxx old_offer.name,
 			'{%OLD_COUNTRY%}': old_offer.country.name,
 			'{%OLD_CHARITY%}': old_offer.charity.name,
 			'{%OLD_AMOUNT%}': old_offer.amount,
@@ -264,6 +295,7 @@ class Matchmaker:
 			'{%OLD_EMAIL%}': old_offer.email,
 			'{%OLD_AMOUNT_CONVERTED%}': old_amount_in_new_currency,
 			'{%OLD_INSTRUCTIONS%}': old_instructions,
+			'{%NEW_NAME%}': '<xxx name not supported yet', #xxx new_offer.name,
 			'{%NEW_COUNTRY%}': new_offer.country.name,
 			'{%NEW_CHARITY%}': new_offer.charity.name,
 			'{%NEW_AMOUNT%}': new_offer.amount,
