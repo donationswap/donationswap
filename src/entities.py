@@ -241,6 +241,17 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 		db.write(query, id=self.id)
 		self.confirmed = True
 
+	def suspend(self, db):
+		#xxx introducing a new "suspended" column would be more honest
+		#    (created_ts should NEVER be updated)
+		query = '''
+			UPDATE offers
+			SET confirmed = false, created_ts = now()
+			WHERE id = %(id)s;
+		'''
+		db.write(query, id=self.id)
+		self.confirmed = False
+
 	def delete(self, db):
 		query = '''
 			DELETE FROM offers

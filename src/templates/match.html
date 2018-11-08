@@ -71,14 +71,19 @@
 	ui.btnApprove.onclick = () => {
 		ajax('/ajax/approve_match', { secret })
 			.then(() => {
-				//xxx Say "we're waiting for the other person's response"
-				//xxx or say "we sent you an email"
+				//xxx say "you'll get an email soon."
 				alert('Thanks!');
 			});
 	};
 
 	ui.btnDecline.onclick = () => {
-		alert('Sorry, not this part is not implemented yet.');
+		//xxx un-hide feedback form and actual decline button
+		const feedback = 'xxx not implemented yet';
+		ajax('/ajax/decline_match', { secret, feedback })
+			.then(() => {
+				//xxx let them know their offer has been suspended
+				alert('Bummer!');
+			});
 	};
 }());
 </script>
