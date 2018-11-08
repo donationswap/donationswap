@@ -206,6 +206,7 @@ class Matchmaker:
 					is_good = self._is_good_match(offer1, offer2)
 				else:
 					is_good = sorted([offer1, offer2]) == force_pair
+					#xxx and not in declined_offers
 
 				if is_good:
 					matches.append((offer1, offer2))
