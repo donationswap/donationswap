@@ -123,10 +123,6 @@ class Matchmaker:
 
 		#xxx if (offer1, offer2) in declined_matches: return False
 
-		#xxx hack!!!
-		if set((offer1.id, offer2.id)) == set((18, 19)):
-			return True
-
 		logging.info('Comparing %s and %s.', offer1.id, offer2.id)
 
 		if offer1.charity_id == offer2.charity_id:
@@ -190,7 +186,7 @@ class Matchmaker:
 		result = Matcher("USD").match(matchingOffer1, [matchingOffer2])
 		return result != None
 
-	def find_matches(self):
+	def find_matches(self, force_pair=None):
 		'''Compares every offer to every other offer.'''
 
 		matches = []
@@ -200,10 +196,18 @@ class Matchmaker:
 
 		logging.info('There are %s eligible offers to match up.', len(offers))
 
+		if force_pair is not None:
+			force_pair = sorted(force_pair)
+
 		while offers:
 			offer1 = offers.pop()
 			for offer2 in offers:
-				if self._is_good_match(offer1, offer2):
+				if force_pair is None:
+					is_good = self._is_good_match(offer1, offer2)
+				else:
+					is_good = sorted([offer1, offer2]) == force_pair
+
+				if is_good:
 					matches.append((offer1, offer2))
 					offers.remove(offer2)
 					break
@@ -332,7 +336,12 @@ def main():
 	parser = argparse.ArgumentParser(description='The Match Maker.')
 	parser.add_argument('config_path')
 	parser.add_argument('--doit', action='store_true')
+	parser.add_argument('--force-pair', '-fp', help='comma-separated pair of IDs for which "is match" is forced to True')
 	args = parser.parse_args()
+
+	if args.force_pair is not None:
+		tmp = args.force_pair.split(',')
+		args.force_pair = int(tmp[0]), int(tmp[1])
 
 	matchmaker = Matchmaker(args.config_path, dry_run=not args.doit)
 
