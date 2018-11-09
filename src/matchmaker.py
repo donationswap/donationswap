@@ -34,9 +34,9 @@ class Matchmaker:
 
 	def _send_mail_about_expired_offer(self, offer):
 		replacements = {
-			'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+			'{%NAME%}': offer.name,
 			'{%AMOUNT%}': offer.amount,
-			'{%MIN_AMOUNT%}': 'xxx',
+			'{%MIN_AMOUNT%}': offer.min_amount,
 			'{%CURRENCY%}': offer.country.currency.iso,
 			'{%CHARITY%}': offer.charity.name,
 			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
@@ -224,15 +224,16 @@ class Matchmaker:
 			my_offer.country.currency.iso)
 
 		replacements = {
-			'{%YOUR_NAME%}': 'xxx add name', #xxx my_offer.name,
+			'{%YOUR_NAME%}': my_offer.name,
 			'{%YOUR_COUNTRY%}': my_offer.country.name,
 			'{%YOUR_CHARITY%}': my_offer.charity.name,
 			'{%YOUR_AMOUNT%}': my_offer.amount,
-			'{%YOUR_MIN_AMOUNT%}': 'xxx',
+			'{%YOUR_MIN_AMOUNT%}': my_offer.min_amount,
 			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
 			'{%THEIR_COUNTRY%}': their_offer.country.name,
 			'{%THEIR_CHARITY%}': their_offer.charity.name,
 			'{%THEIR_AMOUNT%}': their_offer.amount,
+			'{%THEIR_MIN_AMOUNT%}': their_offer.min_amount,
 			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
 			'{%THEIR_AMOUNT_CONVERTED%}': your_amount_in_their_currency,
 			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
@@ -292,7 +293,7 @@ class Matchmaker:
 			new_instructions = 'Sorry, there are no instructions available (yet).'
 
 		replacements = {
-			'{%OLD_NAME%}': '<xxx name not supported yet', #xxx old_offer.name,
+			'{%OLD_NAME%}': old_offer.name,
 			'{%OLD_COUNTRY%}': old_offer.country.name,
 			'{%OLD_CHARITY%}': old_offer.charity.name,
 			'{%OLD_AMOUNT%}': old_offer.amount,
@@ -300,7 +301,7 @@ class Matchmaker:
 			'{%OLD_EMAIL%}': old_offer.email,
 			'{%OLD_AMOUNT_CONVERTED%}': old_amount_in_new_currency,
 			'{%OLD_INSTRUCTIONS%}': old_instructions,
-			'{%NEW_NAME%}': '<xxx name not supported yet', #xxx new_offer.name,
+			'{%NEW_NAME%}': new_offer.name,
 			'{%NEW_COUNTRY%}': new_offer.country.name,
 			'{%NEW_CHARITY%}': new_offer.charity.name,
 			'{%NEW_AMOUNT%}': new_offer.amount,

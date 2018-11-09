@@ -49,7 +49,6 @@ def ajax(f):
 	f.allow_ajax = True
 	return f
 
-#xxx name, min_amount
 #xxx add "show only tax-deductible charities" checkbox to /start/
 
 #xxx add declined_matches table with offer1_id and offer2_id column.
@@ -62,9 +61,6 @@ def ajax(f):
 
 #xxx add link to from /start/ to /readonlyadmin/ so potential donors
 #    can learn more about charities.
-
-#xxx make /start/ so that it can be pre-populated with ?country=42&charity=27
-#    so we can email URLs
 
 #xxx find a way for Catherine to get statistics out of the db
 #    (unmatched offers etc.)
@@ -195,7 +191,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		})
 
 		self._mail.send(
-			'Message for donationswap.eahub.org',
+			'Message for donationswap.eahub.org', #xxx do not hardcode subjects
 			tmp.content,
 			to=self._config.contact_message_receivers.get('to', []),
 			cc=self._config.contact_message_receivers.get('cc', []),
@@ -254,20 +250,29 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			},
 		}
 
-	def _validate_offer(self, captcha_response, country, amount, charity, email, expiration):
+	def _validate_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
 		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
 
 		if not is_legit:
 			raise DonationException('bad captcha response')
+
+
+		name = name.strip()
+		if not name:
+			raise DonationException('no name provided')
 
 		country = entities.Country.by_id(country)
 		if country is None:
 			raise DonationException('country not found')
 
 		amount = self._int(amount, 'invalid amount')
-
 		if amount < 0:
 			raise DonationException('negative amount')
+
+		min_amount = self._int(min_amount, 'invalid min_amount')
+		if min_amount < 0:
+			raise DonationException('negative min_amount')
+
 
 		charity = entities.Charity.by_id(charity)
 		if charity is None:
@@ -287,28 +292,26 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		except ValueError:
 			DonationException('invalid expiration date')
 
-		return country, amount, charity, email, expires_ts
+		return name, country, amount, min_amount, charity, email, expires_ts
 
 	@ajax
-	def create_offer(self, captcha_response, country, amount, charity, email, expiration):
-		#xxx add name to offer (so we can start the email with "Dear <name>")
-
-		country, amount, charity, email, expires_ts = self._validate_offer(captcha_response, country, amount, charity, email, expiration)
+	def create_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
+		name, country, amount, min_amount, charity, email, expires_ts = self._validate_offer(captcha_response, name, country, amount, min_amount, charity, email, expiration)
 
 		secret = create_secret()
 		# Do NOT return this secret to the client via this method.
 		# Only put it in the email, so that having the link acts as email address verification.
 
 		with self._database.connect() as db:
-			entities.Offer.create(db, secret, email, country.id, amount, charity.id, expires_ts)
+			offer = entities.Offer.create(db, secret, name, email, country.id, amount, min_amount, charity.id, expires_ts)
 
 		replacements = {
-			'{%NAME%}': 'xxx',
-			'{%SECRET%}': secret,
-			'{%CHARITY%}': charity.name,
-			'{%CURRENCY%}': country.currency.iso,
-			'{%AMOUNT%}': amount,
-			'{%MIN_AMOUNT%}': 'xxx',
+			'{%NAME%}': offer.name,
+			'{%SECRET%}': offer.secret,
+			'{%CHARITY%}': offer.charity.name,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
 		}
 		self._mail.send(
 			'Please confirm your donation offer',
@@ -417,7 +420,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			#xxx feedback isn't actually used yet
 
 			replacements = {
-				'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+				'{%NAME%}': my_offer.name,
 				'{%OFFER_SECRET%}': my_offer.secret,
 			}
 			self._mail.send(
@@ -428,7 +431,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			)
 
 			replacements = {
-				'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+				'{%NAME%}': other_offer.name,
 				'{%OFFER_SECRET%}': other_offer.secret,
 			}
 			self._mail.send(
