@@ -120,7 +120,7 @@ class get_info(TestBase):
 
 	def test_all_information_must_be_included(self):
 		info = self.ds.get_info()
-		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries', 'today'])
+		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries', 'charities_in_countries', 'today'])
 
 	def test_client_country(self):
 		self.geoip.country = 'c1'

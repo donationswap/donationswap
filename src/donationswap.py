@@ -49,9 +49,6 @@ def ajax(f):
 	f.allow_ajax = True
 	return f
 
-#xxx add "show only tax-deductible charities" checkbox to /start/
-
-#xxx add declined_matches table with offer1_id and offer2_id column.
 #xxx add permanent record to database
 
 #xxx when a user declines a match, they should get asked if
@@ -226,6 +223,18 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			for i in sorted(entities.Country.get_all(), key=lambda i: i.name)
 		]
 
+	def _get_charities_in_countries_info(self):
+		result = {}
+
+		for country in entities.Country.get_all():
+			result[country.id] = []
+			for charity in entities.Charity.get_all():
+				charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity.id, country.id)
+				if charity_in_country is not None:
+					result[country.id].append(charity.id)
+
+		return result
+
 	@ajax
 	def get_info(self):
 		client_country_iso = self._geoip.lookup(self._ip_address)
@@ -243,6 +252,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			'charities': self._get_charities_info(),
 			'client_country': client_country_id,
 			'countries': self._get_countries_info(),
+			'charities_in_countries': self._get_charities_in_countries_info(),
 			'today': {
 				'day': today.day,
 				'month': today.month,
