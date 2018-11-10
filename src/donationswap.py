@@ -58,9 +58,6 @@ def ajax(f):
 #xxx add link to from /start/ to /readonlyadmin/ so potential donors
 #    can learn more about charities.
 
-#xxx find a way for Catherine to get statistics out of the db
-#    (unmatched offers etc.)
-
 #xxx post MVP features:
 #- a donation offer is pointless if
 #  - it is to the only tax-deductible charity in the country OR
