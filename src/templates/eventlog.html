@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+.number {
+	cursor: default;
+	display: inline-block;
+	margin-right: 1em;
+}
+.number.clickable {
+	cursor: pointer;
+	text-decoration: underline;
+}
+#events {
+	cursor: default;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+li {
+	border: 1px solid #7bb0a8;
+	margin: 0.25em;
+	padding: 0.25em;
+}
+details {
+	font-weight: default;
+	margin: 0 0 0 2em;
+	white-space: pre-wrap;
+}
+summary {
+	cursor: pointer;
+	font-weight: bold;
+	margin: 0 0 0 -2em;
+}
+</style>
+<title>Donation Swap Admin</title>
+</head>
+<body>
+<h1>Event Log</h1>
+<p>
+	Show only
+	<select class="bordered" id="eventType" multiple>
+		<option selected value="1">offer created</option>
+		<option selected value="2">offer confirmed</option>
+		<option selected value="3">offer deleted</option>
+		<option selected value="4">offer expired</option>
+		<option selected value="21">match generated</option>
+		<option selected value="22">match accepted</option>
+		<option selected value="23">match declined</option>
+		<option selected value="24">match expired</option>
+		<option selected value="41">contact message sent</option>
+	</select>
+	events
+	<label>between <input class="bordered" id="minTimestamp" placeholder="yyyy-mm-dd HH:MM:SS"></label>
+	<label>and <input class="bordered" id="maxTimestamp" placeholder="yyyy-mm-dd HH:MM:SS"></label>
+</p>
+<p id="info"></p>
+<p id="numbers"></p>
+<ul id="events"></ul>
+<script>
+/* globals ajax, createNode, getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+
+	let timeout = null;
+	let offset = 0;
+	let limit = 20;
+
+	function renderNumbers(current_offset, limit, total) {
+		ui.numbers.innerHTML = '';
+		for (let i = 0; i < total; i += limit) {
+			const clickable = current_offset !== i;
+			ui.numbers.appendChild(createNode({
+				xtype: 'span',
+				a_class: `number ${clickable ? 'clickable' : ''}`,
+				p_textContent: `${i+1}-${Math.min(total, i+limit)}`,
+				p_onclick: clickable ? () => {
+					offset = i;
+					load();
+				} : null,
+			}));
+		}
+	}
+
+	function renderDetails(details) {
+		const keys = Object.keys(details);
+		keys.sort();
+		return keys.map(key => `${key}: ${details[key]}`).join('\n');
+	}
+
+	function renderEvents(events) {
+		ui.info.textContent = events.data.length ? `Showing entries ${events.offset+1}-${events.offset+events.data.length} of ${events.filtered_count} (filtered) of ${events.total_count} (total)` : `Showing none of a total of ${events.total_count} events.`;
+		renderNumbers(events.offset, events.limit, events.filtered_count);
+
+		ui.events.innerHTML = '';
+		events.data.forEach(event => {
+			ui.events.appendChild(createNode({
+				xtype: 'li',
+				children: [
+					{
+						xtype: 'details',
+						children: [
+							{
+								xtype: 'summary',
+								p_textContent: `${event.created_ts} ${event.id} ${event.event_type}`,
+							},
+							`${renderDetails(event.details)}`,
+						],
+					},
+				],
+			}));
+		});
+	}
+
+	function load() {
+		ajax('/special-secret-admin/read_log', {
+			min_timestamp: ui.minTimestamp.value,
+			max_timestamp: ui.maxTimestamp.value,
+			event_types: Array.prototype.map.call(
+				ui.eventType.selectedOptions,
+				option => parseInt(option.value, 10)
+			),
+			offset: offset,
+			limit: limit,
+		})
+			.then(events => renderEvents(events))
+			.catch(error => {
+				console.error(error);
+				window.alert('Unexpected error. See console.');
+			});
+	}
+
+	function reload() {
+		offset = 0;
+		window.clearTimeout(timeout);
+		timeout = window.setTimeout(() => load(), 1000);
+	}
+
+	ui.eventType.onchange = () => reload();
+	ui.minTimestamp.oninput = () => reload();
+	ui.maxTimestamp.oninput = () => reload();
+
+	load();
+}());
+</script>
+</body>
+</html>

@@ -41,6 +41,7 @@ import config
 import currency
 import database
 import entities
+import eventlog
 import geoip
 import mail
 import util
@@ -48,8 +49,6 @@ import util
 def ajax(f):
 	f.allow_ajax = True
 	return f
-
-#xxx add permanent record to database
 
 #xxx when a user declines a match, they should get asked if
 #    they want to delete their own (now suspended) offer.
@@ -187,12 +186,19 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			'{%MESSAGE%}': message.strip(),
 		})
 
+		send_to = self._config.contact_message_receivers.get('to', [])
+		send_cc = self._config.contact_message_receivers.get('cc', [])
+		send_bcc = self._config.contact_message_receivers.get('bcc', [])
+
+		with self._database.connect() as db:
+			eventlog.sent_contact_message(db, tmp.content, send_to, send_cc, send_bcc)
+
 		self._mail.send(
 			'Message for donationswap.eahub.org', #xxx do not hardcode subjects
 			tmp.content,
-			to=self._config.contact_message_receivers.get('to', []),
-			cc=self._config.contact_message_receivers.get('cc', []),
-			bcc=self._config.contact_message_receivers.get('bcc', [])
+			to=send_to,
+			cc=send_cc,
+			bcc=send_bcc
 		)
 
 	@staticmethod
@@ -223,7 +229,8 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			for i in sorted(entities.Country.get_all(), key=lambda i: i.name)
 		]
 
-	def _get_charities_in_countries_info(self):
+	@staticmethod
+	def _get_charities_in_countries_info():
 		result = {}
 
 		for country in entities.Country.get_all():
@@ -314,6 +321,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 
 		with self._database.connect() as db:
 			offer = entities.Offer.create(db, secret, name, email, country.id, amount, min_amount, charity.id, expires_ts)
+			eventlog.created_offer(db, offer)
 
 		replacements = {
 			'{%NAME%}': offer.name,
@@ -348,6 +356,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		if not was_confirmed:
 			with self._database.connect() as db:
 				offer.confirm(db)
+				eventlog.confirmed_offer(db, offer)
 
 		return {
 			'was_confirmed': was_confirmed,
@@ -364,6 +373,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		if offer is not None:
 			with self._database.connect() as db:
 				offer.delete(db)
+				eventlog.deleted_offer(db, offer)
 
 	@ajax
 	def get_match(self, secret):
@@ -405,9 +415,11 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		if my_offer == old_offer:
 			with self._database.connect() as db:
 				match.agree_old(db)
+				eventlog.approved_match(db, match, my_offer)
 		elif my_offer == new_offer:
 			with self._database.connect() as db:
 				match.agree_new(db)
+				eventlog.approved_match(db, match, my_offer)
 
 	@ajax
 	def decline_match(self, secret, feedback):
@@ -424,10 +436,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			db.write(query, id_old=old_offer.id, id_new=new_offer.id)
 			match.delete(db)
 			my_offer.suspend(db)
-
-			#xxx add to permanent record
-
-			#xxx feedback isn't actually used yet
+			eventlog.declined_match(db, match, my_offer, feedback)
 
 			replacements = {
 				'{%NAME%}': my_offer.name,

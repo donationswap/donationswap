@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import eventlog
+
 #xxx use entities instead of plain SQL
 
 class Admin:
@@ -184,3 +186,15 @@ class Admin:
 			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
 		with self._database.connect() as db:
 			db.write(query, charity_id=charity_id, country_id=country_id)
+
+	def read_log(self, min_timestamp, max_timestamp, event_types, offset, limit):
+		with self._database.connect() as db:
+			events = eventlog.get_events(
+				db,
+				min_timestamp=min_timestamp,
+				max_timestamp=max_timestamp,
+				event_types=event_types,
+				offset=offset,
+				limit=limit,
+			)
+		return events

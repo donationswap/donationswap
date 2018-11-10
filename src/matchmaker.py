@@ -11,6 +11,7 @@ import currency
 import database
 import donationswap
 import entities
+import eventlog
 import mail
 import util
 
@@ -65,23 +66,26 @@ class Matchmaker:
 		'''An offer is considered expired if it has not been confirmed
 		for 24 hours. We delete it and send the donor an email.'''
 
+		#xxx "expired" also means past the expiration date -- send different email then.
+
 		one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
 		with self._database.connect() as db:
 			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts < one_day_ago):
 				logging.info('Deleting expired offer.')
 				offer.delete(db)
+				eventlog.offer_expired(db, offer)
 				self._send_mail_about_expired_offer(offer)
 
-	def _send_mail_about_match_feedback(match):
+	def _send_mail_about_match_feedback(self, match):
 		replacements = {
 		}
 
-		logging.info('Sending match feedback email to %s and %s', (
+		logging.info('Sending match feedback email to %s and %s',
 			match.old_offer.email,
 			match.new_offer.email,
-		))
+		)
 
-		pass #xxx
+		#xxx
 
 	def _delete_old_matches(self):
 		'''Four weeks after a match was made we delete it and
@@ -90,7 +94,7 @@ class Matchmaker:
 		(It only gets to be four weeks old if it was accepted by both
 		donors, otherwise it would have been deleted within 72 hours.)'''
 
-		four_weeks_ageo = datetime.datetime.utcnow() - datetime.timedelta(days=28)
+		four_weeks_ago = datetime.datetime.utcnow() - datetime.timedelta(days=28)
 
 		with self._database.connect() as db:
 			for match in entities.Match.get_all(lambda x: x.new_agrees is True and x.old_agrees is True and x.created_ts < four_weeks_ago):
@@ -102,17 +106,13 @@ class Matchmaker:
 		self._delete_old_matches()
 
 		now = datetime.datetime.utcnow()
-		two_days = datetime.timedelta(days=2)
 		one_week = datetime.timedelta(days=7)
 
 		with self._database.connect() as db:
 
-			# delete declined matches immediately
-			for match in entities.Match.get_all(lambda x: x.new_agrees is False or x.old_agrees is False):
-				match.delete(db)
-
 			# delete unapproved matches after one week
-			for match in entities.Match.get_all(lambda x: x.new_agrees is None or x.old_agrees is None and x.created_ts + one_week < now):
+			for match in entities.Match.get_all(lambda x: (x.new_agrees is None or x.old_agrees is None) and x.created_ts + one_week < now):
+				eventlog.match_expired(db, match)
 				match.delete(db)
 
 			#xxx also...
@@ -142,8 +142,8 @@ class Matchmaker:
 		multiplier1 = 1
 		multiplier2 = 1
 
-		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
-		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
+		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, 'USD')
+		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, 'USD')
 
 		country1Charities = []
 		country2Charities = []
@@ -158,12 +158,12 @@ class Matchmaker:
 
 			charityInCountry1 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry1.id)
 			charityInCountry2 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry2.id)
-			if (charityInCountry1 != None):
+			if (charityInCountry1 is not None):
 				country1Charities.append(charityCache[charity.name])
 				if (offer1.charity == charity):
 					country1TaxReturn = charityInCountry1.tax_factor
 
-			if (charityInCountry2 != None):
+			if (charityInCountry2 is not None):
 				country2Charities.append(charityCache[charity.name])
 				if (offer2.charity == charity):
 					country2TaxReturn = charityInCountry2.tax_factor
@@ -183,8 +183,8 @@ class Matchmaker:
 		matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1, [charityCache[offer1.charity.name]], offer1Created)
 		matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2, [charityCache[offer2.charity.name]], offer2Created)
 
-		result = Matcher("USD").match(matchingOffer1, [matchingOffer2])
-		return result != None
+		result = Matcher('USD').match(matchingOffer1, [matchingOffer2])
+		return result is not None
 
 	def find_matches(self, force_pair=None):
 		'''Compares every offer to every other offer.'''
@@ -205,7 +205,7 @@ class Matchmaker:
 				if force_pair is None:
 					is_good = self._is_good_match(offer1, offer2)
 				else:
-					is_good = sorted([offer1, offer2]) == force_pair
+					is_good = sorted([offer1.id, offer2.id]) == force_pair
 					#xxx and not in declined_offers
 
 				if is_good:
@@ -265,7 +265,8 @@ class Matchmaker:
 
 			logging.info('Creating match between offers %s and %s.', new_offer.id, old_offer.id)
 			with self._database.connect() as db:
-				entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
+				match = entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
+				eventlog.match_generated(db, match)
 
 			self._send_mail_about_match(old_offer, new_offer, match_secret)
 			self._send_mail_about_match(new_offer, old_offer, match_secret)
@@ -349,7 +350,7 @@ def main():
 
 	matchmaker.clean()
 
-	matches = matchmaker.find_matches()
+	matches = matchmaker.find_matches(args.force_pair)
 	matchmaker.process_found_matches(matches)
 
 	matchmaker.process_approved_matches()
