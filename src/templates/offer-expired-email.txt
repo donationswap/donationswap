@@ -1,11 +1,11 @@
 Hello {%NAME%},
 
-You have not confirmed your offer to donate {%AMOUNT%} {%CURRENCY%} to {%CHARITY%}.
+You have not confirmed your offer to donate {%AMOUNT%} {%CURRENCY%} to {%CHARITY%} within the required timeframe.
 
-We have removed it from our system.
+We have removed this offer from our system.
 
-If you want to create another offer just like it
-(you're still going to have to confirm it by clicking on the link we're going to send you),
-you can go to https://donationswap.eahub.org/start/{%ARGS%} take it from there.
+If you want to recreate it
+simply click the following link: https://donationswap.eahub.org/start/{%ARGS%} . Please note you will still
+need to confirm the new offer via the email link we send after you have posted it.
 
 Thanks!
