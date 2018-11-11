@@ -1,4 +1,4 @@
-Dear {%YOUR_NAME%},
+Dear {%NAME%},
 You have not confirmed your offer to donate on the EA donation swap site.
 
 Details of your offer:
