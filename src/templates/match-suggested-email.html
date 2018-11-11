@@ -1,22 +1,24 @@
 <html>
 <body>
-<p>Hi there!</p>
-<p>We have found a potential match for the offer you posted at https://donationswap.eahub.org.</p>
-<p></p>
-<p>Your offer:</p>
-<p>Country: {%YOUR_COUNTRY%}</p>
-<p>Charity: {%YOUR_CHARITY%}</p>
-<p>Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}</p>
+<p>Dear {%YOUR_NAME%},</p>
+<p>You’ve been matched with a compatible donor through the EA donation swap site.</p>
 <p></p>
 <p>The potential match:</p>
-<p>Country: {%THEIR_COUNTRY%}</p>
-<p>Charity: {%THEIR_CHARITY%}</p>
+<p>Charity they wish to support: {%THEIR_CHARITY%}</p>
 <p>Amount: {%THEIR_AMOUNT%} {%THEIR_CURRENCY%}</p>
-<p>(This is around {%THEIR_AMOUNT_CONVERTED%} in {%YOUR_CURRENCY%}.)</p>
+<p>Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}</p>
+<p>This is around {%THEIR_AMOUNT_CONVERTED%} in {%YOUR_CURRENCY%}.</p>
+<p>This amount may change a little due to currency fluctuations. 
+</p>
+<p></p>
+<p>For reference, your offer was:</p>
+<p>Charity you wish to support: {%YOUR_CHARITY%}</p>
+<p>Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}</p>
+<p>Minimum swap amount: {%YOUR_MIN_AMOUNT%} {%YOUR_CURRENCY%}}</p>
 <p></p>
 <p>Please visit <a href="https://donationswap.eahub.org/match/#{%SECRET%}" target="_blank">https://donationswap.eahub.org/match/#{%SECRET%}</a>
 to either approve or decline the donation swap.</p>
 <p></p>
-<p>Your friends from Donation Swap.</p>
+<p>Thanks from the EA donation swap team.</p>
 </body>
 </html>

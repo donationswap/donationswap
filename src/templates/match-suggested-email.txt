@@ -1,19 +1,19 @@
-Hi there!
-
-We have found a potential match for the offer you posted at https://donationswap.eahub.org.
-
-Your offer:
-Country: {%YOUR_COUNTRY%}
-Charity: {%YOUR_CHARITY%}
-Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}
+Dear {%YOUR_NAME%},
+You’ve been matched with a compatible donor through the EA donation swap site.
 
 The potential match:
-Country: {%THEIR_COUNTRY%}
-Charity: {%THEIR_CHARITY%}
+Charity they wish to support: {%THEIR_CHARITY%}
 Amount: {%THEIR_AMOUNT%} {%THEIR_CURRENCY%}
 (This is around {%THEIR_AMOUNT_CONVERTED%} in {%YOUR_CURRENCY%}.)
+This amount may change a little due to currency fluctuations. 
+
+For reference, your offer was:
+Charity you wish to support: {%YOUR_CHARITY%}
+Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}
+Minimum swap amount: {%YOUR_MIN_AMOUNT%} {%YOUR_CURRENCY%}
+
 
 Please visit https://donationswap.eahub.org/match/#{%SECRET%}
 to either approve or decline the donation swap.
 
-Your friends from Donation Swap.
+Thanks from the EA donation swap team.
