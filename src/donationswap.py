@@ -50,13 +50,13 @@ def ajax(f):
 	f.allow_ajax = True
 	return f
 
+#xxx admin stuff must require login
+#    (can't rely on hidden URL When code is publicly available)
+
 #xxx when a user declines a match, they should get asked if
 #    they want to delete their own (now suspended) offer.
 
 #xxx send feedback email after a month.
-
-#xxx add link to from /start/ to /readonlyadmin/ so potential donors
-#    can learn more about charities.
 
 #xxx post MVP features:
 #- a donation offer is pointless if
@@ -214,6 +214,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			{
 				'id': i.id,
 				'name': i.name,
+				'iso_name': i.iso_name,
 				'live_in_name': i.live_in_name or i.name,
 				'currency_iso': i.currency.iso,
 				'currency_name': i.currency.name,
@@ -263,6 +264,13 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 				'year': today.year,
 			},
 		}
+
+	@ajax
+	def get_charity_in_country_info(self, charity_id, country_id): # pylint: disable=no-self-use
+		charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity_id, country_id)
+		if charity_in_country is not None:
+			return charity_in_country.instructions
+		return None
 
 	def _validate_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
 		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)

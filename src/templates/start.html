@@ -49,6 +49,9 @@
 				<label for="chkTaxes"><input id="chkTaxes" type="checkbox">Show only tax-deductible charities</label>
 			</p>
 			<p>
+				<a href="/charities/" target="_blank">Learn more</a> about our list of supported charities.
+			</p>
+			<p>
 				<label for="intMinAmount">The smallest match I'm willing to agree to is</label>
 				<input class="bordered" id="intMinAmount" type="number">
 				<span id="txtCurrency2">$</span>.
@@ -150,7 +153,7 @@ function captchaBad() {
 				args = JSON.parse(decodeURIComponent(window.location.hash.substr(1)));
 			}
 			catch(e) {
-				console.error(e);
+				// console.error(e);
 			}
 
 			const currencyByCountry = {};
