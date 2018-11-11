@@ -1,6 +1,6 @@
 Hi there!
 
-We have found a potential match for your offer.
+We have found a potential match for the offer you posted at https://donationswap.eahub.org.
 
 Your offer:
 Country: {%YOUR_COUNTRY%}
