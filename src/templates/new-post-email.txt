@@ -1,4 +1,4 @@
-Dear {%YOUR_NAME%},
+Dear {%NAME%},
 Thanks so much for posting a donation swap offer on the EA donation swap site.
 
 Details of your offer:
