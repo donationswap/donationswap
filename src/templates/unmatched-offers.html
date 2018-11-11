@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+#offers {
+	cursor: default;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+li {
+	border: 1px solid #7bb0a8;
+	margin: 0.25em;
+	padding: 0.25em;
+}
+details {
+	font-weight: normal;
+	margin: 0 0 0 2em;
+	white-space: pre-wrap;
+}
+summary {
+	cursor: pointer;
+	font-weight: bold;
+	margin: 0 0 0 -2em;
+}
+</style>
+<title>Donation Swap Admin</title>
+</head>
+<body>
+<h1>Unmatched Offers</h1>
+<p id="info"></p>
+<ul id="offers"></ul>
+<script>
+/* globals ajax, createNode, getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+
+	function renderDetails(details) {
+		const keys = Object.keys(details);
+		keys.sort();
+		return keys.map(key => `${key}: ${details[key]}`).join('\n');
+	}
+
+	function renderOffers(offers) {
+		ui.info.textContent = `Found ${offers.length} unmatched offers`;
+
+		ui.offers.innerHTML = '';
+		offers.forEach(offer => {
+			ui.offers.appendChild(createNode({
+				xtype: 'li',
+				children: [
+					{
+						xtype: 'details',
+						children: [
+							{
+								xtype: 'summary',
+								p_textContent: `${offer.country}, ${offer.charity}, ${offer.amount} ${offer.currency}`,
+							},
+							`${renderDetails(offer)}`,
+						],
+					},
+				],
+			}));
+		});
+	}
+
+	ajax('/special-secret-admin/get_unmatched_offers')
+		.then(offers => renderOffers(offers))
+		.catch(error => {
+			console.error(error);
+			window.alert('Unexpected error. See console.');
+		});
+}());
+</script>
+</body>
+</html>

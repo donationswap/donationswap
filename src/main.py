@@ -134,6 +134,7 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 			(r'/contact/?', TemplateHandler, args({'page_name': 'contact.html'})),
 			(r'/howto/?', TemplateHandler, args({'page_name': 'howto.html'})),
 			(r'/start/?', TemplateHandler, args({'page_name': 'start.html'})),
+			(r'/charities/?', TemplateHandler, args({'page_name': 'charities.html'})),
 			(r'/match/?', TemplateHandler, args({'page_name': 'match.html'})),
 			(r'/offer/?', TemplateHandler, args({'page_name': 'offer.html'})),
 			(r'/ajax/(.+)', AjaxHandler, args()),

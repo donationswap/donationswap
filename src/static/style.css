@@ -125,7 +125,9 @@ header .beta {
 	font-weight: 900;
 	padding: 0.5em 0;
 	text-align: center;
-	transform: translate(25%, 50%) rotate(45deg);
+	transform: rotate(45deg) translate(0, 2em);
+	transform-origin: center top;
+	width: 200%;
 }
 
 footer {

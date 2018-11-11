@@ -2,13 +2,16 @@
 
 import argparse
 import datetime
+import json
 import logging
+import urllib.parse
 
 import config
 import currency
 import database
 import donationswap
 import entities
+import eventlog
 import mail
 import util
 
@@ -30,29 +33,86 @@ class Matchmaker:
 		with self._database.connect() as db:
 			entities.load(db)
 
+	def _send_mail_about_expired_offer(self, offer):
+		replacements = {
+			'{%NAME%}': offer.name,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%CHARITY%}': offer.charity.name,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'country': offer.country_id,
+				'amount': offer.amount,
+				'charity': offer.charity_id,
+				'expires': [
+					offer.expires_ts.day,
+					offer.expires_ts.month,
+					offer.expires_ts.year,
+				],
+				'email': offer.email,
+			}))
+		}
+
+		logging.info('Sending expiration email to %s.', offer.email)
+
+		self._mail.send(
+			'Your offer has expired',
+			util.Template('offer-expired-email.txt').replace(replacements).content,
+			html=util.Template('offer-expired-email.html').replace(replacements).content,
+			to=offer.email
+		)
+
+	def _delete_expired_offers(self):
+		'''An offer is considered expired if it has not been confirmed
+		for 24 hours. We delete it and send the donor an email.'''
+
+		#xxx "expired" also means past the expiration date -- send different email then.
+
+		one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+		with self._database.connect() as db:
+			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts < one_day_ago):
+				logging.info('Deleting expired offer.')
+				offer.delete(db)
+				eventlog.offer_expired(db, offer)
+				self._send_mail_about_expired_offer(offer)
+
+	def _send_mail_about_match_feedback(self, match):
+		replacements = {
+		}
+
+		logging.info('Sending match feedback email to %s and %s',
+			match.old_offer.email,
+			match.new_offer.email,
+		)
+
+		#xxx
+
+	def _delete_old_matches(self):
+		'''Four weeks after a match was made we delete it and
+		send the two donors a feedback email.
+
+		(It only gets to be four weeks old if it was accepted by both
+		donors, otherwise it would have been deleted within 72 hours.)'''
+
+		four_weeks_ago = datetime.datetime.utcnow() - datetime.timedelta(days=28)
+
+		with self._database.connect() as db:
+			for match in entities.Match.get_all(lambda x: x.new_agrees is True and x.old_agrees is True and x.created_ts < four_weeks_ago):
+				match.delete(db)
+				self._send_mail_about_match_feedback(match)
+
 	def clean(self):
+		self._delete_expired_offers()
+		self._delete_old_matches()
+
 		now = datetime.datetime.utcnow()
-		two_days = datetime.timedelta(days=2)
 		one_week = datetime.timedelta(days=7)
-		four_weeks = datetime.timedelta(days=28)
 
 		with self._database.connect() as db:
 
-			# delete unconfirmed offers after 48 hours
-			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts + two_days < now):
-				offer.delete(db)
-
-			# delete declined matches immediately
-			for match in entities.Match.get_all(lambda x: x.new_agrees is False or x.old_agrees is False):
-				match.delete(db)
-
 			# delete unapproved matches after one week
-			for match in entities.Match.get_all(lambda x: x.new_agrees is None or x.old_agrees is None and x.created_ts + one_week < now):
-				match.delete(db)
-
-			# delete approved matches after four weeks
-			# TODO: consider storing the core data?
-			for match in entities.Match.get_all(lambda x: x.new_agrees is True and x.old_agrees is True and x.created_ts + four_weeks < now):
+			for match in entities.Match.get_all(lambda x: (x.new_agrees is None or x.old_agrees is None) and x.created_ts + one_week < now):
+				eventlog.match_expired(db, match)
 				match.delete(db)
 
 			#xxx also...
@@ -60,6 +120,9 @@ class Matchmaker:
 			# ... signal the web server to update its cache
 
 	def _is_good_match(self, offer1, offer2):
+
+		#xxx if (offer1, offer2) in declined_matches: return False
+
 		logging.info('Comparing %s and %s.', offer1.id, offer2.id)
 
 		if offer1.charity_id == offer2.charity_id:
@@ -79,8 +142,8 @@ class Matchmaker:
 		multiplier1 = 1
 		multiplier2 = 1
 
-		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
-		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, "USD")
+		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, 'USD')
+		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, 'USD')
 
 		country1Charities = []
 		country2Charities = []
@@ -95,12 +158,12 @@ class Matchmaker:
 
 			charityInCountry1 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry1.id)
 			charityInCountry2 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry2.id)
-			if (charityInCountry1 != None):
+			if (charityInCountry1 is not None):
 				country1Charities.append(charityCache[charity.name])
 				if (offer1.charity == charity):
 					country1TaxReturn = charityInCountry1.tax_factor
 
-			if (charityInCountry2 != None):
+			if (charityInCountry2 is not None):
 				country2Charities.append(charityCache[charity.name])
 				if (offer2.charity == charity):
 					country2TaxReturn = charityInCountry2.tax_factor
@@ -120,10 +183,10 @@ class Matchmaker:
 		matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1, [charityCache[offer1.charity.name]], offer1Created)
 		matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2, [charityCache[offer2.charity.name]], offer2Created)
 
-		result = Matcher("USD").match(matchingOffer1, [matchingOffer2])
-		return result != None
+		result = Matcher('USD').match(matchingOffer1, [matchingOffer2])
+		return result is not None
 
-	def find_matches(self):
+	def find_matches(self, force_pair=None):
 		'''Compares every offer to every other offer.'''
 
 		matches = []
@@ -133,10 +196,19 @@ class Matchmaker:
 
 		logging.info('There are %s eligible offers to match up.', len(offers))
 
+		if force_pair is not None:
+			force_pair = sorted(force_pair)
+
 		while offers:
 			offer1 = offers.pop()
 			for offer2 in offers:
-				if self._is_good_match(offer1, offer2):
+				if force_pair is None:
+					is_good = self._is_good_match(offer1, offer2)
+				else:
+					is_good = sorted([offer1.id, offer2.id]) == force_pair
+					#xxx and not in declined_offers
+
+				if is_good:
 					matches.append((offer1, offer2))
 					offers.remove(offer2)
 					break
@@ -152,13 +224,16 @@ class Matchmaker:
 			my_offer.country.currency.iso)
 
 		replacements = {
+			'{%YOUR_NAME%}': my_offer.name,
 			'{%YOUR_COUNTRY%}': my_offer.country.name,
 			'{%YOUR_CHARITY%}': my_offer.charity.name,
 			'{%YOUR_AMOUNT%}': my_offer.amount,
+			'{%YOUR_MIN_AMOUNT%}': my_offer.min_amount,
 			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
 			'{%THEIR_COUNTRY%}': their_offer.country.name,
 			'{%THEIR_CHARITY%}': their_offer.charity.name,
 			'{%THEIR_AMOUNT%}': their_offer.amount,
+			'{%THEIR_MIN_AMOUNT%}': their_offer.min_amount,
 			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
 			'{%THEIR_AMOUNT_CONVERTED%}': your_amount_in_their_currency,
 			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
@@ -167,6 +242,7 @@ class Matchmaker:
 		}
 
 		logging.info('Sending match email to %s.', my_offer.email)
+
 		self._mail.send(
 			'We may have found a matching donation for you',
 			util.Template('match-suggested-email.txt').replace(replacements).content,
@@ -189,7 +265,8 @@ class Matchmaker:
 
 			logging.info('Creating match between offers %s and %s.', new_offer.id, old_offer.id)
 			with self._database.connect() as db:
-				entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
+				match = entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
+				eventlog.match_generated(db, match)
 
 			self._send_mail_about_match(old_offer, new_offer, match_secret)
 			self._send_mail_about_match(new_offer, old_offer, match_secret)
@@ -217,6 +294,7 @@ class Matchmaker:
 			new_instructions = 'Sorry, there are no instructions available (yet).'
 
 		replacements = {
+			'{%OLD_NAME%}': old_offer.name,
 			'{%OLD_COUNTRY%}': old_offer.country.name,
 			'{%OLD_CHARITY%}': old_offer.charity.name,
 			'{%OLD_AMOUNT%}': old_offer.amount,
@@ -224,6 +302,7 @@ class Matchmaker:
 			'{%OLD_EMAIL%}': old_offer.email,
 			'{%OLD_AMOUNT_CONVERTED%}': old_amount_in_new_currency,
 			'{%OLD_INSTRUCTIONS%}': old_instructions,
+			'{%NEW_NAME%}': new_offer.name,
 			'{%NEW_COUNTRY%}': new_offer.country.name,
 			'{%NEW_CHARITY%}': new_offer.charity.name,
 			'{%NEW_AMOUNT%}': new_offer.amount,
@@ -234,6 +313,7 @@ class Matchmaker:
 		}
 
 		logging.info('Sending deal email to %s and %s.', old_offer.email, new_offer.email)
+
 		self._mail.send(
 			'Here is your match!',
 			util.Template('match-approved-email.txt').replace(replacements).content,
@@ -259,13 +339,18 @@ def main():
 	parser = argparse.ArgumentParser(description='The Match Maker.')
 	parser.add_argument('config_path')
 	parser.add_argument('--doit', action='store_true')
+	parser.add_argument('--force-pair', '-fp', help='comma-separated pair of IDs for which "is match" is forced to True')
 	args = parser.parse_args()
+
+	if args.force_pair is not None:
+		tmp = args.force_pair.split(',')
+		args.force_pair = int(tmp[0]), int(tmp[1])
 
 	matchmaker = Matchmaker(args.config_path, dry_run=not args.doit)
 
 	matchmaker.clean()
 
-	matches = matchmaker.find_matches()
+	matches = matchmaker.find_matches(args.force_pair)
 	matchmaker.process_found_matches(matches)
 
 	matchmaker.process_approved_matches()

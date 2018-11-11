@@ -120,7 +120,7 @@ class get_info(TestBase):
 
 	def test_all_information_must_be_included(self):
 		info = self.ds.get_info()
-		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries', 'today'])
+		self.assertEqual(sorted(info.keys()), ['charities', 'charities_in_countries', 'client_country', 'countries', 'today'])
 
 	def test_client_country(self):
 		self.geoip.country = 'c1'
@@ -154,11 +154,13 @@ class send_contact_message(TestBase):
 
 class create_offer(TestBase):
 
-	def _create_offer(self, country=1, amount=42, charity=1, email='user@test.test'):
+	def _create_offer(self, name='Ava of Animalia', country=1, amount=42, min_amount=1, charity=1, email='user@test.test'):
 		return self.ds.create_offer(
 			captcha_response='irrelevant',
+			name=name,
 			country=country,
 			amount=amount,
+			min_amount=min_amount,
 			charity=charity,
 			email=email,
 			expiration={
@@ -192,6 +194,12 @@ class create_offer(TestBase):
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
+	def test_bad_name(self):
+		with self.assertRaises(donationswap.DonationException):
+			self._create_offer(name='')
+		self.assertEqual(self._get_offer(), None)
+		self.assertEqual(self.mail.calls, {})
+
 	def test_bad_country(self):
 		with self.assertRaises(donationswap.DonationException):
 			self._create_offer(country=100)
@@ -207,6 +215,18 @@ class create_offer(TestBase):
 	def test_invalid_amount(self):
 		with self.assertRaises(donationswap.DonationException):
 			self._create_offer(amount=-42)
+		self.assertEqual(self._get_offer(), None)
+		self.assertEqual(self.mail.calls, {})
+
+	def test_bad_min_amount(self):
+		with self.assertRaises(donationswap.DonationException):
+			self._create_offer(min_amount='fourty-two')
+		self.assertEqual(self._get_offer(), None)
+		self.assertEqual(self.mail.calls, {})
+
+	def test_invalid_min_amount(self):
+		with self.assertRaises(donationswap.DonationException):
+			self._create_offer(min_amount=-42)
 		self.assertEqual(self._get_offer(), None)
 		self.assertEqual(self.mail.calls, {})
 
@@ -227,8 +247,10 @@ class confirm_offer(TestBase):
 	def test_happy_path_no_match(self):
 		self.ds.create_offer(
 			captcha_response='irrelevant',
+			name='Buzz of Protozania',
 			country=1,
 			amount=42,
+			min_amount=42,
 			charity=1,
 			email='user@test.test',
 			expiration={
@@ -256,8 +278,10 @@ class delete_offer(TestBase):
 	def test_happy_path(self):
 		self.ds.create_offer(
 			captcha_response='irrelevant',
+			name='Ava of Animalia',
 			country=1,
 			amount=42,
+			min_amount=42,
 			charity=1,
 			email='user@test.test',
 			expiration={

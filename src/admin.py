@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import eventlog
+
 #xxx use entities instead of plain SQL
 
 class Admin:
@@ -184,3 +186,58 @@ class Admin:
 			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
 		with self._database.connect() as db:
 			db.write(query, charity_id=charity_id, country_id=country_id)
+
+	def read_log(self, min_timestamp, max_timestamp, event_types, offset, limit):
+		with self._database.connect() as db:
+			events = eventlog.get_events(
+				db,
+				min_timestamp=min_timestamp,
+				max_timestamp=max_timestamp,
+				event_types=event_types,
+				offset=offset,
+				limit=limit,
+			)
+		return events
+
+	def get_unmatched_offers(self):
+		'''Returns all offers that are
+		* not matched and
+		* not expired and
+		* confirmed
+		'''
+
+		query = '''
+			SELECT
+				offer.id,
+				country.name AS country,
+				offer.amount,
+				offer.min_amount,
+				currency.iso AS currency,
+				charity.name AS charity,
+				offer.expires_ts,
+				offer.email
+			FROM offers offer
+			JOIN countries country ON offer.country_id = country.id
+			JOIN currencies currency ON country.currency_id = currency.id
+			JOIN charities charity ON offer.charity_id = charity.id
+			WHERE
+				offer.confirmed
+				AND offer.expires_ts > now()
+				AND offer.id NOT IN (SELECT old_offer_id FROM matches)
+				AND offer.id NOT IN (SELECT new_offer_id FROM matches)
+			ORDER BY country ASC, charity ASC, expires_ts ASC
+		'''
+		with self._database.connect() as db:
+			return [
+				{
+					'id': i['id'],
+					'country': i['country'],
+					'amount': i['amount'],
+					'min_amount': i['min_amount'],
+					'currency': i['currency'],
+					'charity': i['charity'],
+					'expires_ts': i['expires_ts'].strftime('%Y-%m-%d %H:%M:%S'),
+					'email': i['email'],
+				}
+				for i in db.read(query)
+			]

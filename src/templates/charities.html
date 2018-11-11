@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+table {
+	border-collapse: collapse;
+	cursor: default;
+	text-align: center;
+}
+td {
+	border: 1px solid #7bb0a8;
+}
+.country {
+	font-weight: bold;
+	width: 2em;
+}
+.charity {
+	text-align: right;
+}
+.dot {
+	cursor: pointer;
+}
+#background {
+	background-color: rgba(0, 0, 0, 0.9);
+	bottom: 0;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+}
+#info {
+	background-color: white;
+	border-radius: 1em;
+	padding: 1em;
+	margin: 5em auto 0 auto;
+	text-align: right;
+	white-space: pre-line;
+	width: 50%;
+}
+#infoTitle {
+	font-weight: bold;
+	margin: 0 0 1em 0;
+	text-align: left;
+}
+#infoText {
+	display: inline-block;
+	margin-bottom: 1em;
+	text-align: left;
+}
+</style>
+<title>Donation Swap</title>
+</head>
+<body>
+{%FILE=header.snippet.html%}
+	<div class="body">
+		<h1>Supported Charities</h1>
+		<p>
+			These are the charities we support,
+			and the countries we support them in.
+			A dot in the table means donations to that charity
+			will earn you tax credits in that country.
+			Hover over the country code to see the full name.
+		</p>
+		<p>
+			Click on the dot to learn how to donate effectively.
+			Those are the same instructions that we will mail you
+			when we found a match for your offer.
+		</p>
+		<p>
+			Note that offering to donate to a charity
+			that is already tax-deductible in your country is still
+			a great idea, because we might be able to match you up
+			with someone whose chosen charity is not tax-deductible
+			in their country.
+		</p>
+		<table>
+			<tbody id="matrix">
+			</tbody>
+		</table>
+	</div>
+	<div class="hidden" id="background">
+		<div id="info">
+			<div id="infoTitle"></div>
+			<span id="infoText"></span>
+			<button class="purple" id="btnClose">Close</button>
+		</div>
+	</div>
+{%FILE=footer.snippet.html%}
+<script>
+/* globals ajax, createNode, getElementsById */
+/* jshint esversion: 6 */
+(function () {
+	'use strict';
+
+	const ui = getElementsById();
+
+	ui.btnClose.onclick = () => {
+		ui.background.classList.add('hidden');
+	};
+
+	window.onkeydown = e => {
+		console.log(e);
+		if (e.keyCode === 27) {
+			ui.btnClose.click();
+		}
+	};
+
+	function onCellClicked(charity, country) {
+		ajax('/ajax/get_charity_in_country_info', {
+			charity_id: charity.id,
+			country_id: country.id,
+		})
+			.then(info => {
+				ui.infoTitle.textContent = `How to donate to ${charity.name} from ${country.live_in_name}:`;
+				ui.infoText.textContent = info;
+				ui.background.classList.remove('hidden');
+			});
+	}
+
+	ajax('/ajax/get_info')
+		.then(info => {
+			info.countries.sort2(x => x.iso_name);
+			info.charities.sort2(x => x.name);
+
+			ui.matrix.appendChild(createNode({
+				xtype: 'tr',
+				children: [
+					{
+						xtype: 'td',
+					},
+				].concat(info.countries.map(country => {
+					return {
+						xtype: 'td',
+						a_class: 'country',
+						a_title: country.name,
+						p_textContent: country.iso_name,
+					};
+				})),
+			}));
+
+			info.charities.forEach(charity => {
+				ui.matrix.appendChild(createNode({
+					xtype: 'tr',
+					children: [
+						{
+							xtype: 'td',
+							a_class: 'charity',
+							p_textContent: charity.name,
+						},
+					].concat(info.countries.map(country => {
+						return info.charities_in_countries[country.id].indexOf(charity.id) === -1 ? {
+							xtype: 'td',
+						} : {
+							xtype: 'td',
+							a_class: 'dot',
+							p_textContent: '\u2022',
+							p_onclick() {
+								onCellClicked(charity, country);
+							},
+						};
+					})),
+				}));
+			});
+		});
+}());
+</script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+ALTER TABLE offers
+ADD COLUMN name varchar(50) NOT NULL DEFAULT '(no name provided)';
+
+ALTER TABLE offers
+ALTER COLUMN name DROP DEFAULT; 
+
+ALTER TABLE offers
+ADD COLUMN min_amount INT NOT NULL DEFAULT 1;
+
+ALTER TABLE offers
+ALTER COLUMN min_amount DROP DEFAULT;

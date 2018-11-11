@@ -78,3 +78,6 @@ class Connection:
 
 	def execute_script(self, script):
 		self._cursor.execute(script)
+
+	def escape(self, query, **args):
+		return self._cursor.mogrify(query, args).decode('utf-8')
