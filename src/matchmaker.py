@@ -142,8 +142,8 @@ class Matchmaker:
 		multiplier1 = 1
 		multiplier2 = 1
 
-		exchangeRate1VsUSA = self._currency.convert(1, dbCountry1.currency.iso, 'USD')
-		exchangeRate2VsUSA = self._currency.convert(1, dbCountry1.currency.iso, 'USD')
+		exchangeRate1VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
+		exchangeRate2VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
 
 		country1Charities = []
 		country2Charities = []
@@ -206,7 +206,7 @@ class Matchmaker:
 					is_good = self._is_good_match(offer1, offer2)
 				else:
 					is_good = sorted([offer1.id, offer2.id]) == force_pair
-					#xxx and not in declined_offers
+					#xxx and not in declined_matches
 
 				if is_good:
 					matches.append((offer1, offer2))
