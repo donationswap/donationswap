@@ -1,10 +1,11 @@
-Dear {%NAME%},
+Dear {%YOUR_NAME%},
 You’ve been matched with a compatible donor through the EA donation swap site.
 
 The potential match:
 Charity they wish to support: {%THEIR_CHARITY%}
 Amount: {%THEIR_AMOUNT%} {%THEIR_CURRENCY%}
 (This is around {%THEIR_AMOUNT_CONVERTED%} in {%YOUR_CURRENCY%}.)
+This amount may change a little due to currency fluctuations. 
 
 For reference, your offer was:
 Charity you wish to support: {%YOUR_CHARITY%}

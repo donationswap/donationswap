@@ -1,10 +1,10 @@
-Dear {%NAME%},
+Dear {%YOUR_NAME%},
 You have not confirmed your offer to donate on the EA donation swap site.
 
 Details of your offer:
 Charity you wish to support: {%CHARITY%}
 Amount: {%CURRENCY%} {%AMOUNT%}
-Minimum swap amount: {%CURRENCY%} {%MINAMOUNT%}
+Minimum swap amount: {%CURRENCY%} {%MIN_AMOUNT%}
 
 We have removed your swap offer from our system.
 
