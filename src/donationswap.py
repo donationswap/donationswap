@@ -41,6 +41,7 @@ import config
 import currency
 import database
 import entities
+import eventlog
 import geoip
 import mail
 import util
@@ -49,25 +50,13 @@ def ajax(f):
 	f.allow_ajax = True
 	return f
 
-#xxx name, min_amount
-#xxx add "show only tax-deductible charities" checkbox to /start/
-
-#xxx add declined_matches table with offer1_id and offer2_id column.
-#xxx add permanent record to database
+#xxx admin stuff must require login
+#    (can't rely on hidden URL When code is publicly available)
 
 #xxx when a user declines a match, they should get asked if
 #    they want to delete their own (now suspended) offer.
 
 #xxx send feedback email after a month.
-
-#xxx add link to from /start/ to /readonlyadmin/ so potential donors
-#    can learn more about charities.
-
-#xxx make /start/ so that it can be pre-populated with ?country=42&charity=27
-#    so we can email URLs
-
-#xxx find a way for Catherine to get statistics out of the db
-#    (unmatched offers etc.)
 
 #xxx post MVP features:
 #- a donation offer is pointless if
@@ -194,12 +183,19 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			'{%MESSAGE%}': message.strip(),
 		})
 
+		send_to = self._config.contact_message_receivers.get('to', [])
+		send_cc = self._config.contact_message_receivers.get('cc', [])
+		send_bcc = self._config.contact_message_receivers.get('bcc', [])
+
+		with self._database.connect() as db:
+			eventlog.sent_contact_message(db, tmp.content, send_to, send_cc, send_bcc)
+
 		self._mail.send(
-			'Message for donationswap.eahub.org',
+			'Message for donationswap.eahub.org', #xxx do not hardcode subjects
 			tmp.content,
-			to=self._config.contact_message_receivers.get('to', []),
-			cc=self._config.contact_message_receivers.get('cc', []),
-			bcc=self._config.contact_message_receivers.get('bcc', [])
+			to=send_to,
+			cc=send_cc,
+			bcc=send_bcc
 		)
 
 	@staticmethod
@@ -218,6 +214,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			{
 				'id': i.id,
 				'name': i.name,
+				'iso_name': i.iso_name,
 				'live_in_name': i.live_in_name or i.name,
 				'currency_iso': i.currency.iso,
 				'currency_name': i.currency.name,
@@ -229,6 +226,19 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			}
 			for i in sorted(entities.Country.get_all(), key=lambda i: i.name)
 		]
+
+	@staticmethod
+	def _get_charities_in_countries_info():
+		result = {}
+
+		for country in entities.Country.get_all():
+			result[country.id] = []
+			for charity in entities.Charity.get_all():
+				charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity.id, country.id)
+				if charity_in_country is not None:
+					result[country.id].append(charity.id)
+
+		return result
 
 	@ajax
 	def get_info(self):
@@ -247,6 +257,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			'charities': self._get_charities_info(),
 			'client_country': client_country_id,
 			'countries': self._get_countries_info(),
+			'charities_in_countries': self._get_charities_in_countries_info(),
 			'today': {
 				'day': today.day,
 				'month': today.month,
@@ -254,20 +265,36 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			},
 		}
 
-	def _validate_offer(self, captcha_response, country, amount, charity, email, expiration):
+	@ajax
+	def get_charity_in_country_info(self, charity_id, country_id): # pylint: disable=no-self-use
+		charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity_id, country_id)
+		if charity_in_country is not None:
+			return charity_in_country.instructions
+		return None
+
+	def _validate_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
 		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
 
 		if not is_legit:
 			raise DonationException('bad captcha response')
+
+
+		name = name.strip()
+		if not name:
+			raise DonationException('no name provided')
 
 		country = entities.Country.by_id(country)
 		if country is None:
 			raise DonationException('country not found')
 
 		amount = self._int(amount, 'invalid amount')
-
 		if amount < 0:
 			raise DonationException('negative amount')
+
+		min_amount = self._int(min_amount, 'invalid min_amount')
+		if min_amount < 0:
+			raise DonationException('negative min_amount')
+
 
 		charity = entities.Charity.by_id(charity)
 		if charity is None:
@@ -287,28 +314,27 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		except ValueError:
 			DonationException('invalid expiration date')
 
-		return country, amount, charity, email, expires_ts
+		return name, country, amount, min_amount, charity, email, expires_ts
 
 	@ajax
-	def create_offer(self, captcha_response, country, amount, charity, email, expiration):
-		#xxx add name to offer (so we can start the email with "Dear <name>")
-
-		country, amount, charity, email, expires_ts = self._validate_offer(captcha_response, country, amount, charity, email, expiration)
+	def create_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
+		name, country, amount, min_amount, charity, email, expires_ts = self._validate_offer(captcha_response, name, country, amount, min_amount, charity, email, expiration)
 
 		secret = create_secret()
 		# Do NOT return this secret to the client via this method.
 		# Only put it in the email, so that having the link acts as email address verification.
 
 		with self._database.connect() as db:
-			entities.Offer.create(db, secret, email, country.id, amount, charity.id, expires_ts)
+			offer = entities.Offer.create(db, secret, name, email, country.id, amount, min_amount, charity.id, expires_ts)
+			eventlog.created_offer(db, offer)
 
 		replacements = {
-			'{%NAME%}': 'xxx',
-			'{%SECRET%}': secret,
-			'{%CHARITY%}': charity.name,
-			'{%CURRENCY%}': country.currency.iso,
-			'{%AMOUNT%}': amount,
-			'{%MIN_AMOUNT%}': 'xxx',
+			'{%NAME%}': offer.name,
+			'{%SECRET%}': offer.secret,
+			'{%CHARITY%}': offer.charity.name,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
 		}
 		self._mail.send(
 			'Please confirm your donation offer',
@@ -335,6 +361,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		if not was_confirmed:
 			with self._database.connect() as db:
 				offer.confirm(db)
+				eventlog.confirmed_offer(db, offer)
 
 		return {
 			'was_confirmed': was_confirmed,
@@ -351,6 +378,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		if offer is not None:
 			with self._database.connect() as db:
 				offer.delete(db)
+				eventlog.deleted_offer(db, offer)
 
 	@ajax
 	def get_match(self, secret):
@@ -392,9 +420,11 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		if my_offer == old_offer:
 			with self._database.connect() as db:
 				match.agree_old(db)
+				eventlog.approved_match(db, match, my_offer)
 		elif my_offer == new_offer:
 			with self._database.connect() as db:
 				match.agree_new(db)
+				eventlog.approved_match(db, match, my_offer)
 
 	@ajax
 	def decline_match(self, secret, feedback):
@@ -411,13 +441,10 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			db.write(query, id_old=old_offer.id, id_new=new_offer.id)
 			match.delete(db)
 			my_offer.suspend(db)
-
-			#xxx add to permanent record
-
-			#xxx feedback isn't actually used yet
+			eventlog.declined_match(db, match, my_offer, feedback)
 
 			replacements = {
-				'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+				'{%NAME%}': my_offer.name,
 				'{%OFFER_SECRET%}': my_offer.secret,
 			}
 			self._mail.send(
@@ -428,7 +455,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			)
 
 			replacements = {
-				'{%NAME%}': 'xxx (name not implemented yet)', #offer.name
+				'{%NAME%}': other_offer.name,
 				'{%OFFER_SECRET%}': other_offer.secret,
 			}
 			self._mail.send(

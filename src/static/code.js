@@ -74,6 +74,23 @@ function getElementsById() {
 	return result;
 }
 
+Array.prototype.sort2 = function (key) {
+
+	function sorter(a, b) {
+		const ka = key(a);
+		const kb = key(b);
+		return (ka === kb) ? 0 : (ka > kb ? 1 : -1);
+	}
+
+	this.sort(sorter);
+};
+
+Array.prototype.toDictionary = function (key) {
+	const dictionary = {};
+	this.forEach(i => dictionary[key(i)] = i);
+	return dictionary;
+};
+
 // var date = Date.fromUtcIsoString('2012-12-22_06-40-41')
 Date.fromUtcIsoString = function (isoString) {
 	const utc = Date.UTC(

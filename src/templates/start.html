@@ -7,15 +7,19 @@
 <script src="/static/code.js"></script>
 <script src="https://www.google.com/recaptcha/api.js"></script>
 <style>
-#intAmount {
+#intAmount,#intMinAmount {
 	width: 6em;
 }
 #errorContainer {
 	border: 5px solid red;
 	color: red;
+	margin: 1em;
+	padding: 1em;
 }
 #successContainer {
 	border: 5px solid green;
+	margin: 1em;
+	padding: 1em;
 }
 </style>
 <title>Donation Swap</title>
@@ -25,20 +29,35 @@
 	<div class="body">
 		<div id="form">
 			<p>
+				<label for="txtName">My name is</label>
+				<input autofocus class="bordered" id="txtName" placeholder="Preferred Name">.
+			</p>
+			<p>
 				<label for="idCountry">I pay taxes in</label>
 				<select class="bordered" id="idCountry"></select>
 			</p>
 			<p>
 				<label for="intAmount">and I would like to donate</label>
-				<input autofocus class="bordered" id="intAmount" min="0" type="number" value="100">
-				<span id="txtCurrency">$</span>
+				<input class="bordered" id="intAmount" min="0" type="number" value="100">
+				<span id="txtCurrency1">$</span>
 			</p>
 			<p>
 				<label for="idCharity">to</label>
 				<select class="bordered" id="idCharity"></select>.
 			</p>
 			<p>
-				This offer is valid until:
+				<label for="chkTaxes"><input id="chkTaxes" type="checkbox">Show only tax-deductible charities</label>
+			</p>
+			<p>
+				<a href="/charities/" target="_blank">Learn more</a> about our list of supported charities.
+			</p>
+			<p>
+				<label for="intMinAmount">The smallest match I'm willing to agree to is</label>
+				<input class="bordered" id="intMinAmount" type="number">
+				<span id="txtCurrency2">$</span>.
+			</p>
+			<p>
+				This offer is valid until
 				<span class="bordered">
 					<select id="intExpirationDay"></select>
 					<select id="intExpirationMonth"></select>
@@ -46,7 +65,7 @@
 				</span>
 			</p>
 			<p>
-				My Email Address:
+				My Email Address is
 				<input class="bordered" id="txtEmail" type="email">
 			</p>
 			{%FILE=captcha.snippet.html%}
@@ -87,6 +106,46 @@ function captchaBad() {
 
 	captchaBad();
 
+	function populateCountries(countries) {
+		countries.forEach(country => {
+			ui.idCountry.appendChild(createNode({
+				xtype: 'option',
+				a_value: country.id,
+				p_textContent: country.live_in_name,
+			}));
+		});
+	}
+
+	function populateCharities(charities, charitiesInCountry) {
+		const categories = [... new Set(charities.map(charity => charity.category))];
+		const categoryByName = {};
+		const optgroups = [];
+
+		categories.forEach(category => {
+			optgroups.push(categoryByName[category] = createNode({
+				xtype: 'optgroup',
+				a_label: category,
+			}));
+		});
+
+		charities.forEach(charity => {
+			if (charitiesInCountry.length === 0 || charitiesInCountry.indexOf(charity.id) !== -1) {
+				categoryByName[charity.category].appendChild(createNode({
+					xtype: 'option',
+					a_value: charity.id,
+					p_textContent: charity.name,
+				}));
+			}
+		});
+
+		ui.idCharity.innerHTML = '';
+		optgroups.forEach(optgroup => {
+			if (optgroup.children.length > 0) {
+				ui.idCharity.appendChild(optgroup);
+			}
+		});
+	}
+
 	ajax('/ajax/get_info')
 		.then(info => {
 			let args = {};
@@ -94,57 +153,45 @@ function captchaBad() {
 				args = JSON.parse(decodeURIComponent(window.location.hash.substr(1)));
 			}
 			catch(e) {
-				console.error(e);
+				// console.error(e);
 			}
 
 			const currencyByCountry = {};
-
-			// populate countries dropdown
 			info.countries.forEach(country => {
-				ui.idCountry.appendChild(createNode({
-					xtype: 'option',
-					a_value: country.id,
-					p_textContent: country.live_in_name,
-				}));
 				currencyByCountry[country.id] = {
 					iso: country.currency_iso,
 					name: country.currency_name,
 				};
 			});
+
+			populateCountries(info.countries);
 			ui.idCountry.value = args.hasOwnProperty('country') ? args.country : info.client_country;
 
 			// handle country changes
 			ui.idCountry.onchange = () => {
 				const currency = currencyByCountry[ui.idCountry.value];
 				//xxx ui.intAmount.setAttribute('min', 'xxx')
-				ui.txtCurrency.textContent = currency.iso;
-				ui.txtCurrency.setAttribute('title', currency.name);
+				ui.txtCurrency1.textContent = currency.iso;
+				ui.txtCurrency1.setAttribute('title', currency.name);
+				ui.txtCurrency2.textContent = currency.iso;
+				ui.txtCurrency2.setAttribute('title', currency.name);
+
+				populateCharities(info.charities, ui.chkTaxes.checked ? info.charities_in_countries[ui.idCountry.value] : []);
 			};
 			ui.idCountry.onchange(); // to set currency
 
 			// populate amount
 			ui.intAmount.value = args.hasOwnProperty('amount') ? args.amount : 50;
-			// xxx minimum donation amount
+			ui.intMinAmount.value = args.hasOwnProperty('min_amount') ? args.min_amount : 50;
 
-			// populate charities dropdown
-			const categories = [... new Set(info.charities.map(charity => charity.category))];
-			const categoryByName = {};
-			categories.forEach(category => {
-				ui.idCharity.appendChild(categoryByName[category] = createNode({
-					xtype: 'optgroup',
-					a_label: category,
-				}));
-			});
-			info.charities.forEach(charity => {
-				categoryByName[charity.category].appendChild(createNode({
-					xtype: 'option',
-					a_value: charity.id,
-					p_textContent: charity.name,
-				}));
-			});
+			populateCharities(info.charities, ui.chkTaxes.checked ? info.charities_in_countries[ui.idCountry.value] : []);
 			if (args.hasOwnProperty('charity')) {
 				ui.idCharity.value = args.charity;
 			}
+
+			ui.chkTaxes.onchange = () => {
+				populateCharities(info.charities, ui.chkTaxes.checked ? info.charities_in_countries[ui.idCountry.value] : []);
+			};
 
 			// populate calendar
 			for (let day = 1; day <= 31; day++) {
@@ -157,7 +204,7 @@ function captchaBad() {
 			const monthNames = [null,
 				'January', 'February', 'March', 'April',
 				'May', 'June', 'July', 'August',
-				'September', 'October', 'November', 'December']
+				'September', 'October', 'November', 'December'];
 			for (let month = 1; month <= 12; month++) {
 				ui.intExpirationMonth.appendChild(createNode({
 					xtype: 'option',
@@ -172,18 +219,21 @@ function captchaBad() {
 					p_textContent: year,
 				}));
 			}
-			ui.intExpirationDay.value = args.expires[0] || info.today.day;
-			ui.intExpirationMonth.value = args.expires[1] || info.today.month;
-			ui.intExpirationYear.value = args.expires[2] || info.today.year + 1;
+			ui.intExpirationDay.value = (args.expires || [])[0] || info.today.day;
+			ui.intExpirationMonth.value = (args.expires || [])[1] || info.today.month;
+			ui.intExpirationYear.value = (args.expires || [])[2] || info.today.year + 1;
 			ui.txtEmail.value = args.email || '';
 
 			// handle form submission
 			ui.btnSend.onclick = () => {
+				//xxx client-side validation
 				captchaBad(); // disable send button
 				ajax('/ajax/create_offer', {
 					captcha_response: document.getElementsByName('g-recaptcha-response')[0].value,
+					name: ui.txtName.value,
 					country: parseInt(ui.idCountry.value, 10),
 					amount: parseInt(ui.intAmount.value, 10),
+					min_amount: parseInt(ui.intMinAmount.value, 10),
 					charity: parseInt(ui.idCharity.value, 10),
 					email: ui.txtEmail.value,
 				expiration: {
