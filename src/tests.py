@@ -120,7 +120,7 @@ class get_info(TestBase):
 
 	def test_all_information_must_be_included(self):
 		info = self.ds.get_info()
-		self.assertEqual(sorted(info.keys()), ['charities', 'charities_in_countries', 'client_country', 'countries', 'today'])
+		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries', 'today'])
 
 	def test_client_country(self):
 		self.geoip.country = 'c1'
@@ -391,38 +391,16 @@ class Admin(unittest.TestCase):
 			db.write('DELETE FROM charity_categories;')
 
 	def test_read_currencies(self):
-		currencies = self.admin.read_currencies()
-		self.assertEqual(len(currencies), 168)
-		for currency in currencies:
-			self.assertEqual(currency['iso'], currency['iso'].upper())
-			self.assertEqual(len(currency['iso']), 3)
+		with self.assertRaises(ValueError):
+			currencies = self.admin.read_currencies()
 
 	def test_charity_categories(self):
-		self.admin.create_charity_category('dogs')
-		self.admin.create_charity_category('cats')
-		categories = self.admin.read_charity_categories()
-
-		self.assertEqual(len(categories), 2)
-		cats = categories[0]
-		dogs = categories[1]
-		self.assertEqual(cats['name'], 'cats')
-		self.assertEqual(dogs['name'], 'dogs')
-
-		self.admin.update_charity_category(cats['id'], 'cats and more cats')
-		categories = self.admin.read_charity_categories()
-
-		self.assertEqual(len(categories), 2)
-		cats = categories[0]
-		dogs = categories[1]
-		self.assertEqual(cats['name'], 'cats and more cats')
-		self.assertEqual(dogs['name'], 'dogs', 'only cat should have been renamed')
-
-		self.admin.delete_charity_category(dogs['id'])
-		categories = self.admin.read_charity_categories()
-
-		self.assertEqual(len(categories), 1)
-		cats = categories[0]
-		self.assertEqual(cats['name'], 'cats and more cats')
+		with self.assertRaises(donationswap.DonationException):
+			self.admin.create_charity_category('dogs')
+		with self.assertRaises(donationswap.DonationException):
+			self.admin.read_charity_categories()
+		with self.assertRaises(donationswap.DonationException):
+			self.admin.delete_charity_category(dogs['id'])
 
 if __name__ == '__main__':
 	unittest.main(verbosity=2)
