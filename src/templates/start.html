@@ -46,9 +46,6 @@
 				<select class="bordered" id="idCharity"></select>.
 			</p>
 			<p>
-				<label for="chkTaxes"><input id="chkTaxes" type="checkbox">Show only tax-deductible charities</label>
-			</p>
-			<p>
 				<a href="/charities/" target="_blank">Learn more</a> about our list of supported charities.
 			</p>
 			<p>
@@ -117,7 +114,7 @@ function captchaBad() {
 		});
 	}
 
-	function populateCharities(charities, charitiesInCountry) {
+	function populateCharities(charities) {
 		const categories = [... new Set(charities.map(charity => charity.category))];
 		const categoryByName = {};
 		const optgroups = [];
@@ -130,13 +127,11 @@ function captchaBad() {
 		});
 
 		charities.forEach(charity => {
-			if (charitiesInCountry.length === 0 || charitiesInCountry.indexOf(charity.id) !== -1) {
-				categoryByName[charity.category].appendChild(createNode({
-					xtype: 'option',
-					a_value: charity.id,
-					p_textContent: charity.name,
-				}));
-			}
+			categoryByName[charity.category].appendChild(createNode({
+				xtype: 'option',
+				a_value: charity.id,
+				p_textContent: charity.name,
+			}));
 		});
 
 		ui.idCharity.innerHTML = '';
@@ -176,8 +171,6 @@ function captchaBad() {
 				ui.txtCurrency1.setAttribute('title', currency.name);
 				ui.txtCurrency2.textContent = currency.iso;
 				ui.txtCurrency2.setAttribute('title', currency.name);
-
-				populateCharities(info.charities, ui.chkTaxes.checked ? info.charities_in_countries[ui.idCountry.value] : []);
 			};
 			ui.idCountry.onchange(); // to set currency
 
@@ -185,14 +178,10 @@ function captchaBad() {
 			ui.intAmount.value = args.hasOwnProperty('amount') ? args.amount : 50;
 			ui.intMinAmount.value = args.hasOwnProperty('min_amount') ? args.min_amount : 50;
 
-			populateCharities(info.charities, ui.chkTaxes.checked ? info.charities_in_countries[ui.idCountry.value] : []);
+			populateCharities(info.charities);
 			if (args.hasOwnProperty('charity')) {
 				ui.idCharity.value = args.charity;
 			}
-
-			ui.chkTaxes.onchange = () => {
-				populateCharities(info.charities, ui.chkTaxes.checked ? info.charities_in_countries[ui.idCountry.value] : []);
-			};
 
 			// populate calendar
 			for (let day = 1; day <= 31; day++) {

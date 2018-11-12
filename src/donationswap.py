@@ -46,10 +46,11 @@ import geoip
 import mail
 import util
 
+
 #xxx change email to have minimum amount
 #    in match creation email and match confirmation email
+#    also on /match/
 
-#xxx remove "show only tax-deductible charities"
 #xxx default min_amount to half of amount
 
 #xxx run matchmaker every 5 minutes or so
@@ -265,18 +266,6 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		]
 
 	@staticmethod
-	def _get_charities_in_countries_info():
-		result = {}
-
-		for country in entities.Country.get_all():
-			result[country.id] = []
-			for charity in entities.Charity.get_all():
-				charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity.id, country.id)
-				if charity_in_country is not None:
-					result[country.id].append(charity.id)
-
-		return result
-
 	@ajax
 	def get_info(self):
 		client_country_iso = self._geoip.lookup(self._ip_address)
@@ -294,7 +283,6 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			'charities': self._get_charities_info(),
 			'client_country': client_country_id,
 			'countries': self._get_countries_info(),
-			'charities_in_countries': self._get_charities_in_countries_info(),
 			'today': {
 				'day': today.day,
 				'month': today.month,
