@@ -57,7 +57,7 @@
 			ui.txtTheirCharity.textContent = match.their_charity;
 			ui.txtTheirAmount.textContent = (match.my_currency === match.their_currency)
 				? `${match.their_amount} ${match.their_currency}`
-				: `${match.their_amount} ${match.their_currency} (${match.their_amount_converted} ${match.my_currency})`
+				: `${match.their_amount} ${match.their_currency}`
 		});
 
 	ui.btnApprove.onclick = () => {

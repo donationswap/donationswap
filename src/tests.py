@@ -318,20 +318,20 @@ class Templates(unittest.TestCase):
 
 	def test_match_appoved_email(self):
 		placeholders = [
-			'{%OLD_COUNTRY%}',
-			'{%OLD_CHARITY%}',
-			'{%OLD_AMOUNT%}',
-			'{%OLD_CURRENCY%}',
-			'{%OLD_EMAIL%}',
-			'{%OLD_AMOUNT_CONVERTED%}',
-			'{%OLD_INSTRUCTIONS%}',
-			'{%NEW_COUNTRY%}',
-			'{%NEW_CHARITY%}',
-			'{%NEW_AMOUNT%}',
-			'{%NEW_CURRENCY%}',
-			'{%NEW_EMAIL%}',
-			'{%NEW_AMOUNT_CONVERTED%}',
-			'{%NEW_INSTRUCTIONS%}',
+			'{%NAME_A%}',
+			'{%COUNTRY_A%}',
+			'{%CHARITY_A%}',
+			'{%ACTUAL_AMOUNT_A%}',
+			'{%CURRENCY_A%}',
+			'{%EMAIL_A%}',
+			'{%INSTRUCTIONS_A%}',
+			'{%NAME_B%}',
+			'{%COUNTRY_B%}',
+			'{%CHARITY_B%}',
+			'{%ACTUAL_AMOUNT_B%}',
+			'{%CURRENCY_B%}',
+			'{%EMAIL_B%}',
+			'{%INSTRUCTIONS_B%}',
 		]
 		txt = util.Template('match-approved-email.txt').content
 		self._check_expected_placeholders(txt, placeholders)
@@ -341,16 +341,16 @@ class Templates(unittest.TestCase):
 	def test_match_suggested_email(self):
 		placeholders = [
 			'{%YOUR_NAME%}',
-			#'{%YOUR_COUNTRY%}',
 			'{%YOUR_CHARITY%}',
 			'{%YOUR_AMOUNT%}',
 			'{%YOUR_MIN_AMOUNT%}',
+			'{%YOUR_ACTUAL_AMOUNT%}',
 			'{%YOUR_CURRENCY%}',
-			#'{%THEIR_COUNTRY%}',
 			'{%THEIR_CHARITY%}',
 			'{%THEIR_AMOUNT%}',
 			'{%THEIR_CURRENCY%}',
 			'{%THEIR_AMOUNT_CONVERTED%}',
+			'{%THEIR_ACTUAL_AMOUNT%}',
 			'{%SECRET%}',
 		]
 		txt = util.Template('match-suggested-email.txt').content
@@ -395,12 +395,12 @@ class Admin(unittest.TestCase):
 			currencies = self.admin.read_currencies()
 
 	def test_charity_categories(self):
-		with self.assertRaises(donationswap.DonationException):
+		with self.assertRaises(ValueError):
 			self.admin.create_charity_category('dogs')
-		with self.assertRaises(donationswap.DonationException):
+		with self.assertRaises(ValueError):
 			self.admin.read_charity_categories()
-		with self.assertRaises(donationswap.DonationException):
-			self.admin.delete_charity_category(dogs['id'])
+		with self.assertRaises(ValueError):
+			self.admin.delete_charity_category(42)
 
 if __name__ == '__main__':
 	unittest.main(verbosity=2)

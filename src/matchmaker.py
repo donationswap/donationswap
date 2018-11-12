@@ -218,24 +218,41 @@ class Matchmaker:
 		return matches
 
 	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		your_amount_in_their_currency = self._currency.convert(
+		their_amount_in_your_currency = self._currency.convert(
 			their_offer.amount,
 			their_offer.country.currency.iso,
 			my_offer.country.currency.iso)
 
+		if self._currency.is_more_money(
+			my_offer.amount,
+			my_offer.country.currency.iso,
+			their_offer.amount,
+			their_offer.country.currency.iso
+		):
+			my_actual_amount = self._currency.convert(
+				their_offer.amount,
+				their_offer.country.currency.iso,
+				my_offer.country.currency.iso)
+			their_actual_amount = their_offer.amount
+		else:
+			my_actual_amount = my_offer.amount
+			their_actual_amount = self._currency.convert(
+				my_actual_amount,
+				my_offer.country.currency.iso,
+				their_offer.country.currency.iso)
+
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
-			#'{%YOUR_COUNTRY%}': my_offer.country.name,
 			'{%YOUR_CHARITY%}': my_offer.charity.name,
 			'{%YOUR_AMOUNT%}': my_offer.amount,
 			'{%YOUR_MIN_AMOUNT%}': my_offer.min_amount,
+			'{%YOUR_ACTUAL_AMOUNT%}': my_actual_amount,
 			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
-			'{%THEIR_COUNTRY%}': their_offer.country.name,
 			'{%THEIR_CHARITY%}': their_offer.charity.name,
 			'{%THEIR_AMOUNT%}': their_offer.amount,
-			'{%THEIR_MIN_AMOUNT%}': their_offer.min_amount,
 			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
-			'{%THEIR_AMOUNT_CONVERTED%}': your_amount_in_their_currency,
+			'{%THEIR_AMOUNT_CONVERTED%}': their_amount_in_your_currency,
+			'{%THEIR_ACTUAL_AMOUNT%}': their_actual_amount,
 			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
 			# Do NOT put their email address here.
 			# Wait until both parties approved the match.
@@ -271,54 +288,65 @@ class Matchmaker:
 			self._send_mail_about_match(old_offer, new_offer, match_secret)
 			self._send_mail_about_match(new_offer, old_offer, match_secret)
 
-	def _send_mail_about_deal(self, old_offer, new_offer):
-		old_amount_in_new_currency = self._currency.convert(
-			old_offer.amount,
-			old_offer.country.currency.iso,
-			new_offer.country.currency.iso)
-		new_amount_in_old_currency = self._currency.convert(
-			new_offer.amount,
-			new_offer.country.currency.iso,
-			old_offer.country.currency.iso)
-
-		tmp = entities.CharityInCountry.by_charity_and_country_id(new_offer.charity.id, new_offer.country.id)
-		if tmp is not None:
-			old_instructions = tmp.instructions
+	def _send_mail_about_deal(self, offer_a, offer_b):
+		if self._currency.is_more_money(
+			offer_a.amount,
+			offer_a.country.currency.iso,
+			offer_b.amount,
+			offer_b.country.currency.iso
+		):
+			actual_amount_a = self._currency.convert(
+				offer_b.amount,
+				offer_b.country.currency.iso,
+				offer_a.country.currency.iso)
+			actual_amount_b = offer_b.amount
 		else:
-			old_instructions = 'Sorry, there are no instructions available (yet).'
+			actual_amount_a = offer_a.amount
+			actual_amount_b = self._currency.convert(
+				offer_a.amount,
+				offer_a.country.currency.iso,
+				offer_b.country.currency.iso)
 
-		tmp = entities.CharityInCountry.by_charity_and_country_id(old_offer.charity.id, new_offer.country.id)
+		tmp = entities.CharityInCountry.by_charity_and_country_id(
+			offer_b.charity.id,
+			offer_a.country.id)
 		if tmp is not None:
-			new_instructions = tmp.instructions
+			instructions_a = tmp.instructions
 		else:
-			new_instructions = 'Sorry, there are no instructions available (yet).'
+			instructions_a = 'Sorry, there are no instructions available (yet).'
+
+		tmp = entities.CharityInCountry.by_charity_and_country_id(
+			offer_a.charity.id,
+			offer_b.country.id)
+		if tmp is not None:
+			instructions_b = tmp.instructions
+		else:
+			instructions_b = 'Sorry, there are no instructions available (yet).'
 
 		replacements = {
-			'{%OLD_NAME%}': old_offer.name,
-			'{%OLD_COUNTRY%}': old_offer.country.name,
-			'{%OLD_CHARITY%}': old_offer.charity.name,
-			'{%OLD_AMOUNT%}': old_offer.amount,
-			'{%OLD_CURRENCY%}': old_offer.country.currency.iso,
-			'{%OLD_EMAIL%}': old_offer.email,
-			'{%OLD_AMOUNT_CONVERTED%}': old_amount_in_new_currency,
-			'{%OLD_INSTRUCTIONS%}': old_instructions,
-			'{%NEW_NAME%}': new_offer.name,
-			'{%NEW_COUNTRY%}': new_offer.country.name,
-			'{%NEW_CHARITY%}': new_offer.charity.name,
-			'{%NEW_AMOUNT%}': new_offer.amount,
-			'{%NEW_CURRENCY%}': new_offer.country.currency.iso,
-			'{%NEW_EMAIL%}': new_offer.email,
-			'{%NEW_AMOUNT_CONVERTED%}': new_amount_in_old_currency,
-			'{%NEW_INSTRUCTIONS%}': new_instructions,
+			'{%NAME_A%}': offer_a.name,
+			'{%COUNTRY_A%}': offer_a.country.name,
+			'{%CHARITY_A%}': offer_a.charity.name,
+			'{%ACTUAL_AMOUNT_A%}': actual_amount_a,
+			'{%CURRENCY_A%}': offer_a.country.currency.iso,
+			'{%EMAIL_A%}': offer_a.email,
+			'{%INSTRUCTIONS_A%}': instructions_a,
+			'{%NAME_B%}': offer_b.name,
+			'{%COUNTRY_B%}': offer_b.country.name,
+			'{%CHARITY_B%}': offer_b.charity.name,
+			'{%ACTUAL_AMOUNT_B%}': actual_amount_b,
+			'{%CURRENCY_B%}': offer_b.country.currency.iso,
+			'{%EMAIL_B%}': offer_b.email,
+			'{%INSTRUCTIONS_B%}': instructions_b,
 		}
 
-		logging.info('Sending deal email to %s and %s.', old_offer.email, new_offer.email)
+		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
 
 		self._mail.send(
 			'Here is your match!',
 			util.Template('match-approved-email.txt').replace(replacements).content,
 			html=util.Template('match-approved-email.html').replace(replacements).content,
-			to=[old_offer.email, new_offer.email]
+			to=[offer_a.email, offer_b.email]
 		)
 
 	def process_approved_matches(self):

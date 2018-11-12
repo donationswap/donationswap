@@ -12,6 +12,9 @@ Charity you wish to support: {%YOUR_CHARITY%}
 Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}
 Minimum swap amount: {%YOUR_MIN_AMOUNT%} {%YOUR_CURRENCY%}
 
+If both of you accept the match, you will be donating
+{%YOUR_ACTUAL_AMOUNT%} {%YOUR_CURRENCY%} to {%THEIR_CHARITY%},
+and they will be donating the same amount ({%THEIR_ACTUAL_AMOUNT%} {%THEIR_CURRENCY%}) to {%YOUR_CHARITY%}.
 
 Please visit https://donationswap.eahub.org/match/#{%SECRET%}
 to either approve or decline the donation swap.

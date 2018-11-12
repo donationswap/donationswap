@@ -47,10 +47,6 @@ import mail
 import util
 
 
-#xxx change email to have minimum amount
-#    in match creation email and match confirmation email
-#    also on /match/
-
 #xxx run matchmaker every 5 minutes or so
 
 #xxx find out what information the matching algorithm provides
@@ -58,15 +54,14 @@ import util
 
 #xxx allow admins to force a match
 
-#xxx when a user declines a match, they should get asked if
-#    they want to delete their own (now suspended) offer.
-
 #xxx send feedback email after a month (don't delete match after sending out the deal email)
 #    add "completed_ts" column to match
 
 #xxx consolidate databases
 
 #xxx find a way to not hard-code subject lines and error messages
+
+#xxx point system for match evaluation
 
 #xxx post MVP features:
 #- a donation offer is pointless if
@@ -408,26 +403,33 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		if my_offer is None or their_offer is None:
 			return None
 
-		my_amount_converted = self._currency.convert(
-				my_offer.amount,
-				my_offer.country.currency.iso,
-				their_offer.country.currency.iso)
-		their_amount_converted = self._currency.convert(
+		if self._currency.is_more_money(
+			my_offer.amount,
+			my_offer.country.currency.iso,
+			their_offer.amount,
+			their_offer.country.currency.iso
+		):
+			my_actual_amount = self._currency.convert(
 				their_offer.amount,
 				their_offer.country.currency.iso,
 				my_offer.country.currency.iso)
+			their_actual_amount = their_offer.amount
+		else:
+			my_actual_amount = my_offer.amount
+			their_actual_amount = self._currency.convert(
+				my_offer.amount,
+				my_offer.country.currency.iso,
+				their_offer.country.currency.iso)
 
 		return {
 			'my_country': my_offer.country.name,
 			'my_charity': my_offer.charity.name,
-			'my_amount': my_offer.amount,
+			'my_amount': my_actual_amount,
 			'my_currency': my_offer.country.currency.iso,
-			'my_amount_converted': my_amount_converted,
 			'their_country': their_offer.country.name,
 			'their_charity': their_offer.charity.name,
-			'their_amount': their_offer.amount,
+			'their_amount': their_actual_amount,
 			'their_currency': their_offer.country.currency.iso,
-			'their_amount_converted': their_amount_converted,
 			# Do NOT put their email address here.
 			# Wait until both parties approved the match.
 		}
@@ -482,7 +484,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			}
 			self._mail.send(
 				'A match you approved has been declined',
-				util.Template('match-decliner-email.txt').replace(replacements).content,
+				util.Template('match-declined-email.txt').replace(replacements).content,
 				html=util.Template('match-declined-email.html').replace(replacements).content,
 				to=other_offer.email
 			)

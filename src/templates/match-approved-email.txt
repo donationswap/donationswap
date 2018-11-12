@@ -1,25 +1,25 @@
-Dear {%OLD_NAME%} and {%NEW_NAME%}, 
+Dear {%NAME_A%} and {%NAME_B%}, 
 
 Success! You have been matched by the EA donation swap site. 
 
-{%OLD_NAME%} is from {%OLD_COUNTRY%}, and wants to support {%OLD_CHARITY%}. Their email address is {%OLD_EMAIL%}.
-{%NEW_NAME%} is from {%NEW_COUNTRY%}, and wants to support {%NEW_CHARITY%}. Their email address is {%NEW_EMAIL%}.
+{%NAME_A%} is from {%COUNTRY_A%}, and wants to support {%CHARITY_A%}. Their email address is {%EMAIL_A%}.
+{%NAME_B%} is from {%COUNTRY_B%}, and wants to support {%CHARITY_B%}. Their email address is {%EMAIL_B%}.
 
 If you choose to proceed with your donation swap, here are your instructions:
 
 ________________________________________________________________
 
-{%OLD_NAME%}:
+{%NAME_A%}:
 
-{%OLD_NAME%} will donate {%OLD_AMOUNT%} {%OLD_CURRENCY%} to the charity {%NEW_CHARITY%}.
-Instructions to donate: {%NEW_INSTRUCTIONS%}
+{%NAME_A%} will donate {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} to the charity {%CHARITY_B%}.
+Instructions to donate: {%INSTRUCTIONS_A%}
 
 ________________________________________________________________
 
-{%NEW_NAME%}:
+{%NAME_B%}:
 
-{%NEW_NAME%} will donate {%NEW_AMOUNT%} {%NEW_CURRENCY%} to the charity {%OLD_CHARITY%}.
-Instructions to donate: {%OLD_INSTRUCTIONS%}
+{%NAME_B%} will donate {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} to the charity {%CHARITY_A%}.
+Instructions to donate: {%INSTRUCTIONS_B%}
 
 ________________________________________________________________
 
