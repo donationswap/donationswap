@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import grp
+import json
 import logging
 import logging.handlers
 import os
@@ -97,6 +98,7 @@ class Template:
 
 	def __init__(self, filename):
 		self.content = self._load_file(filename)
+		self._json = None
 		self.populate_file_references()
 
 	@staticmethod
@@ -108,6 +110,13 @@ class Template:
 				return f.read()
 		else:
 			return ''
+
+	def json(self, key=None):
+		if self._json is None:
+			self._json = json.loads(self.content)
+		if key is not None:
+			return self._json.get(key, key)
+		return self._json
 
 	def populate_file_references(self):
 		'''Replace all occurrences of `{%FILE=...%}` with the content of that file.

@@ -1,3 +1,11 @@
 {
-	"{%ERROR%}": "Something went wrong"
+	"bad amount": "The amount you provided for your donation offer is not a valid number.",
+	"bad captcha": "The reCapcha response was incorrect. Please refresh the page and try again.",
+	"bad email address": "The email address you provided in your donation offer is not valid.",
+	"bad expiration date": "The expiration date you provided for your donation offer is not valid.",
+	"bad min_amount": "The minimum amount you provided for your donation offer is not a valid number.",
+	"charity not found": "The charity you provided in your donation offer does not exist in our database.",
+	"country not found": "The country you provided in your donation offer does not exist in our database.",
+	"match not found": "Could not find that match. Deleted? Declined? Expired?",
+	"no name provided": "You did not provide a name in your donation offer."
 }

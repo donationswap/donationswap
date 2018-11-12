@@ -372,6 +372,24 @@ class Templates(unittest.TestCase):
 		txt = util.Template('new-post-email.html').content
 		self._check_expected_placeholders(txt, placeholders)
 
+	def test_email_subjects(self):
+		data = util.Template('email-subjects.json').json()
+		self.assertTrue('match-declined-email' in data)
+		self.assertTrue('match-decliner-email' in data)
+		self.assertTrue('new-post-email' in data)
+
+	def test_errors_and_warnings(self):
+		data = util.Template('errors-and-warnings.json').json()
+		self.assertTrue('bad amount' in data)
+		self.assertTrue('bad captcha' in data)
+		self.assertTrue('bad email address' in data)
+		self.assertTrue('bad expiration date' in data)
+		self.assertTrue('bad min_amount' in data)
+		self.assertTrue('charity not found' in data)
+		self.assertTrue('country not found' in data)
+		self.assertTrue('match not found' in data)
+		self.assertTrue('no name provided' in data)
+
 class Admin(unittest.TestCase):
 
 	def setUp(self):

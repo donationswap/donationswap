@@ -46,8 +46,11 @@ import geoip
 import mail
 import util
 
-
 #xxx run matchmaker every 5 minutes or so
+
+#xxx client-side validation for /start/
+
+#xxx multithread email sending
 
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
@@ -59,12 +62,10 @@ import util
 
 #xxx consolidate databases
 
-#xxx find a way to not hard-code subject lines and error messages
-
 #xxx point system for match evaluation
 
 #xxx post MVP features:
-#- a donation offer is pointless if
+# - a donation offer is pointless if
 #  - it is to the only tax-deductible charity in the country OR
 #  - it is to a charity that is tax-decuctible everywhere
 # - add "never match me with any of these charity" blacklist button.
@@ -203,7 +204,9 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
 
 		if not is_legit:
-			raise DonationException('bad captcha response')
+			raise DonationException(
+				util.Template('errors-and-warnings.json').json('bad captcha')
+			)
 
 		tmp = util.Template('contact-email.txt')
 		tmp.replace({
@@ -222,7 +225,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			eventlog.sent_contact_message(db, tmp.content, send_to, send_cc, send_bcc)
 
 		self._mail.send(
-			'Message for donationswap.eahub.org', #xxx do not hardcode subjects
+			'Message for donationswap.eahub.org',
 			tmp.content,
 			to=send_to,
 			cc=send_cc,
@@ -290,46 +293,47 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		return None
 
 	def _validate_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
+		errors = util.Template('errors-and-warnings.json')
+
 		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
 
 		if not is_legit:
-			raise DonationException('bad captcha response')
-
+			raise DonationException(errors.json('bad captcha'))
 
 		name = name.strip()
 		if not name:
-			raise DonationException('no name provided')
+			raise DonationException(errors.json('no name provided'))
 
 		country = entities.Country.by_id(country)
 		if country is None:
-			raise DonationException('country not found')
+			raise DonationException(errors.json('country not found'))
 
-		amount = self._int(amount, 'invalid amount')
+		amount = self._int(amount, errors.json('bad amount'))
 		if amount < 0:
-			raise DonationException('negative amount')
+			raise DonationException(errors.json('bad amount'))
 
-		min_amount = self._int(min_amount, 'invalid min_amount')
+		min_amount = self._int(min_amount, errors.json('bad min_amount'))
 		if min_amount < 0:
-			raise DonationException('negative min_amount')
+			raise DonationException(errors.json('bad min_amount'))
 
 
 		charity = entities.Charity.by_id(charity)
 		if charity is None:
-			raise DonationException('charity not found')
+			raise DonationException(errors.json('charity not found'))
 
 		email = email.strip()
 		if not re.fullmatch(r'.+?@.+\..+', email):
-			raise DonationException('bad email address')
+			raise DonationException(errors.json('bad email address'))
 
 		expires_ts = '%04i-%02i-%02i' % (
-			self._int(expiration['year'], 'invalid expiration date'),
-			self._int(expiration['month'], 'invalid expiration date'),
-			self._int(expiration['day'], 'invalid expiration date')
+			self._int(expiration['year'], errors.json('bad expiration date')),
+			self._int(expiration['month'], errors.json('bad expiration date')),
+			self._int(expiration['day'], errors.json('bad expiration date'))
 		)
 		try:
 			expires_ts = datetime.datetime.strptime(expires_ts, '%Y-%m-%d')
 		except ValueError:
-			DonationException('invalid expiration date')
+			DonationException(errors.json('bad expiration date'))
 
 		return name, country, amount, min_amount, charity, email, expires_ts
 
@@ -354,7 +358,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			'{%MIN_AMOUNT%}': offer.min_amount,
 		}
 		self._mail.send(
-			'Please confirm your donation offer',
+			util.Template('email-subjects.json').json('new-post-email'),
 			util.Template('new-post-email.txt').replace(replacements).content,
 			html=util.Template('new-post-email.html').replace(replacements).content,
 			to=email
@@ -439,7 +443,9 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		match, old_offer, new_offer, my_offer, _ = self._get_match_and_offers(secret)
 
 		if match is None:
-			raise DonationException('Could not find that match. Deleted? Declined? Expired?')
+			raise DonationException(
+				util.Template('errors-and-warnings.json').json('match not found')
+			)
 
 		if my_offer == old_offer:
 			with self._database.connect() as db:
@@ -455,7 +461,9 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		match, old_offer, new_offer, my_offer, other_offer = self._get_match_and_offers(secret)
 
 		if match is None:
-			raise DonationException('Could not find that match. Deleted? Declined? Expired?')
+			raise DonationException(
+				util.Template('errors-and-warnings.json').json('match not found')
+			)
 
 		with self._database.connect() as db:
 			query = '''
@@ -472,7 +480,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 				'{%OFFER_SECRET%}': my_offer.secret,
 			}
 			self._mail.send(
-				'You declined a match',
+				util.Template('match-decliner-email.json').json('new-post-email'),
 				util.Template('match-decliner-email.txt').replace(replacements).content,
 				html=util.Template('match-decliner-email.html').replace(replacements).content,
 				to=my_offer.email
@@ -483,7 +491,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 				'{%OFFER_SECRET%}': other_offer.secret,
 			}
 			self._mail.send(
-				'A match you approved has been declined',
+				util.Template('match-declined-email.json').json('new-post-email'),
 				util.Template('match-declined-email.txt').replace(replacements).content,
 				html=util.Template('match-declined-email.html').replace(replacements).content,
 				to=other_offer.email
