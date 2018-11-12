@@ -52,10 +52,8 @@
 				window.location.pathname = '/';
 				return;
 			}
-			ui.txtMyCountry.textContent = match.my_country;
 			ui.txtMyCharity.textContent = match.my_charity;
 			ui.txtMyAmount.textContent = `${match.my_amount} ${match.my_currency}`;
-			ui.txtTheirCountry.textContent = match.their_country;
 			ui.txtTheirCharity.textContent = match.their_charity;
 			ui.txtTheirAmount.textContent = (match.my_currency === match.their_currency)
 				? `${match.their_amount} ${match.their_currency}`

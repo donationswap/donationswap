@@ -46,9 +46,6 @@ import geoip
 import mail
 import util
 
-#xxx Match object created by matchmaker, required by webserver
-#    => reload matches in `_get_match_and_offers(...):`
-
 #xxx change email to have minimum amount
 #    in match creation email and match confirmation email
 
@@ -122,8 +119,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		except ValueError:
 			raise DonationException(msg)
 
-	@staticmethod
-	def _get_match_and_offers(secret):
+	def _get_match_and_offers(self, secret):
 		if len(secret) != 48:
 			logging.debug('invalid secret length.')
 			return None, None, None, None, None
@@ -131,8 +127,15 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		offer_secret = secret[:24]
 		match_secret = secret[24:]
 
-		#xxx load matches if secret isn't there.
 		match = entities.Match.by_secret(match_secret)
+
+		if match is None:
+			# not cached yet? reload from db
+			logging.debug('reloading matches')
+			with self._database.connect() as db:
+				entities.Match.load(db)
+			match = entities.Match.by_secret(match_secret)
+
 		if match is None:
 			logging.debug('match with secret "%s" not found.', match_secret)
 			return None, None, None, None, None
