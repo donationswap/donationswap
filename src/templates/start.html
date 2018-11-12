@@ -102,6 +102,8 @@ function captchaBad() {
 
 	const ui = getElementsById();
 
+	let autoMin = true;
+
 	captchaBad();
 
 	function populateCountries(countries) {
@@ -176,7 +178,14 @@ function captchaBad() {
 
 			// populate amount
 			ui.intAmount.value = args.hasOwnProperty('amount') ? args.amount : 50;
-			ui.intMinAmount.value = args.hasOwnProperty('min_amount') ? args.min_amount : 50;
+			ui.intAmount.oninput = () => {
+				if (autoMin) {
+					ui.intMinAmount.value = Math.floor(ui.intAmount.value / 2);
+				}
+			};
+
+			ui.intMinAmount.value = args.hasOwnProperty('min_amount') ? args.min_amount : Math.floor(ui.intAmount.value / 2);
+			ui.intMinAmount.oninput = () => autoMin = false;
 
 			populateCharities(info.charities);
 			if (args.hasOwnProperty('charity')) {

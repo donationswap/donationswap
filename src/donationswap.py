@@ -51,8 +51,6 @@ import util
 #    in match creation email and match confirmation email
 #    also on /match/
 
-#xxx default min_amount to half of amount
-
 #xxx run matchmaker every 5 minutes or so
 
 #xxx find out what information the matching algorithm provides
@@ -265,7 +263,6 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			for i in sorted(entities.Country.get_all(), key=lambda i: i.name)
 		]
 
-	@staticmethod
 	@ajax
 	def get_info(self):
 		client_country_iso = self._geoip.lookup(self._ip_address)
