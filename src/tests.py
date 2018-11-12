@@ -301,9 +301,9 @@ class Templates(unittest.TestCase):
 
 	def _check_expected_placeholders(self, txt, placeholders):
 		for placeholder in placeholders:
-			self.assertTrue(placeholder in txt)
+			self.assertTrue(placeholder in txt, 'Missing expected placeholder %s.' % placeholder)
 		for found_placeholder in re.findall(r'{%.+?%}', txt):
-			self.assertTrue(found_placeholder in placeholders)
+			self.assertTrue(found_placeholder in placeholders, 'Found unused placeholder %s.' % found_placeholder)
 
 	def test_contact_email(self):
 		placeholders = [
@@ -340,11 +340,13 @@ class Templates(unittest.TestCase):
 
 	def test_match_suggested_email(self):
 		placeholders = [
-			'{%YOUR_COUNTRY%}',
+			'{%YOUR_NAME%}',
+			#'{%YOUR_COUNTRY%}',
 			'{%YOUR_CHARITY%}',
 			'{%YOUR_AMOUNT%}',
+			'{%YOUR_MIN_AMOUNT%}',
 			'{%YOUR_CURRENCY%}',
-			'{%THEIR_COUNTRY%}',
+			#'{%THEIR_COUNTRY%}',
 			'{%THEIR_CHARITY%}',
 			'{%THEIR_AMOUNT%}',
 			'{%THEIR_CURRENCY%}',
@@ -358,10 +360,12 @@ class Templates(unittest.TestCase):
 
 	def test_new_post_email(self):
 		placeholders = [
+			'{%NAME%}',
 			'{%SECRET%}',
 			'{%CHARITY%}',
 			'{%CURRENCY%}',
 			'{%AMOUNT%}',
+			'{%MIN_AMOUNT%}',
 		]
 		txt = util.Template('new-post-email.txt').content
 		self._check_expected_placeholders(txt, placeholders)

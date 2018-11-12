@@ -225,7 +225,7 @@ class Matchmaker:
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
-			'{%YOUR_COUNTRY%}': my_offer.country.name,
+			#'{%YOUR_COUNTRY%}': my_offer.country.name,
 			'{%YOUR_CHARITY%}': my_offer.charity.name,
 			'{%YOUR_AMOUNT%}': my_offer.amount,
 			'{%YOUR_MIN_AMOUNT%}': my_offer.min_amount,

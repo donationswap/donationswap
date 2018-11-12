@@ -46,17 +46,31 @@ import geoip
 import mail
 import util
 
-def ajax(f):
-	f.allow_ajax = True
-	return f
+#xxx Match object created by matchmaker, required by webserver
+#    => reload matches in `_get_match_and_offers(...):`
 
-#xxx admin stuff must require login
-#    (can't rely on hidden URL When code is publicly available)
+#xxx change email to have minimum amount
+#    in match creation email and match confirmation email
+
+#xxx remove "show only tax-deductible charities"
+#xxx default min_amount to half of amount
+
+#xxx run matchmaker every 5 minutes or so
+
+#xxx find out what information the matching algorithm provides
+#    (and add it to the email)
+
+#xxx allow admins to force a match
 
 #xxx when a user declines a match, they should get asked if
 #    they want to delete their own (now suspended) offer.
 
-#xxx send feedback email after a month.
+#xxx send feedback email after a month (don't delete match after sending out the deal email)
+#    add "completed_ts" column to match
+
+#xxx consolidate databases
+
+#xxx find a way to not hard-code subject lines and error messages
 
 #xxx post MVP features:
 #- a donation offer is pointless if
@@ -66,6 +80,11 @@ def ajax(f):
 # - add "blacklist charity" to offer.
 # - blacklist users who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
+# - add link to match email for user to create offer for remaining amount
+
+def ajax(f):
+	f.allow_ajax = True
+	return f
 
 def create_secret():
 	timestamp_bytes = struct.pack('!d', time.time())
@@ -93,6 +112,9 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 
 		self._ip_address = None
 
+	def get_cookie_key(self):
+		return self._config.cookie_key
+
 	@staticmethod
 	def _int(number, msg):
 		try:
@@ -109,6 +131,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		offer_secret = secret[:24]
 		match_secret = secret[24:]
 
+		#xxx load matches if secret isn't there.
 		match = entities.Match.by_secret(match_secret)
 		if match is None:
 			logging.debug('match with secret "%s" not found.', match_secret)
@@ -148,8 +171,19 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			logging.error('Ajax Error', exc_info=True)
 			return False, None
 
-	def run_admin_ajax(self, command, args):
+	def run_admin_ajax(self, user_secret, command, args):
 		'''Admin ajax methods do have their error messages exposed.'''
+
+		with self._database.connect() as db:
+			query = '''SELECT * FROM admins WHERE secret = %(secret)s;'''
+			user = db.read_one(query, secret=user_secret)
+		if user is None:
+			self._admin.user = None
+		else:
+			self._admin.user = {
+				'id': user['id'],
+				'email': user['email'],
+			}
 
 		if command.startswith('_'):
 			return False, 'method forbidden'
