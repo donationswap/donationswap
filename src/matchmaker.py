@@ -44,11 +44,11 @@ class Matchmaker:
 				'country': offer.country_id,
 				'amount': offer.amount,
 				'charity': offer.charity_id,
-				'expires': [
-					offer.expires_ts.day,
-					offer.expires_ts.month,
-					offer.expires_ts.year,
-				],
+				'expires': {
+					'day': offer.expires_ts.day,
+					'month': offer.expires_ts.month,
+					'year': offer.expires_ts.year,
+				},
 				'email': offer.email,
 			}))
 		}

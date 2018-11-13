@@ -46,23 +46,27 @@ import geoip
 import mail
 import util
 
-#xxx run matchmaker every 5 minutes or so
+#xxx move all reactions from matchmaker.py to donationswap.py
+
+#xxx allow admins to evaluate and force a match
+
+#xxx benchmark all ajax calls
+
+#xxx run matchmaker every hour or so to delete expired entities
 
 #xxx client-side validation for /start/
 
-#xxx multithread email sending
+#xxx multithread email sending to speed up webserver
 
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
-
-#xxx allow admins to force a match
 
 #xxx send feedback email after a month (don't delete match after sending out the deal email)
 #    add "completed_ts" column to match
 
 #xxx consolidate databases
 
-#xxx point system for match evaluation
+#xxx layout html emails
 
 #xxx post MVP features:
 # - a donation offer is pointless if
@@ -111,7 +115,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 	def _int(number, msg):
 		try:
 			return int(number)
-		except ValueError:
+		except (TypeError, ValueError):
 			raise DonationException(msg)
 
 	def _get_match_and_offers(self, secret):
@@ -201,9 +205,7 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 
 	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
-		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
-
-		if not is_legit:
+		if not self._captcha.is_legit(self._ip_address, captcha_response):
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('bad captcha')
 			)
@@ -292,13 +294,8 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			return charity_in_country.instructions
 		return None
 
-	def _validate_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
+	def _validate_offer(self, name, country, amount, min_amount, charity, email, expiration):
 		errors = util.Template('errors-and-warnings.json')
-
-		is_legit = self._captcha.is_legit(self._ip_address, captcha_response)
-
-		if not is_legit:
-			raise DonationException(errors.json('bad captcha'))
 
 		name = name.strip()
 		if not name:
@@ -328,18 +325,31 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		expires_ts = '%04i-%02i-%02i' % (
 			self._int(expiration['year'], errors.json('bad expiration date')),
 			self._int(expiration['month'], errors.json('bad expiration date')),
-			self._int(expiration['day'], errors.json('bad expiration date'))
+			self._int(expiration['day'], errors.json('bad expiration date')),
 		)
 		try:
 			expires_ts = datetime.datetime.strptime(expires_ts, '%Y-%m-%d')
 		except ValueError:
-			DonationException(errors.json('bad expiration date'))
+			raise DonationException(errors.json('bad expiration date'))
 
 		return name, country, amount, min_amount, charity, email, expires_ts
 
 	@ajax
+	def validate_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
+		# pylint: disable=unused-argument
+		try:
+			self._validate_offer(name, country, amount, min_amount, charity, email, expiration)
+			return None
+		except DonationException as e:
+			return str(e)
+
+	@ajax
 	def create_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
-		name, country, amount, min_amount, charity, email, expires_ts = self._validate_offer(captcha_response, name, country, amount, min_amount, charity, email, expiration)
+		errors = util.Template('errors-and-warnings.json')
+		if not self._captcha.is_legit(self._ip_address, captcha_response):
+			raise DonationException(errors.json('bad captcha'))
+
+		name, country, amount, min_amount, charity, email, expires_ts = self._validate_offer(name, country, amount, min_amount, charity, email, expiration)
 
 		secret = create_secret()
 		# Do NOT return this secret to the client via this method.
@@ -400,6 +410,54 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			with self._database.connect() as db:
 				offer.delete(db)
 				eventlog.deleted_offer(db, offer)
+
+	def _get_match_score(self, offer_a, offer_b, db):
+		if offer_a.charity_id == offer_b.charity_id:
+			return 0, 'same charity'
+
+		if offer_a.country_id == offer_b.country_id:
+			return 0, 'same country'
+
+		if offer_a.email == offer_b.email:
+			return 0, 'same email address'
+
+		amount_a_in_currency_b = self._currency.convert(
+			offer_a.amount,
+			offer_a.country.currency.iso,
+			offer_b.country.currency.iso)
+		amount_b_in_currency_a = self._currency.convert(
+			offer_b.amount,
+			offer_b.country.currency.iso,
+			offer_a.country.currency.iso)
+
+		if amount_a_in_currency_b < offer_b.min_amount:
+			return 0, 'amount mismatch'
+		if amount_b_in_currency_a < offer_a.min_amount:
+			return 0, 'amount mismatch'
+
+		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
+		b_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_b.country_id) is not None
+
+		if not a_will_benefit and not b_will_benefit:
+			return 0, 'nobody will benefit'
+
+		query = '''
+			SELECT 1
+			FROM declined_matches
+			WHERE (new_offer_id = %(id_a)s AND old_offer_id = %(id_b)s)
+				OR (new_offer_id = %(id_b)s old_offer_id = %(id_a)s);
+		'''
+		declined = db.read_one(query, id_a=offer_a.id, id_b=offer_b.id) or False
+		if declined:
+			return 0, 'match declined'
+
+		if a_will_benefit and b_will_benefit:
+			factor, reason = 1, 'both benefit'
+		else:
+			factor, reason = 0.5, 'only one will benefit'
+
+		return factor, reason
+		#xxx higher score if amounts are closer to each other
 
 	@ajax
 	def get_match(self, secret):
