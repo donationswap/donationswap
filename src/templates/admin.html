@@ -55,7 +55,7 @@ li {
 	}
 
 	ui.btnLogin.onclick = () => {
-		ajax('/special-secret-admin/login', {
+		ajax('/ajax/login', {
 			email: ui.txtEmail.value,
 			password: ui.txtPassword.value,
 		})
@@ -64,7 +64,9 @@ li {
 				ui.txtPassword.value = '';
 				alert('You are now logged in.');
 			})
-			.catch(handleError);
+			.catch(() => {
+				alert('Error. Wrong username? Wrong password?');
+			});
 	};
 
 	ui.btnLogout.onclick = () => {

@@ -35,7 +35,8 @@ import re
 import struct
 import time
 
-import admin
+from passlib.apps import custom_app_context as pwd_context # `sudo pip3 install passlib`
+
 import captcha
 import config
 import currency
@@ -62,6 +63,8 @@ import util
 
 #xxx consolidate databases
 
+#xxx use entities instead of plain SQL for ajax from data-edit.html
+
 #xxx layout html emails
 
 #xxx post MVP features:
@@ -78,6 +81,10 @@ def ajax(f):
 	f.allow_ajax = True
 	return f
 
+def admin_ajax(f):
+	f.allow_admin_ajax = True
+	return f
+
 def create_secret():
 	timestamp_bytes = struct.pack('!d', time.time())
 	random_bytes = os.urandom(10)
@@ -86,14 +93,15 @@ def create_secret():
 class DonationException(Exception):
 	pass
 
-class Donationswap: # pylint: disable=too-many-instance-attributes
+class Donationswap:
+	# pylint: disable=too-many-instance-attributes
+	# pylint: disable=too-many-public-methods
 
 	def __init__(self, config_path):
 		self._config = config.Config(config_path)
 
 		self._database = database.Database(self._config.db_connection_string)
 
-		self._admin = admin.Admin(self._database)
 		self._captcha = captcha.Captcha(self._config.captcha_secret)
 		self._currency = currency.Currency(self._config.currency_cache, self._config.fixer_apikey)
 		self._geoip = geoip.GeoIpCountry(self._config.geoip_datafile)
@@ -173,29 +181,30 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			logging.error('Ajax Error', exc_info=True)
 			return False, None
 
-	def run_admin_ajax(self, user_secret, command, args):
+	def run_admin_ajax(self, user_secret, command, ip_address, args):
 		'''Admin ajax methods do have their error messages exposed.'''
 
 		with self._database.connect() as db:
 			query = '''SELECT * FROM admins WHERE secret = %(secret)s;'''
 			user = db.read_one(query, secret=user_secret)
 		if user is None:
-			self._admin.user = None
-		else:
-			self._admin.user = {
-				'id': user['id'],
-				'email': user['email'],
-			}
+			return False, 'Must be logged in.'
+		user = {
+			'id': user['id'],
+			'email': user['email'],
+		}
 
-		if command.startswith('_'):
-			return False, 'method forbidden'
-		method = getattr(self._admin, command, None)
+		method = getattr(self, command, None)
 		if method is None:
 			return False, 'method does not exist'
+		if not getattr(method, 'allow_admin_ajax', False):
+			return False, 'not an admin-ajax method'
+
+		self._ip_address = ip_address
 
 		try:
 			t1 = time.time()
-			result = method(**args)
+			result = method(user, **args)
 			t2 = time.time()
 			logging.debug('Benchmark: %s: %s sec.', command, t2-t1)
 			return True, result
@@ -558,3 +567,320 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 				html=util.Template('match-declined-email.html').replace(replacements).content,
 				to=other_offer.email
 			)
+
+	@ajax
+	def login(self, email, password):
+		with self._database.connect() as db:
+			query = '''
+				SELECT password_hash
+				FROM admins
+				WHERE email = %(email)s;
+			'''
+			row = db.read_one(query, email=email)
+			if row is None:
+				password_hash = None
+			else:
+				password_hash = row['password_hash']
+
+			# We run this even if password_hash is None, because
+			# otherwise "user does not exist" would return MUCH
+			# faster than "password is wrong", which is bad security.
+			success = pwd_context.verify(password, password_hash)
+
+			if not success:
+				raise ValueError('User not found or wrong password.')
+
+			secret = create_secret()
+
+			query = '''
+				UPDATE admins
+				SET secret=%(secret)s, last_login_ts=now()
+				WHERE email=%(email)s;
+			'''
+			db.write(query, email=email, secret=secret)
+
+			return secret
+
+	@admin_ajax
+	def logout(self, user):
+		with self._database.connect() as db:
+			query = '''
+				UPDATE admins
+				SET secret=null
+				WHERE id = %(admin_id)s;
+			'''
+			db.write(query, admin_id=user['id'])
+
+	@admin_ajax
+	def change_password(self, user, old_password, new_password):
+		with self._database.connect() as db:
+			query = '''
+				SELECT password_hash
+				FROM admins
+				WHERE id = %(admin_id)s;
+			'''
+			password_hash = db.read_one(query, admin_id=user['id'])['password_hash']
+			success = pwd_context.verify(old_password, password_hash)
+
+			if not success:
+				raise ValueError('Current password is incorrect.')
+
+			password_hash = pwd_context.encrypt(new_password)
+			query = '''
+				UPDATE admins
+				SET password_hash = %(password_hash)s
+				WHERE id = %(admin_id)s;
+			'''
+			db.write(query, password_hash=password_hash, admin_id=user['id'])
+
+	@admin_ajax
+	def read_all(self, user):
+		return {
+			'currencies': self.read_currencies(),
+			'charity_categories': self.read_charity_categories(),
+			'charities': self.read_charities(),
+			'countries': self.read_countries(),
+			'charities_in_countries': self.read_charities_in_countries(),
+		}
+
+	# There is no create, update, or delete for this one on purpose.
+	# All values are constants, because those are the exact
+	# currency that our 3rd party currency library supports.
+	def read_currencies(self):
+		query = '''
+			SELECT *
+			FROM currencies
+			ORDER BY iso;'''
+		with self._database.connect() as db:
+			return [
+				{
+					'id': i['id'],
+					'iso': i['iso'],
+					'name': i['name'],
+				}
+				for i in db.read(query)
+			]
+
+	@admin_ajax
+	def create_charity_category(self, user, name):
+		query = '''
+			INSERT INTO charity_categories (name)
+			VALUES (%(name)s);'''
+		with self._database.connect() as db:
+			db.write(query, name=name)
+
+	@admin_ajax
+	def read_charity_categories(self, user):
+		query = '''
+			SELECT *
+			FROM charity_categories
+			ORDER BY name;'''
+		with self._database.connect() as db:
+			return [
+				{
+					'id': i['id'],
+					'name': i['name'],
+				}
+				for i in db.read(query)
+			]
+
+	@admin_ajax
+	def update_charity_category(self, user, id, name):
+		query = '''
+			UPDATE charity_categories
+			SET name = %(name)s
+			WHERE id = %(id)s;'''
+		with self._database.connect() as db:
+			db.write(query, id=id, name=name)
+
+	@admin_ajax
+	def delete_charity_category(self, user, id):
+		query = '''
+			DELETE FROM charity_categories
+			WHERE id = %(id)s;'''
+		with self._database.connect() as db:
+			db.write(query, id=id)
+
+	@admin_ajax
+	def create_charity(self, user, name, category_id):
+		query = '''
+			INSERT INTO charities (name, category_id)
+			VALUES (%(name)s, %(category_id)s);'''
+		with self._database.connect() as db:
+			db.write(query, name=name, category_id=category_id)
+
+	@admin_ajax
+	def read_charities(self, user):
+		query = '''
+			SELECT *
+			FROM charities
+			ORDER BY name;'''
+		with self._database.connect() as db:
+			return [
+				{
+					'id': i['id'],
+					'name': i['name'],
+					'category_id': i['category_id'],
+				}
+				for i in db.read(query)
+			]
+
+	@admin_ajax
+	def update_charity(self, user, id, name, category_id):
+		query = '''
+			UPDATE charities
+			SET name = %(name)s, category_id = %(category_id)s
+			WHERE id = %(id)s;'''
+		with self._database.connect() as db:
+			db.write(query, id=id, name=name, category_id=category_id)
+
+	@admin_ajax
+	def delete_charity(self, user, id):
+		query = '''
+			DELETE FROM charities
+			WHERE id = %(id)s;'''
+		with self._database.connect() as db:
+			db.write(query, id=id)
+
+	@admin_ajax
+	def create_country(self, user, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+		query = '''
+			INSERT INTO countries (name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
+			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s, %(min_donation_amount)s, %(min_donation_currency_id)s);'''
+		with self._database.connect() as db:
+			db.write(query, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
+
+	@admin_ajax
+	def read_countries(self, user):
+		query = '''
+			SELECT *
+			FROM countries
+			ORDER BY name;'''
+		with self._database.connect() as db:
+			return [
+				{
+					'id': i['id'],
+					'name': i['name'],
+					'live_in_name': i['live_in_name'],
+					'iso_name': i['iso_name'],
+					'currency_id': i['currency_id'],
+					'min_donation_amount': i['min_donation_amount'],
+					'min_donation_currency_id': i['min_donation_currency_id'],
+				}
+				for i in db.read(query)
+			]
+
+	@admin_ajax
+	def update_country(self, user, id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+		query = '''
+			UPDATE countries
+			SET name = %(name)s, live_in_name = %(live_in_name)s, iso_name = %(iso_name)s, currency_id = %(currency_id)s, min_donation_amount = %(min_donation_amount)s, min_donation_currency_id = %(min_donation_currency_id)s
+			WHERE id = %(id)s;'''
+		with self._database.connect() as db:
+			db.write(query, id=id, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
+
+	@admin_ajax
+	def delete_country(self, user, id):
+		query = '''
+			DELETE FROM countries
+			WHERE id = %(id)s;'''
+		with self._database.connect() as db:
+			db.write(query, id=id)
+
+	@admin_ajax
+	def create_charity_in_country(self, user, charity_id, country_id, tax_factor, instructions):
+		query = '''
+			INSERT INTO charities_in_countries (charity_id, country_id, tax_factor, instructions)
+			VALUES (%(charity_id)s, %(country_id)s, %(tax_factor)s, %(instructions)s);'''
+		with self._database.connect() as db:
+			db.write(query, charity_id=charity_id, country_id=country_id, tax_factor=tax_factor, instructions=instructions)
+
+	@admin_ajax
+	def read_charities_in_countries(self, user):
+		query = '''
+			SELECT *
+			FROM charities_in_countries;'''
+		with self._database.connect() as db:
+			return [
+				{
+					'charity_id': i['charity_id'],
+					'country_id': i['country_id'],
+					'tax_factor': i['tax_factor'],
+					'instructions': i['instructions'],
+				}
+				for i in db.read(query)
+			]
+
+	@admin_ajax
+	def update_charity_in_country(self, user, charity_id, country_id, tax_factor, instructions):
+		query = '''
+			UPDATE charities_in_countries
+			SET tax_factor = %(tax_factor)s, instructions = %(instructions)s
+			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
+		with self._database.connect() as db:
+			db.write(query, charity_id=charity_id, country_id=country_id, tax_factor=tax_factor, instructions=instructions)
+
+	@admin_ajax
+	def delete_charity_in_country(self, user, charity_id, country_id):
+		query = '''
+			DELETE FROM charities_in_countries
+			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
+		with self._database.connect() as db:
+			db.write(query, charity_id=charity_id, country_id=country_id)
+
+	@admin_ajax
+	def read_log(self, user, min_timestamp, max_timestamp, event_types, offset, limit):
+		with self._database.connect() as db:
+			events = eventlog.get_events(
+				db,
+				min_timestamp=min_timestamp,
+				max_timestamp=max_timestamp,
+				event_types=event_types,
+				offset=offset,
+				limit=limit,
+			)
+		return events
+
+	@admin_ajax
+	def get_unmatched_offers(self, user):
+		'''Returns all offers that are
+		* not matched and
+		* not expired and
+		* confirmed
+		'''
+
+		query = '''
+			SELECT
+				offer.id,
+				country.name AS country,
+				offer.amount,
+				offer.min_amount,
+				currency.iso AS currency,
+				charity.name AS charity,
+				offer.expires_ts,
+				offer.email
+			FROM offers offer
+			JOIN countries country ON offer.country_id = country.id
+			JOIN currencies currency ON country.currency_id = currency.id
+			JOIN charities charity ON offer.charity_id = charity.id
+			WHERE
+				offer.confirmed
+				AND offer.expires_ts > now()
+				AND offer.id NOT IN (SELECT old_offer_id FROM matches)
+				AND offer.id NOT IN (SELECT new_offer_id FROM matches)
+			ORDER BY country ASC, charity ASC, expires_ts ASC
+		'''
+		with self._database.connect() as db:
+			return [
+				{
+					'id': i['id'],
+					'country': i['country'],
+					'amount': i['amount'],
+					'min_amount': i['min_amount'],
+					'currency': i['currency'],
+					'charity': i['charity'],
+					'expires_ts': i['expires_ts'].strftime('%Y-%m-%d %H:%M:%S'),
+					'email': i['email'],
+				}
+				for i in db.read(query)
+			]

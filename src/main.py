@@ -69,11 +69,7 @@ class AdminHandler(BaseHandler): # pylint: disable=abstract-method
 		if user_secret is not None:
 			user_secret = user_secret.decode('ascii')
 
-		success, result = self.logic.run_admin_ajax(user_secret, action, payload)
-
-		if action == 'login' and success:
-			self.set_secure_cookie('user', result, expires_days=1)
-			result = None
+		success, result = self.logic.run_admin_ajax(user_secret, action, self.request.remote_ip, payload)
 
 		self.set_header('Content-Type', 'application/json; charset=utf-8')
 		if success:
@@ -88,6 +84,10 @@ class AjaxHandler(BaseHandler): # pylint: disable=abstract-method
 		payload = json.loads(self.request.body.decode('utf-8'))
 
 		success, result = self.logic.run_ajax(action, self.request.remote_ip, payload)
+
+		if action == 'login' and success:
+			self.set_secure_cookie('user', result, expires_days=1)
+			result = None
 
 		self.set_header('Content-Type', 'application/json; charset=utf-8')
 		if success:
