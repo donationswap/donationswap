@@ -50,11 +50,7 @@ import util
 
 #xxx allow admins to evaluate and force a match
 
-#xxx benchmark all ajax calls
-
 #xxx run matchmaker every hour or so to delete expired entities
-
-#xxx client-side validation for /start/
 
 #xxx multithread email sending to speed up webserver
 
@@ -166,7 +162,11 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 		self._ip_address = ip_address
 
 		try:
-			return True, method(**args)
+			t1 = time.time()
+			result = method(**args)
+			t2 = time.time()
+			logging.debug('Benchmark: %s: %s sec.', command, t2-t1)
+			return True, result
 		except DonationException as e:
 			return False, str(e)
 		except Exception: # pylint: disable=broad-except
@@ -194,7 +194,11 @@ class Donationswap: # pylint: disable=too-many-instance-attributes
 			return False, 'method does not exist'
 
 		try:
-			return True, method(**args)
+			t1 = time.time()
+			result = method(**args)
+			t2 = time.time()
+			logging.debug('Benchmark: %s: %s sec.', command, t2-t1)
+			return True, result
 		except Exception as e: # pylint: disable=broad-except
 			logging.error('Ajax Admin Error', exc_info=True)
 			return False, str(e)

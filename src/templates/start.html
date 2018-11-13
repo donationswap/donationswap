@@ -110,6 +110,9 @@
 	}
 
 	function captchaGood() {
+		const tmp = document.getElementsByName('g-recaptcha-response');
+		offer.captcha_response = tmp.length ? tmp[0].value : null;
+
 		captchaValid = true;
 		updateButton();
 	}
@@ -248,8 +251,7 @@
 	}
 
 	function validate() {
-		const tmp = document.getElementsByName('g-recaptcha-response');
-		offer.captcha_response = tmp.length ? tmp[0].value : null;
+		offer.captcha_response = offer.captcha_response || '';
 		offer.name = ui.txtName.value;
 		offer.country = parseInt(ui.idCountry.value, 10);
 		offer.amount = parseInt(ui.intAmount.value, 10);

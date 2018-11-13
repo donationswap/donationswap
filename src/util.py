@@ -26,12 +26,12 @@ def setup_logging(path):
 	os.makedirs(os.path.dirname(path), mode=0o777, exist_ok=True)
 	file_handler = logging.handlers.RotatingFileHandler(path, maxBytes=LOG_MAX_FILESIZE, backupCount=10)
 	file_handler.setFormatter(formatter)
-	file_handler.setLevel(level=logging.INFO)
+	file_handler.setLevel(level=logging.DEBUG)
 	logger.addHandler(file_handler)
 
 	console_handler = logging.StreamHandler()
 	console_handler.setFormatter(formatter)
-	console_handler.setLevel(level=logging.INFO)
+	console_handler.setLevel(level=logging.DEBUG)
 	logger.addHandler(console_handler)
 
 def daemonize(pidfile=None):
