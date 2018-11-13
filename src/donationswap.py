@@ -425,6 +425,9 @@ class Donationswap:
 				eventlog.deleted_offer(db, offer)
 
 	def _get_match_score(self, offer_a, offer_b, db):
+		if offer_a.id == offer_b.id:
+			return 0, 'same offer'
+
 		if offer_a.charity_id == offer_b.charity_id:
 			return 0, 'same charity'
 
@@ -458,7 +461,7 @@ class Donationswap:
 			SELECT 1
 			FROM declined_matches
 			WHERE (new_offer_id = %(id_a)s AND old_offer_id = %(id_b)s)
-				OR (new_offer_id = %(id_b)s old_offer_id = %(id_a)s);
+				OR (new_offer_id = %(id_b)s AND old_offer_id = %(id_a)s);
 		'''
 		declined = db.read_one(query, id_a=offer_a.id, id_b=offer_b.id) or False
 		if declined:
@@ -636,17 +639,18 @@ class Donationswap:
 	@admin_ajax
 	def read_all(self, user):
 		return {
-			'currencies': self.read_currencies(),
-			'charity_categories': self.read_charity_categories(),
-			'charities': self.read_charities(),
-			'countries': self.read_countries(),
-			'charities_in_countries': self.read_charities_in_countries(),
+			'currencies': self.read_currencies(user),
+			'charity_categories': self.read_charity_categories(user),
+			'charities': self.read_charities(user),
+			'countries': self.read_countries(user),
+			'charities_in_countries': self.read_charities_in_countries(user),
 		}
 
 	# There is no create, update, or delete for this one on purpose.
 	# All values are constants, because those are the exact
 	# currency that our 3rd party currency library supports.
-	def read_currencies(self):
+	@admin_ajax
+	def read_currencies(self, user):
 		query = '''
 			SELECT *
 			FROM currencies
@@ -841,8 +845,7 @@ class Donationswap:
 			)
 		return events
 
-	@admin_ajax
-	def get_unmatched_offers(self, user):
+	def _get_unmatched_offers(self):
 		'''Returns all offers that are
 		* not matched and
 		* not expired and
@@ -851,17 +854,9 @@ class Donationswap:
 
 		query = '''
 			SELECT
-				offer.id,
-				country.name AS country,
-				offer.amount,
-				offer.min_amount,
-				currency.iso AS currency,
-				charity.name AS charity,
-				offer.expires_ts,
-				offer.email
+				offer.id AS id
 			FROM offers offer
 			JOIN countries country ON offer.country_id = country.id
-			JOIN currencies currency ON country.currency_id = currency.id
 			JOIN charities charity ON offer.charity_id = charity.id
 			WHERE
 				offer.confirmed
@@ -872,15 +867,39 @@ class Donationswap:
 		'''
 		with self._database.connect() as db:
 			return [
-				{
-					'id': i['id'],
-					'country': i['country'],
-					'amount': i['amount'],
-					'min_amount': i['min_amount'],
-					'currency': i['currency'],
-					'charity': i['charity'],
-					'expires_ts': i['expires_ts'].strftime('%Y-%m-%d %H:%M:%S'),
-					'email': i['email'],
-				}
+				entities.Offer.by_id(i['id'])
 				for i in db.read(query)
 			]
+
+	@admin_ajax
+	def get_unmatched_offers(self, user):
+		return [
+			{
+				'id': offer.id,
+				'country': offer.country.name,
+				'amount': offer.amount,
+				'min_amount': offer.min_amount,
+				'currency': offer.country.currency.iso,
+				'charity': offer.charity.name,
+				'expires_ts': offer.expires_ts.strftime('%Y-%m-%d %H:%M:%S'),
+				'email': offer.email,
+				'amount_NZD': self._currency.convert(
+					offer.amount,
+					offer.country.currency.iso,
+					'NZD'),
+				'min_amount_NZD': self._currency.convert(
+					offer.min_amount,
+					offer.country.currency.iso,
+					'NZD'),
+			}
+			for offer in self._get_unmatched_offers()
+		]
+
+	@admin_ajax
+	def get_match_scores(self, user, offer_id):
+		with self._database.connect() as db:
+			offer_a = entities.Offer.by_id(offer_id)
+			return {
+				offer_b.id: self._get_match_score(offer_a, offer_b, db)
+				for offer_b in self._get_unmatched_offers()
+			}
