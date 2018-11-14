@@ -23,6 +23,7 @@ class Config:
 
 		self.captcha_secret = data['captcha_secret']
 		self.contact_message_receivers = data['contact_message_receivers']
+		self.cookie_key = data['cookie_key']
 		self.currency_cache = data['currency_cache']
 		self.db_connection_string = data['db_connection_string']
 		self.email_password = data['email_password']

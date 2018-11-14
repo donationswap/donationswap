@@ -45,6 +45,14 @@ table.visuals {
 .hidden {
 	display: none;
 }
+.background {
+	background-color: rgba(0, 0, 0, 0.9);
+	bottom: 0;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+}
 
 .buttons {
 	text-align: center;
@@ -85,6 +93,8 @@ input:focus,select:focus {
 .bordered {
 	border: 2px solid #512b52;
 	display: inline-block;
+	margin-bottom: 0.1em;
+	margin-top: 0.1em;
 	padding: 0.2em;
 }
 .bordered:focus {

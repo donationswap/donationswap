@@ -1,0 +1,7 @@
+{
+	"match-approved-email": "Here is your match!",
+	"match-declined-email": "A match you approved has been declined",
+	"match-decliner-email": "You declined a match",
+	"match-suggested-email": "We may have found a matching donation for you",
+	"new-post-email": "Please confirm your donation offer"
+}
