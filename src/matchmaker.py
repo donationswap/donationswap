@@ -1,20 +1,5 @@
 #!/usr/bin/env python3
 
-import argparse
-import datetime
-import json
-import logging
-import urllib.parse
-
-import config
-import currency
-import database
-import donationswap
-import entities
-import eventlog
-import mail
-import util
-
 from matching.charity import Charity
 from matching.country import Country
 from matching.donor import Donor
@@ -22,16 +7,6 @@ from matching.offer import Offer
 from matching.matcher import Matcher
 
 class Matchmaker:
-
-	def __init__(self, config_path, dry_run=False):
-		self._dry_run = dry_run
-		self._config = config.Config(config_path)
-		self._database = database.Database(self._config.db_connection_string)
-		self._currency = currency.Currency(self._config.currency_cache, self._config.fixer_apikey)
-		self._mail = mail.Mail(self._config.email_user, self._config.email_password, self._config.email_smtp, self._config.email_sender_name)
-
-		with self._database.connect() as db:
-			entities.load(db)
 
 	def _send_mail_about_expired_offer(self, offer):
 		replacements = {
@@ -80,12 +55,12 @@ class Matchmaker:
 		replacements = {
 		}
 
+		#xxx
+
 		logging.info('Sending match feedback email to %s and %s',
 			match.old_offer.email,
 			match.new_offer.email,
 		)
-
-		#xxx
 
 	def _delete_old_matches(self):
 		'''Four weeks after a match was made we delete it and
@@ -103,6 +78,8 @@ class Matchmaker:
 
 	def clean(self):
 		self._delete_expired_offers()
+		#xxx self._delete_unconfirmed_offers()
+		#xxx self._delete_unapproved_matches()
 		self._delete_old_matches()
 
 		now = datetime.datetime.utcnow()
@@ -117,23 +94,8 @@ class Matchmaker:
 
 			#xxx also...
 			# ... delete expired offers that aren't part of a match
-			# ... signal the web server to update its cache
 
 	def _is_good_match(self, offer1, offer2):
-
-		#xxx if (offer1, offer2) in declined_matches: return False
-
-		logging.info('Comparing %s and %s.', offer1.id, offer2.id)
-
-		if offer1.charity_id == offer2.charity_id:
-			logging.info('same charity.')
-			return False
-		if offer1.country_id == offer2.country_id:
-			logging.info('same country.')
-			return False
-		if offer1.email == offer2.email:
-			logging.info('same email.')
-			return False
 
 		dbCountry1 = offer1.country
 		dbCountry2 = offer2.country
@@ -143,7 +105,7 @@ class Matchmaker:
 		multiplier2 = 1
 
 		exchangeRate1VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
-		exchangeRate2VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
+		exchangeRate2VsUSA = self._currency.convert(1000, dbCountry2.currency.iso, 'USD') / 1000.0
 
 		country1Charities = []
 		country2Charities = []
@@ -186,202 +148,16 @@ class Matchmaker:
 		result = Matcher('USD').match(matchingOffer1, [matchingOffer2])
 		return result is not None
 
-	def find_matches(self, force_pair=None):
-		'''Compares every offer to every other offer.'''
-
-		matches = []
-
-		with self._database.connect() as db:
-			offers = entities.Offer.get_match_candidates(db)
-
-		logging.info('There are %s eligible offers to match up.', len(offers))
-
-		if force_pair is not None:
-			force_pair = sorted(force_pair)
-
-		while offers:
-			offer1 = offers.pop()
-			for offer2 in offers:
-				if force_pair is None:
-					is_good = self._is_good_match(offer1, offer2)
-				else:
-					is_good = sorted([offer1.id, offer2.id]) == force_pair
-					#xxx and not in declined_matches
-
-				if is_good:
-					matches.append((offer1, offer2))
-					offers.remove(offer2)
-					break
-
-		logging.info('Found %s matching pairs.', len(matches))
-
-		return matches
-
-	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		their_amount_in_your_currency = self._currency.convert(
-			their_offer.amount,
-			their_offer.country.currency.iso,
-			my_offer.country.currency.iso)
-
-		if self._currency.is_more_money(
-			my_offer.amount,
-			my_offer.country.currency.iso,
-			their_offer.amount,
-			their_offer.country.currency.iso
-		):
-			my_actual_amount = self._currency.convert(
-				their_offer.amount,
-				their_offer.country.currency.iso,
-				my_offer.country.currency.iso)
-			their_actual_amount = their_offer.amount
-		else:
-			my_actual_amount = my_offer.amount
-			their_actual_amount = self._currency.convert(
-				my_actual_amount,
-				my_offer.country.currency.iso,
-				their_offer.country.currency.iso)
-
-		replacements = {
-			'{%YOUR_NAME%}': my_offer.name,
-			'{%YOUR_CHARITY%}': my_offer.charity.name,
-			'{%YOUR_AMOUNT%}': my_offer.amount,
-			'{%YOUR_MIN_AMOUNT%}': my_offer.min_amount,
-			'{%YOUR_ACTUAL_AMOUNT%}': my_actual_amount,
-			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
-			'{%THEIR_CHARITY%}': their_offer.charity.name,
-			'{%THEIR_AMOUNT%}': their_offer.amount,
-			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
-			'{%THEIR_AMOUNT_CONVERTED%}': their_amount_in_your_currency,
-			'{%THEIR_ACTUAL_AMOUNT%}': their_actual_amount,
-			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
-			# Do NOT put their email address here.
-			# Wait until both parties approved the match.
-		}
-
-		logging.info('Sending match email to %s.', my_offer.email)
-
-		self._mail.send(
-			'We may have found a matching donation for you',
-			util.Template('match-suggested-email.txt').replace(replacements).content,
-			html=util.Template('match-suggested-email.html').replace(replacements).content,
-			to=my_offer.email
-		)
-
-	def process_found_matches(self, matches):
-		for (offer1, offer2) in matches:
-			if self._dry_run:
-				logging.info('Doing nothing, because this is a dry run; offer1=%s; offer2=%s.', offer1, offer2)
-				continue
-
-			match_secret = donationswap.create_secret()
-
-			if offer1.created_ts < offer2.created_ts:
-				old_offer, new_offer = offer1, offer2
-			else:
-				old_offer, new_offer = offer2, offer1
-
-			logging.info('Creating match between offers %s and %s.', new_offer.id, old_offer.id)
-			with self._database.connect() as db:
-				match = entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
-				eventlog.match_generated(db, match)
-
-			self._send_mail_about_match(old_offer, new_offer, match_secret)
-			self._send_mail_about_match(new_offer, old_offer, match_secret)
-
-	def _send_mail_about_deal(self, offer_a, offer_b):
-		if self._currency.is_more_money(
-			offer_a.amount,
-			offer_a.country.currency.iso,
-			offer_b.amount,
-			offer_b.country.currency.iso
-		):
-			actual_amount_a = self._currency.convert(
-				offer_b.amount,
-				offer_b.country.currency.iso,
-				offer_a.country.currency.iso)
-			actual_amount_b = offer_b.amount
-		else:
-			actual_amount_a = offer_a.amount
-			actual_amount_b = self._currency.convert(
-				offer_a.amount,
-				offer_a.country.currency.iso,
-				offer_b.country.currency.iso)
-
-		tmp = entities.CharityInCountry.by_charity_and_country_id(
-			offer_b.charity.id,
-			offer_a.country.id)
-		if tmp is not None:
-			instructions_a = tmp.instructions
-		else:
-			instructions_a = 'Sorry, there are no instructions available (yet).'
-
-		tmp = entities.CharityInCountry.by_charity_and_country_id(
-			offer_a.charity.id,
-			offer_b.country.id)
-		if tmp is not None:
-			instructions_b = tmp.instructions
-		else:
-			instructions_b = 'Sorry, there are no instructions available (yet).'
-
-		replacements = {
-			'{%NAME_A%}': offer_a.name,
-			'{%COUNTRY_A%}': offer_a.country.name,
-			'{%CHARITY_A%}': offer_a.charity.name,
-			'{%ACTUAL_AMOUNT_A%}': actual_amount_a,
-			'{%CURRENCY_A%}': offer_a.country.currency.iso,
-			'{%EMAIL_A%}': offer_a.email,
-			'{%INSTRUCTIONS_A%}': instructions_a,
-			'{%NAME_B%}': offer_b.name,
-			'{%COUNTRY_B%}': offer_b.country.name,
-			'{%CHARITY_B%}': offer_b.charity.name,
-			'{%ACTUAL_AMOUNT_B%}': actual_amount_b,
-			'{%CURRENCY_B%}': offer_b.country.currency.iso,
-			'{%EMAIL_B%}': offer_b.email,
-			'{%INSTRUCTIONS_B%}': instructions_b,
-		}
-
-		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
-
-		self._mail.send(
-			'Here is your match!',
-			util.Template('match-approved-email.txt').replace(replacements).content,
-			html=util.Template('match-approved-email.html').replace(replacements).content,
-			to=[offer_a.email, offer_b.email]
-		)
-
 	def process_approved_matches(self):
 		approved_matches = entities.Match.get_all(lambda x: x.new_agrees and x.old_agrees)
 		for match in approved_matches:
-			if self._dry_run:
-				logging.info('Doing nothing, because this is a dry run; match=%s.', match)
-				continue
-
-			self._send_mail_about_deal(match.old_offer, match.new_offer)
 			#xxx do not delete completed match for 1 month
 			#xxx make site with these instructions, put URL in email.
 			with self._database.connect() as db:
 				match.delete(db)
 
-def main():
-	util.setup_logging('log/matchmaker.txt')
-	parser = argparse.ArgumentParser(description='The Match Maker.')
-	parser.add_argument('config_path')
-	parser.add_argument('--doit', action='store_true')
-	parser.add_argument('--force-pair', '-fp', help='comma-separated pair of IDs for which "is match" is forced to True')
-	args = parser.parse_args()
-
-	if args.force_pair is not None:
-		tmp = args.force_pair.split(',')
-		args.force_pair = int(tmp[0]), int(tmp[1])
-
-	matchmaker = Matchmaker(args.config_path, dry_run=not args.doit)
-
-	matchmaker.clean()
-
-	matches = matchmaker.find_matches(args.force_pair)
-	matchmaker.process_found_matches(matches)
-
-	matchmaker.process_approved_matches()
-
 if __name__ == '__main__':
-	main()
+	print('This is currently not working... soon, though.')
+	matchmaker = Matchmaker(args.config_path, dry_run=not args.doit)
+	matchmaker.clean()
+	matchmaker.process_approved_matches()

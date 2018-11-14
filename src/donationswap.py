@@ -29,11 +29,13 @@ Dependency structure:
 
 import base64
 import datetime
+import json
 import logging
 import os
 import re
 import struct
 import time
+import urllib.parse
 
 from passlib.apps import custom_app_context as pwd_context # `sudo pip3 install passlib`
 
@@ -46,10 +48,6 @@ import eventlog
 import geoip
 import mail
 import util
-
-#xxx move all reactions from matchmaker.py to donationswap.py
-
-#xxx allow admins to evaluate and force a match
 
 #xxx run matchmaker every hour or so to delete expired entities
 
@@ -215,6 +213,12 @@ class Donationswap:
 	@staticmethod
 	def get_page(name):
 		return util.Template(name).content
+
+	def _clean_up(self):
+		#xxx only allow this once every 5 minutes
+		#xxx delete expired offers+matches (and send emails about it)
+		#xxx send feedback emails after one month
+		pass
 
 	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
@@ -477,7 +481,7 @@ class Donationswap:
 
 	@ajax
 	def get_match(self, secret):
-		_, _, _, my_offer, their_offer = self._get_match_and_offers(secret)
+		match, old_offer, new_offer, my_offer, their_offer = self._get_match_and_offers(secret)
 		if my_offer is None or their_offer is None:
 			return None
 
@@ -499,7 +503,14 @@ class Donationswap:
 				my_offer.country.currency.iso,
 				their_offer.country.currency.iso)
 
+		can_edit = False
+		if my_offer.id == new_offer.id:
+			can_edit = match.new_agrees is None
+		elif my_offer.id == old_offer.id:
+			can_edit = match.old_agrees is None
+
 		return {
+			#xxx add calculation
 			'my_country': my_offer.country.name,
 			'my_charity': my_offer.charity.name,
 			'my_amount': my_actual_amount,
@@ -508,9 +519,72 @@ class Donationswap:
 			'their_charity': their_offer.charity.name,
 			'their_amount': their_actual_amount,
 			'their_currency': their_offer.country.currency.iso,
+			'can_edit': can_edit,
 			# Do NOT put their email address here.
 			# Wait until both parties approved the match.
 		}
+
+	def _send_mail_about_approved_match(self, offer_a, offer_b):
+		if self._currency.is_more_money(
+			offer_a.amount,
+			offer_a.country.currency.iso,
+			offer_b.amount,
+			offer_b.country.currency.iso
+		):
+			actual_amount_a = self._currency.convert(
+				offer_b.amount,
+				offer_b.country.currency.iso,
+				offer_a.country.currency.iso)
+			actual_amount_b = offer_b.amount
+		else:
+			actual_amount_a = offer_a.amount
+			actual_amount_b = self._currency.convert(
+				offer_a.amount,
+				offer_a.country.currency.iso,
+				offer_b.country.currency.iso)
+
+		tmp = entities.CharityInCountry.by_charity_and_country_id(
+			offer_b.charity.id,
+			offer_a.country.id)
+		if tmp is not None:
+			instructions_a = tmp.instructions
+		else:
+			instructions_a = 'Sorry, there are no instructions available (yet).'
+
+		tmp = entities.CharityInCountry.by_charity_and_country_id(
+			offer_a.charity.id,
+			offer_b.country.id)
+		if tmp is not None:
+			instructions_b = tmp.instructions
+		else:
+			instructions_b = 'Sorry, there are no instructions available (yet).'
+
+		replacements = {
+			#xxx add calculation
+			'{%NAME_A%}': offer_a.name,
+			'{%COUNTRY_A%}': offer_a.country.name,
+			'{%CHARITY_A%}': offer_a.charity.name,
+			'{%ACTUAL_AMOUNT_A%}': actual_amount_a,
+			'{%CURRENCY_A%}': offer_a.country.currency.iso,
+			'{%EMAIL_A%}': offer_a.email,
+			'{%INSTRUCTIONS_A%}': instructions_a,
+			'{%NAME_B%}': offer_b.name,
+			'{%COUNTRY_B%}': offer_b.country.name,
+			'{%CHARITY_B%}': offer_b.charity.name,
+			'{%ACTUAL_AMOUNT_B%}': actual_amount_b,
+			'{%CURRENCY_B%}': offer_b.country.currency.iso,
+			'{%EMAIL_B%}': offer_b.email,
+			'{%INSTRUCTIONS_B%}': instructions_b,
+		}
+
+		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('match-approved-email'),
+			util.Template('match-approved-email.txt').replace(replacements).content,
+			html=util.Template('match-approved-email.html').replace(replacements).content,
+			to=[offer_a.email, offer_b.email]
+		)
 
 	@ajax
 	def approve_match(self, secret):
@@ -529,6 +603,9 @@ class Donationswap:
 			with self._database.connect() as db:
 				match.agree_new(db)
 				eventlog.approved_match(db, match, my_offer)
+
+		if match.old_agrees and match.new_agrees:
+			self._send_mail_about_approved_match(old_offer, new_offer)
 
 	@ajax
 	def decline_match(self, secret, feedback):
@@ -903,3 +980,73 @@ class Donationswap:
 				offer_b.id: self._get_match_score(offer_a, offer_b, db)
 				for offer_b in self._get_unmatched_offers()
 			}
+
+	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
+		their_amount_in_your_currency = self._currency.convert(
+			their_offer.amount,
+			their_offer.country.currency.iso,
+			my_offer.country.currency.iso)
+
+		if self._currency.is_more_money(
+			my_offer.amount,
+			my_offer.country.currency.iso,
+			their_offer.amount,
+			their_offer.country.currency.iso
+		):
+			my_actual_amount = self._currency.convert(
+				their_offer.amount,
+				their_offer.country.currency.iso,
+				my_offer.country.currency.iso)
+			their_actual_amount = their_offer.amount
+		else:
+			my_actual_amount = my_offer.amount
+			their_actual_amount = self._currency.convert(
+				my_actual_amount,
+				my_offer.country.currency.iso,
+				their_offer.country.currency.iso)
+
+		replacements = {
+			'{%YOUR_NAME%}': my_offer.name,
+			'{%YOUR_CHARITY%}': my_offer.charity.name,
+			'{%YOUR_AMOUNT%}': my_offer.amount,
+			'{%YOUR_MIN_AMOUNT%}': my_offer.min_amount,
+			'{%YOUR_ACTUAL_AMOUNT%}': my_actual_amount,
+			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
+			'{%THEIR_CHARITY%}': their_offer.charity.name,
+			'{%THEIR_AMOUNT%}': their_offer.amount,
+			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
+			'{%THEIR_AMOUNT_CONVERTED%}': their_amount_in_your_currency,
+			'{%THEIR_ACTUAL_AMOUNT%}': their_actual_amount,
+			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
+			# Do NOT put their email address here.
+			# Wait until both parties approved the match.
+		}
+
+		logging.info('Sending match email to %s.', my_offer.email)
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('match-suggested-email'),
+			util.Template('match-suggested-email.txt').replace(replacements).content,
+			html=util.Template('match-suggested-email.html').replace(replacements).content,
+			to=my_offer.email
+		)
+
+	def _create_match(self, offer_a, offer_b):
+		match_secret = create_secret()
+
+		if offer_a.created_ts < offer_b.created_ts:
+			old_offer, new_offer = offer_a, offer_b
+		else:
+			old_offer, new_offer = offer_b, offer_a
+
+		with self._database.connect() as db:
+			match = entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
+			eventlog.match_generated(db, match)
+			self._send_mail_about_match(old_offer, new_offer, match_secret)
+			self._send_mail_about_match(new_offer, old_offer, match_secret)
+
+	@admin_ajax
+	def create_match(self, user, offer_a_id, offer_b_id):
+		offer_a = entities.Offer.by_id(offer_a_id)
+		offer_b = entities.Offer.by_id(offer_b_id)
+		self._create_match(offer_a, offer_b)
