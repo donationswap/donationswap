@@ -390,35 +390,5 @@ class Templates(unittest.TestCase):
 		self.assertTrue('match not found' in data)
 		self.assertTrue('no name provided' in data)
 
-class Admin(unittest.TestCase):
-
-	def setUp(self):
-		ds = donationswap.Donationswap('test-config.json')
-		self.admin = ds._admin
-		self.db = ds._database
-
-	def tearDown(self):
-		if not self.db._connection_string.startswith('dbname=test '):
-			raise ValueError('Only ever clean up the test database.')
-		with self.db.connect() as db:
-			db.write('DELETE FROM matches;')
-			db.write('DELETE FROM offers;')
-			db.write('DELETE FROM charities_in_countries;')
-			db.write('DELETE FROM charities;')
-			db.write('DELETE FROM countries;')
-			db.write('DELETE FROM charity_categories;')
-
-	def test_read_currencies(self):
-		with self.assertRaises(ValueError):
-			currencies = self.admin.read_currencies()
-
-	def test_charity_categories(self):
-		with self.assertRaises(ValueError):
-			self.admin.create_charity_category('dogs')
-		with self.assertRaises(ValueError):
-			self.admin.read_charity_categories()
-		with self.assertRaises(ValueError):
-			self.admin.delete_charity_category(42)
-
 if __name__ == '__main__':
 	unittest.main(verbosity=2)
