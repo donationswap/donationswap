@@ -58,13 +58,6 @@ summary {
 	Click the resulting score number on the other offer to create a match.
 </p>
 <ul id="offers"></ul>
-<div class="background hidden" id="spinner">
-	<div id="waitText">
-		Creating match...<br>
-		Sending emails...<br>
-		This will take a few seconds...
-	</div>
-</div>
 <script>
 /* globals ajax, createNode, getElementsById */
 /* jshint esversion: 6 */
@@ -118,7 +111,6 @@ summary {
 		const confirmed = window.confirm(`Please confirm that you want to create a match for the following two offers:\n\n${first}\n\n${second}`);
 
 		if (confirmed) {
-			ui.spinner.classList.remove('hidden');
 			ajax('/special-secret-admin/create_match', {
 				offer_a_id: state.firstOfferId,
 				offer_b_id: offerId,
@@ -130,9 +122,6 @@ summary {
 				.catch(error => {
 					console.error(error);
 					window.alert(`Unexpected error: ${error}`);
-				})
-				.then(() => {
-					ui.spinner.classList.add('hidden');
 				});
 		}
 	}

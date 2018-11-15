@@ -51,8 +51,6 @@ import util
 
 #xxx listen on pipe/socket to do housekeeping tasks every hour or so
 
-#xxx multithread email sending to speed up webserver
-
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
 
