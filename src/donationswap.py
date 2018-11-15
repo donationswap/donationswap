@@ -29,13 +29,13 @@ Dependency structure:
 
 import base64
 import datetime
-#import json
+import json
 import logging
 import os
 import re
 import struct
 import time
-#import urllib.parse
+import urllib.parse
 
 from passlib.apps import custom_app_context as pwd_context # `sudo pip3 install passlib`
 
@@ -49,13 +49,8 @@ import geoip
 import mail
 import util
 
-#xxx listen on pipe/socket to do housekeeping tasks every hour or so
-
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
-
-#xxx send feedback email after a month (don't delete match after sending out the deal email)
-#    add "completed_ts" column to match
 
 #xxx consolidate databases
 
@@ -212,11 +207,63 @@ class Donationswap:
 	def get_page(name):
 		return util.Template(name).content
 
-	def _clean_up(self):
-		#xxx only allow this once every 5 minutes
-		#xxx delete expired offers+matches (and send emails about it)
-		#xxx send feedback emails after one month
-		pass
+	def _send_mail_about_unconfirmed_offer(self, offer):
+		replacements = {
+			'{%NAME%}': offer.name,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%CHARITY%}': offer.charity.name,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'country': offer.country_id,
+				'amount': offer.amount,
+				'charity': offer.charity_id,
+				'email': offer.email,
+			}))
+		}
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('offer-unconfirmed-email'),
+			util.Template('offer-unconfirmed-email.txt').replace(replacements).content,
+			html=util.Template('offer-unconfirmed-email.html').replace(replacements).content,
+			to=offer.email
+		)
+
+	def _delete_unconfirmed_offers(self):
+		'''An offer is considered unconfirmed if it has not been confirmed
+		for 24 hours. We delete it and send the donor an email.'''
+
+		count = 0
+		one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+
+		with self._database.connect() as db:
+			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts < one_day_ago):
+				logging.info('Deleting expired offer %s.', offer.id)
+				offer.delete(db)
+				eventlog.offer_unconfirmed(db, offer)
+				self._send_mail_about_unconfirmed_offer(offer)
+				count += 1
+
+		return count
+
+	def _delete_expired_offers(self):
+		return 0 #xxx offers that are past their expiration date
+
+	def _delete_unconfirmed_matches(self):
+		return 0 #xxx not confirmed after 72 hours
+
+	def _delete_expired_matches(self):
+		return 0 #xxx send feedback email one month after creation
+
+	def clean_up(self):
+		counts = {
+			'unconfirmed_offers': self._delete_unconfirmed_offers(),
+			'expired_offers': self._delete_expired_offers(),
+			'unconfirmed_matches': self._delete_unconfirmed_matches(),
+			'expired_matches': self._delete_expired_matches(),
+		}
+
+		return '%s\n' % '\n'.join('%s=%s' % i for i in sorted(counts.items()))
 
 	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
