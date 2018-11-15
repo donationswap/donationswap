@@ -101,7 +101,11 @@ summary {
 					window.document.body.querySelectorAll('.score-number'),
 					span => {
 						const id = span.data;
-						[span.textContent, span.title] = scores[id];
+						if (id !== offerId) {
+							[span.textContent, span.title] = scores[id];
+						} else {
+							span.textContent = ''; // can't match an offer with itself
+						}
 					}
 				);
 			});

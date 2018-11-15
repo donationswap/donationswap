@@ -859,11 +859,8 @@ class Donationswap:
 		return events
 
 	def _get_unmatched_offers(self):
-		'''Returns all offers that are
-		* not matched and
-		* not expired and
-		* confirmed
-		'''
+		'''Returns all offers that are confirmed and
+		not expired and not matched.'''
 
 		with self._database.connect() as db:
 			return entities.Offer.get_unmatched_offers(db)
