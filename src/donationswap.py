@@ -49,19 +49,10 @@ import geoip
 import mail
 import util
 
-#xxx run matchmaker every hour or so to delete expired entities
-
-#xxx multithread email sending to speed up webserver
-
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
 
-#xxx send feedback email after a month (don't delete match after sending out the deal email)
-#    add "completed_ts" column to match
-
 #xxx consolidate databases
-
-#xxx use entities instead of plain SQL for ajax from data-edit.html
 
 #xxx layout html emails
 
@@ -74,6 +65,8 @@ import util
 # - blacklist users who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
 # - add link to match email for user to create offer for remaining amount
+
+# pylint: disable=too-many-lines
 
 def ajax(f):
 	f.allow_ajax = True
@@ -214,11 +207,63 @@ class Donationswap:
 	def get_page(name):
 		return util.Template(name).content
 
-	def _clean_up(self):
-		#xxx only allow this once every 5 minutes
-		#xxx delete expired offers+matches (and send emails about it)
-		#xxx send feedback emails after one month
-		pass
+	def _send_mail_about_unconfirmed_offer(self, offer):
+		replacements = {
+			'{%NAME%}': offer.name,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%CHARITY%}': offer.charity.name,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'country': offer.country_id,
+				'amount': offer.amount,
+				'charity': offer.charity_id,
+				'email': offer.email,
+			}))
+		}
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('offer-unconfirmed-email'),
+			util.Template('offer-unconfirmed-email.txt').replace(replacements).content,
+			html=util.Template('offer-unconfirmed-email.html').replace(replacements).content,
+			to=offer.email
+		)
+
+	def _delete_unconfirmed_offers(self):
+		'''An offer is considered unconfirmed if it has not been confirmed
+		for 24 hours. We delete it and send the donor an email.'''
+
+		count = 0
+		one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+
+		with self._database.connect() as db:
+			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts < one_day_ago):
+				logging.info('Deleting expired offer %s.', offer.id)
+				offer.delete(db)
+				eventlog.offer_unconfirmed(db, offer)
+				self._send_mail_about_unconfirmed_offer(offer)
+				count += 1
+
+		return count
+
+	def _delete_expired_offers(self):
+		return 0 #xxx offers that are past their expiration date
+
+	def _delete_unconfirmed_matches(self):
+		return 0 #xxx not confirmed after 72 hours
+
+	def _delete_expired_matches(self):
+		return 0 #xxx send feedback email one month after creation
+
+	def clean_up(self):
+		counts = {
+			'unconfirmed_offers': self._delete_unconfirmed_offers(),
+			'expired_offers': self._delete_expired_offers(),
+			'unconfirmed_matches': self._delete_unconfirmed_matches(),
+			'expired_matches': self._delete_expired_matches(),
+		}
+
+		return '%s\n' % '\n'.join('%s=%s' % i for i in sorted(counts.items()))
 
 	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
@@ -714,203 +759,139 @@ class Donationswap:
 			db.write(query, password_hash=password_hash, admin_id=user['id'])
 
 	@admin_ajax
-	def read_all(self, user):
+	def read_all(self, _): # pylint: disable=no-self-use
 		return {
-			'currencies': self.read_currencies(user),
-			'charity_categories': self.read_charity_categories(user),
-			'charities': self.read_charities(user),
-			'countries': self.read_countries(user),
-			'charities_in_countries': self.read_charities_in_countries(user),
+			'currencies': [
+				{
+					'id': i.id,
+					'iso': i.iso,
+					'name': i.name,
+				}
+				for i in sorted(
+					entities.Currency.get_all(),
+					key=lambda x: x.iso)
+			],
+			'charity_categories': [
+				{
+					'id': i.id,
+					'name': i.name,
+				}
+				for i in sorted(
+					entities.CharityCategory.get_all(),
+					key=lambda x: x.name)
+			],
+			'charities': [
+				{
+					'id': i.id,
+					'name': i.name,
+					'category_id': i.category_id,
+				}
+				for i in sorted(
+					entities.Charity.get_all(),
+					key=lambda x: x.name)
+			],
+			'countries': [
+				{
+					'id': i.id,
+					'name': i.name,
+					'live_in_name': i.live_in_name,
+					'iso_name': i.iso_name,
+					'currency_id': i.currency_id,
+					'min_donation_amount': i.min_donation_amount,
+					'min_donation_currency_id': i.min_donation_currency_id,
+				}
+				for i in sorted(
+					entities.Country.get_all(),
+					key=lambda x: x.iso_name)
+			],
+			'charities_in_countries': [
+				{
+					'charity_id': i.charity_id,
+					'country_id': i.country_id,
+					'tax_factor': i.tax_factor,
+					'instructions': i.instructions,
+				}
+				for i in entities.CharityInCountry.get_all()
+			],
 		}
 
-	# There is no create, update, or delete for this one on purpose.
-	# All values are constants, because those are the exact
-	# currency that our 3rd party currency library supports.
 	@admin_ajax
-	def read_currencies(self, user):
-		query = '''
-			SELECT *
-			FROM currencies
-			ORDER BY iso;'''
+	def create_charity_category(self, _, name):
 		with self._database.connect() as db:
-			return [
-				{
-					'id': i['id'],
-					'iso': i['iso'],
-					'name': i['name'],
-				}
-				for i in db.read(query)
-			]
+			entities.CharityCategory.create(db, name)
 
 	@admin_ajax
-	def create_charity_category(self, user, name):
-		query = '''
-			INSERT INTO charity_categories (name)
-			VALUES (%(name)s);'''
+	def update_charity_category(self, _, category_id, name):
+		category = entities.CharityCategory.by_id(category_id)
+		category.name = name
 		with self._database.connect() as db:
-			db.write(query, name=name)
+			category.save(db)
 
 	@admin_ajax
-	def read_charity_categories(self, user):
-		query = '''
-			SELECT *
-			FROM charity_categories
-			ORDER BY name;'''
+	def delete_charity_category(self, _, category_id):
 		with self._database.connect() as db:
-			return [
-				{
-					'id': i['id'],
-					'name': i['name'],
-				}
-				for i in db.read(query)
-			]
+			entities.CharityCategory.by_id(category_id).delete(db)
 
 	@admin_ajax
-	def update_charity_category(self, user, id, name):
-		query = '''
-			UPDATE charity_categories
-			SET name = %(name)s
-			WHERE id = %(id)s;'''
+	def create_charity(self, _, name, category_id):
 		with self._database.connect() as db:
-			db.write(query, id=id, name=name)
+			entities.Charity.create(db, name, category_id)
 
 	@admin_ajax
-	def delete_charity_category(self, user, id):
-		query = '''
-			DELETE FROM charity_categories
-			WHERE id = %(id)s;'''
+	def update_charity(self, _, charity_id, name, category_id):
+		charity = entities.Charity.by_id(charity_id)
+		charity.name = name
+		charity.category_id = category_id
 		with self._database.connect() as db:
-			db.write(query, id=id)
+			charity.save(db)
 
 	@admin_ajax
-	def create_charity(self, user, name, category_id):
-		query = '''
-			INSERT INTO charities (name, category_id)
-			VALUES (%(name)s, %(category_id)s);'''
+	def delete_charity(self, _, charity_id):
 		with self._database.connect() as db:
-			db.write(query, name=name, category_id=category_id)
+			entities.Charity.by_id(charity_id).delete(db)
 
 	@admin_ajax
-	def read_charities(self, user):
-		query = '''
-			SELECT *
-			FROM charities
-			ORDER BY name;'''
+	def create_country(self, _, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
 		with self._database.connect() as db:
-			return [
-				{
-					'id': i['id'],
-					'name': i['name'],
-					'category_id': i['category_id'],
-				}
-				for i in db.read(query)
-			]
+			entities.Country.create(db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
 
 	@admin_ajax
-	def update_charity(self, user, id, name, category_id):
-		query = '''
-			UPDATE charities
-			SET name = %(name)s, category_id = %(category_id)s
-			WHERE id = %(id)s;'''
+	def update_country(self, _, country_id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+		country = entities.Country.by_id(country_id)
+		country.name = name
+		country.live_in_name = live_in_name
+		country.iso_name = iso_name
+		country.currency_id = currency_id
+		country.min_donation_amount = min_donation_amount
+		country.min_donation_currency_id = min_donation_currency_id
 		with self._database.connect() as db:
-			db.write(query, id=id, name=name, category_id=category_id)
+			country.save(db)
 
 	@admin_ajax
-	def delete_charity(self, user, id):
-		query = '''
-			DELETE FROM charities
-			WHERE id = %(id)s;'''
+	def delete_country(self, _, country_id):
 		with self._database.connect() as db:
-			db.write(query, id=id)
+			entities.Country.by_id(country_id).delete(db)
 
 	@admin_ajax
-	def create_country(self, user, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
-		query = '''
-			INSERT INTO countries (name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
-			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s, %(min_donation_amount)s, %(min_donation_currency_id)s);'''
+	def create_charity_in_country(self, _, charity_id, country_id, tax_factor, instructions):
 		with self._database.connect() as db:
-			db.write(query, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
+			entities.CharityInCountry.create(db, charity_id, country_id, tax_factor, instructions)
 
 	@admin_ajax
-	def read_countries(self, user):
-		query = '''
-			SELECT *
-			FROM countries
-			ORDER BY name;'''
+	def update_charity_in_country(self, _, charity_id, country_id, tax_factor, instructions):
+		charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity_id, country_id)
+		charity_in_country.tax_factor = tax_factor
+		charity_in_country.instructions = instructions
 		with self._database.connect() as db:
-			return [
-				{
-					'id': i['id'],
-					'name': i['name'],
-					'live_in_name': i['live_in_name'],
-					'iso_name': i['iso_name'],
-					'currency_id': i['currency_id'],
-					'min_donation_amount': i['min_donation_amount'],
-					'min_donation_currency_id': i['min_donation_currency_id'],
-				}
-				for i in db.read(query)
-			]
+			charity_in_country.save(db)
 
 	@admin_ajax
-	def update_country(self, user, id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
-		query = '''
-			UPDATE countries
-			SET name = %(name)s, live_in_name = %(live_in_name)s, iso_name = %(iso_name)s, currency_id = %(currency_id)s, min_donation_amount = %(min_donation_amount)s, min_donation_currency_id = %(min_donation_currency_id)s
-			WHERE id = %(id)s;'''
+	def delete_charity_in_country(self, _, charity_id, country_id):
 		with self._database.connect() as db:
-			db.write(query, id=id, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
+			entities.CharityInCountry.by_charity_and_country_id(charity_id, country_id).delete(db)
 
 	@admin_ajax
-	def delete_country(self, user, id):
-		query = '''
-			DELETE FROM countries
-			WHERE id = %(id)s;'''
-		with self._database.connect() as db:
-			db.write(query, id=id)
-
-	@admin_ajax
-	def create_charity_in_country(self, user, charity_id, country_id, tax_factor, instructions):
-		query = '''
-			INSERT INTO charities_in_countries (charity_id, country_id, tax_factor, instructions)
-			VALUES (%(charity_id)s, %(country_id)s, %(tax_factor)s, %(instructions)s);'''
-		with self._database.connect() as db:
-			db.write(query, charity_id=charity_id, country_id=country_id, tax_factor=tax_factor, instructions=instructions)
-
-	@admin_ajax
-	def read_charities_in_countries(self, user):
-		query = '''
-			SELECT *
-			FROM charities_in_countries;'''
-		with self._database.connect() as db:
-			return [
-				{
-					'charity_id': i['charity_id'],
-					'country_id': i['country_id'],
-					'tax_factor': i['tax_factor'],
-					'instructions': i['instructions'],
-				}
-				for i in db.read(query)
-			]
-
-	@admin_ajax
-	def update_charity_in_country(self, user, charity_id, country_id, tax_factor, instructions):
-		query = '''
-			UPDATE charities_in_countries
-			SET tax_factor = %(tax_factor)s, instructions = %(instructions)s
-			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
-		with self._database.connect() as db:
-			db.write(query, charity_id=charity_id, country_id=country_id, tax_factor=tax_factor, instructions=instructions)
-
-	@admin_ajax
-	def delete_charity_in_country(self, user, charity_id, country_id):
-		query = '''
-			DELETE FROM charities_in_countries
-			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
-		with self._database.connect() as db:
-			db.write(query, charity_id=charity_id, country_id=country_id)
-
-	@admin_ajax
-	def read_log(self, user, min_timestamp, max_timestamp, event_types, offset, limit):
+	def read_log(self, _, min_timestamp, max_timestamp, event_types, offset, limit):
 		with self._database.connect() as db:
 			events = eventlog.get_events(
 				db,
@@ -923,33 +904,14 @@ class Donationswap:
 		return events
 
 	def _get_unmatched_offers(self):
-		'''Returns all offers that are
-		* not matched and
-		* not expired and
-		* confirmed
-		'''
+		'''Returns all offers that are confirmed and
+		not expired and not matched.'''
 
-		query = '''
-			SELECT
-				offer.id AS id
-			FROM offers offer
-			JOIN countries country ON offer.country_id = country.id
-			JOIN charities charity ON offer.charity_id = charity.id
-			WHERE
-				offer.confirmed
-				AND offer.expires_ts > now()
-				AND offer.id NOT IN (SELECT old_offer_id FROM matches)
-				AND offer.id NOT IN (SELECT new_offer_id FROM matches)
-			ORDER BY country ASC, charity ASC, expires_ts ASC
-		'''
 		with self._database.connect() as db:
-			return [
-				entities.Offer.by_id(i['id'])
-				for i in db.read(query)
-			]
+			return entities.Offer.get_unmatched_offers(db)
 
 	@admin_ajax
-	def get_unmatched_offers(self, user):
+	def get_unmatched_offers(self, _):
 		return [
 			{
 				'id': offer.id,
@@ -973,7 +935,7 @@ class Donationswap:
 		]
 
 	@admin_ajax
-	def get_match_scores(self, user, offer_id):
+	def get_match_scores(self, _, offer_id):
 		with self._database.connect() as db:
 			offer_a = entities.Offer.by_id(offer_id)
 			return {
@@ -1046,7 +1008,7 @@ class Donationswap:
 			self._send_mail_about_match(new_offer, old_offer, match_secret)
 
 	@admin_ajax
-	def create_match(self, user, offer_a_id, offer_b_id):
+	def create_match(self, _, offer_a_id, offer_b_id):
 		offer_a = entities.Offer.by_id(offer_a_id)
 		offer_b = entities.Offer.by_id(offer_b_id)
 		self._create_match(offer_a, offer_b)

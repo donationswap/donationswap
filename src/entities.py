@@ -82,6 +82,32 @@ class CharityCategory(EntityMixin, IdMixin):
 		for row in db.read('''SELECT * FROM charity_categories;'''):
 			cls._load_entity(row)
 
+	@classmethod
+	def create(cls, db, name):
+		query = '''
+			INSERT INTO charity_categories (name)
+			VALUES (%(name)s)
+			RETURNING *;'''
+		row = db.read_one(query, name=name)
+		db.written = True
+		return cls._load_entity(row)
+
+	def save(self, db):
+		query = '''
+			UPDATE charity_categories
+			SET name = %(name)s
+			WHERE id = %(id)s;'''
+		db.write(query,
+			id=self.id,
+			name=self.name)
+
+	def delete(self, db):
+		query = '''
+			DELETE FROM charity_categories
+			WHERE id=%(id)s'''
+		db.write(query, id=self.id)
+		self._by_id.pop(self.id, None)
+
 class Charity(EntityMixin, IdMixin):
 
 	def __init__(self, row):
@@ -105,6 +131,33 @@ class Charity(EntityMixin, IdMixin):
 	@property
 	def category(self):
 		return CharityCategory.by_id(self.category_id)
+
+	@classmethod
+	def create(cls, db, name, category_id):
+		query = '''
+			INSERT INTO charities (name, category_id)
+			VALUES (%(name)s, %(category_id)s)
+			RETURNING *;'''
+		row = db.read_one(query, name=name, category_id=category_id)
+		db.written = True
+		return cls._load_entity(row)
+
+	def save(self, db):
+		query = '''
+			UPDATE charities
+			SET name = %(name)s, category_id = %(category_id)s
+			WHERE id = %(id)s;'''
+		db.write(query,
+			id=self.id,
+			name=self.name,
+			category_id=self.category_id)
+
+	def delete(self, db):
+		query = '''
+			DELETE FROM charities
+			WHERE id=%(id)s'''
+		db.write(query, id=self.id)
+		self._by_id.pop(self.id, None)
 
 class Country(EntityMixin, IdMixin):
 
@@ -141,8 +194,40 @@ class Country(EntityMixin, IdMixin):
 		return Currency.by_id(self.min_donation_currency_id)
 
 	@classmethod
-	def by_iso_name(cls, id):
-		return cls._by_iso_name.get(id, None)
+	def by_iso_name(cls, iso_name):
+		return cls._by_iso_name.get(iso_name, None)
+
+	@classmethod
+	def create(cls, db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+		query = '''
+			INSERT INTO countries (name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
+			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s, %(min_donation_amount)s, %(min_donation_currency_id)s)
+			RETURNING *;'''
+		row = db.read_one(query, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
+		db.written = True
+		return cls._load_entity(row)
+
+	def save(self, db):
+		query = '''
+			UPDATE countries
+			SET name = %(name)s, live_in_name = %(live_in_name)s, iso_name = %(iso_name)s, currency_id = %(currency_id)s, min_donation_amount = %(min_donation_amount)s, min_donation_currency_id = %(min_donation_currency_id)s
+			WHERE id = %(id)s;'''
+		db.write(query,
+			id=self.id,
+			name=self.name,
+			live_in_name=self.live_in_name,
+			iso_name=self.iso_name,
+			currency_id=self.currency_id,
+			min_donation_amount=self.min_donation_amount,
+			min_donation_currency_id=self.min_donation_currency_id)
+
+	def delete(self, db):
+		query = '''
+			DELETE FROM countries
+			WHERE id=%(id)s'''
+		db.write(query, id=self.id)
+		self._by_id.pop(self.id, None)
+		self._by_iso_name.pop(self.iso_name, None)
 
 class CharityInCountry(EntityMixin):
 
@@ -157,10 +242,12 @@ class CharityInCountry(EntityMixin):
 
 	@classmethod
 	def _load_entity_impl(cls, entity):
+		cls._all.append(entity)
 		cls._by_charity_and_country_id.setdefault(entity.charity_id, {})[entity.country_id] = entity
 
 	@classmethod
 	def load(cls, db):
+		cls._all = []
 		cls._by_charity_and_country_id = {}
 		for row in db.read('''SELECT * FROM charities_in_countries;'''):
 			cls._load_entity(row)
@@ -176,6 +263,41 @@ class CharityInCountry(EntityMixin):
 	@classmethod
 	def by_charity_and_country_id(cls, charity_id, country_id):
 		return cls._by_charity_and_country_id.get(charity_id, {}).get(country_id, None)
+
+	@classmethod
+	def get_all(cls, callback=None):
+		if callback is None:
+			return cls._all[:]
+		return list(filter(callback, cls._all[:]))
+
+	@classmethod
+	def create(cls, db, charity_id, country_id, tax_factor, instructions):
+		query = '''
+			INSERT INTO charities_in_countries (charity_id, country_id, tax_factor, instructions)
+			VALUES (%(charity_id)s, %(country_id)s, %(tax_factor)s, %(instructions)s)
+			RETURNING *;'''
+		row = db.read_one(query, charity_id=charity_id, country_id=country_id, tax_factor=tax_factor, instructions=instructions)
+		db.written = True
+		return cls._load_entity(row)
+
+	def save(self, db):
+		query = '''
+			UPDATE charities_in_countries
+			SET tax_factor = %(tax_factor)s, instructions = %(instructions)s
+			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
+		db.write(query,
+			charity_id=self.charity_id,
+			country_id=self.country_id,
+			tax_factor=self.tax_factor,
+			instructions=self.instructions)
+
+	def delete(self, db):
+		query = '''
+			DELETE FROM charities_in_countries
+			WHERE charity_id=%(charity_id)s AND country_id=%(country_id)s'''
+		db.write(query, charity_id=self.charity_id, country_id=self.country_id)
+		self._all.remove(self)
+		self._by_charity_and_country_id.get(self.charity_id, {}).pop(self.country_id, None)
 
 class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-instance-attributes
 
@@ -214,6 +336,26 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 	@property
 	def country(self):
 		return Country.by_id(self.country_id)
+
+	@classmethod
+	def get_unmatched_offers(cls, db):
+		query = '''
+			SELECT
+				offer.id AS id
+			FROM offers offer
+			JOIN countries country ON offer.country_id = country.id
+			JOIN charities charity ON offer.charity_id = charity.id
+			WHERE
+				offer.confirmed
+				AND offer.expires_ts > now()
+				AND offer.id NOT IN (SELECT old_offer_id FROM matches)
+				AND offer.id NOT IN (SELECT new_offer_id FROM matches)
+			ORDER BY country ASC, charity ASC, expires_ts ASC
+		'''
+		return [
+			cls.by_id(i['id'])
+			for i in db.read(query)
+		]
 
 	@classmethod
 	def create(cls, db, secret, name, email, country_id, amount, min_amount, charity_id, expires_ts):
@@ -264,18 +406,6 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 		db.write(query, id=self.id)
 		self._by_id.pop(self.id, None)
 		self._by_secret.pop(self.secret, None)
-
-	@classmethod
-	def get_match_candidates(cls, db):
-		query = '''
-			SELECT * FROM offers
-			WHERE confirmed AND expires_ts > now() AND
-				NOT EXISTS(SELECT 1 FROM matches WHERE old_offer_id = offers.id) AND
-				NOT EXISTS(SELECT 1 FROM matches WHERE new_offer_id = offers.id);
-		'''
-		db.read(query)
-		ids = set(i['id'] for i in db.read(query))
-		return cls.get_all(lambda x: x.id in ids)
 
 class Match(EntityMixin, IdMixin, SecretMixin):
 

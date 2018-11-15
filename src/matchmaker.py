@@ -1,55 +1,6 @@
 #!/usr/bin/env python3
 
-from matching.charity import Charity
-from matching.country import Country
-from matching.donor import Donor
-from matching.offer import Offer
-from matching.matcher import Matcher
-
 class Matchmaker:
-
-	def _send_mail_about_expired_offer(self, offer):
-		replacements = {
-			'{%NAME%}': offer.name,
-			'{%AMOUNT%}': offer.amount,
-			'{%MIN_AMOUNT%}': offer.min_amount,
-			'{%CURRENCY%}': offer.country.currency.iso,
-			'{%CHARITY%}': offer.charity.name,
-			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
-				'country': offer.country_id,
-				'amount': offer.amount,
-				'charity': offer.charity_id,
-				'expires': {
-					'day': offer.expires_ts.day,
-					'month': offer.expires_ts.month,
-					'year': offer.expires_ts.year,
-				},
-				'email': offer.email,
-			}))
-		}
-
-		logging.info('Sending expiration email to %s.', offer.email)
-
-		self._mail.send(
-			'Your offer has expired',
-			util.Template('offer-expired-email.txt').replace(replacements).content,
-			html=util.Template('offer-expired-email.html').replace(replacements).content,
-			to=offer.email
-		)
-
-	def _delete_expired_offers(self):
-		'''An offer is considered expired if it has not been confirmed
-		for 24 hours. We delete it and send the donor an email.'''
-
-		#xxx "expired" also means past the expiration date -- send different email then.
-
-		one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
-		with self._database.connect() as db:
-			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts < one_day_ago):
-				logging.info('Deleting expired offer.')
-				offer.delete(db)
-				eventlog.offer_expired(db, offer)
-				self._send_mail_about_expired_offer(offer)
 
 	def _send_mail_about_match_feedback(self, match):
 		replacements = {
@@ -77,7 +28,6 @@ class Matchmaker:
 				self._send_mail_about_match_feedback(match)
 
 	def clean(self):
-		self._delete_expired_offers()
 		#xxx self._delete_unconfirmed_offers()
 		#xxx self._delete_unapproved_matches()
 		self._delete_old_matches()
@@ -95,69 +45,63 @@ class Matchmaker:
 			#xxx also...
 			# ... delete expired offers that aren't part of a match
 
-	def _is_good_match(self, offer1, offer2):
+#xxx move this into donationswap.py when I understand it
 
-		dbCountry1 = offer1.country
-		dbCountry2 = offer2.country
+from matching.charity import Charity
+from matching.country import Country
+from matching.donor import Donor
+from matching.offer import Offer
+from matching.matcher import Matcher
 
-		# TODO: UK and ireland(?) GiftAid
-		multiplier1 = 1
-		multiplier2 = 1
+def _is_good_match(self, offer1, offer2):
 
-		exchangeRate1VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
-		exchangeRate2VsUSA = self._currency.convert(1000, dbCountry2.currency.iso, 'USD') / 1000.0
+	dbCountry1 = offer1.country
+	dbCountry2 = offer2.country
 
-		country1Charities = []
-		country2Charities = []
+	# TODO: UK and ireland(?) GiftAid
+	multiplier1 = 1
+	multiplier2 = 1
 
-		charityCache = {}
-		country1TaxReturn = 0
-		country2TaxReturn = 0
+	exchangeRate1VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
+	exchangeRate2VsUSA = self._currency.convert(1000, dbCountry2.currency.iso, 'USD') / 1000.0
 
-		for charity in entities.Charity.get_all():
-			if (charity.name not in charityCache):
-				charityCache[charity.name] = Charity(charity.name)
+	country1Charities = []
+	country2Charities = []
 
-			charityInCountry1 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry1.id)
-			charityInCountry2 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry2.id)
-			if (charityInCountry1 is not None):
-				country1Charities.append(charityCache[charity.name])
-				if (offer1.charity == charity):
-					country1TaxReturn = charityInCountry1.tax_factor
+	charityCache = {}
+	country1TaxReturn = 0
+	country2TaxReturn = 0
 
-			if (charityInCountry2 is not None):
-				country2Charities.append(charityCache[charity.name])
-				if (offer2.charity == charity):
-					country2TaxReturn = charityInCountry2.tax_factor
+	for charity in entities.Charity.get_all():
+		if (charity.name not in charityCache):
+			charityCache[charity.name] = Charity(charity.name)
 
-		country1 = Country(dbCountry1.name, dbCountry1.currency.iso, country1Charities, country1TaxReturn, exchangeRate1VsUSA, multiplier1)
-		country2 = Country(dbCountry2.name, dbCountry2.currency.iso, country2Charities, country2TaxReturn, exchangeRate2VsUSA, multiplier2)
+		charityInCountry1 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry1.id)
+		charityInCountry2 = entities.CharityInCountry.by_charity_and_country_id(charity.id, dbCountry2.id)
+		if (charityInCountry1 is not None):
+			country1Charities.append(charityCache[charity.name])
+			if (offer1.charity == charity):
+				country1TaxReturn = charityInCountry1.tax_factor
 
-		offer1Created = 0
-		offer2Created = 0
-		amount1 = offer1.amount
-		amount2 = offer2.amount
-		donor1 = Donor(offer1.email, country1)
-		donor2 = Donor(offer2.email, country2)
+		if (charityInCountry2 is not None):
+			country2Charities.append(charityCache[charity.name])
+			if (offer2.charity == charity):
+				country2TaxReturn = charityInCountry2.tax_factor
 
-		#xxx offers SHOULD have approximately the same amount (taking tax benefits into account)
-		#    for development, however, everthing goes.
-		matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1, [charityCache[offer1.charity.name]], offer1Created)
-		matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2, [charityCache[offer2.charity.name]], offer2Created)
+	country1 = Country(dbCountry1.name, dbCountry1.currency.iso, country1Charities, country1TaxReturn, exchangeRate1VsUSA, multiplier1)
+	country2 = Country(dbCountry2.name, dbCountry2.currency.iso, country2Charities, country2TaxReturn, exchangeRate2VsUSA, multiplier2)
 
-		result = Matcher('USD').match(matchingOffer1, [matchingOffer2])
-		return result is not None
+	offer1Created = 0
+	offer2Created = 0
+	amount1 = offer1.amount
+	amount2 = offer2.amount
+	donor1 = Donor(offer1.email, country1)
+	donor2 = Donor(offer2.email, country2)
 
-	def process_approved_matches(self):
-		approved_matches = entities.Match.get_all(lambda x: x.new_agrees and x.old_agrees)
-		for match in approved_matches:
-			#xxx do not delete completed match for 1 month
-			#xxx make site with these instructions, put URL in email.
-			with self._database.connect() as db:
-				match.delete(db)
+	#xxx offers SHOULD have approximately the same amount (taking tax benefits into account)
+	#    for development, however, everthing goes.
+	matchingOffer1 = Offer(donor1, amount1 * 0.5, amount1, [charityCache[offer1.charity.name]], offer1Created)
+	matchingOffer2 = Offer(donor2, amount2 * 0.5, amount2, [charityCache[offer2.charity.name]], offer2Created)
 
-if __name__ == '__main__':
-	print('This is currently not working... soon, though.')
-	matchmaker = Matchmaker(args.config_path, dry_run=not args.doit)
-	matchmaker.clean()
-	matchmaker.process_approved_matches()
+	result = Matcher('USD').match(matchingOffer1, [matchingOffer2])
+	return result is not None
