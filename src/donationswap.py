@@ -54,15 +54,15 @@ import util
 
 #xxx layout html emails
 
-#xxx post MVP features:
+# post MVP features:
 # - a donation offer is pointless if
-#  - it is to the only tax-deductible charity in the country OR
-#  - it is to a charity that is tax-decuctible everywhere
+#   - it is to the only tax-deductible charity in the country OR
+#   - it is to a charity that is tax-decuctible everywhere
 # - add "never match me with any of these charity" blacklist button.
 # - add "blacklist charity" to offer.
 # - blacklist users who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
-# - add link to match email for user to create offer for remaining amount
+# - add link to match email for user to create offer for remaining amount.
 
 # pylint: disable=too-many-lines
 
@@ -366,6 +366,17 @@ class Donationswap:
 			for i in sorted(entities.Country.get_all(), key=lambda i: i.name)
 		]
 
+	@staticmethod
+	def _get_charities_in_countries_info():
+		result = {}
+		for country in entities.Country.get_all():
+			result[country.id] = []
+			for charity in entities.Charity.get_all():
+				charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity.id, country.id)
+				if charity_in_country is not None:
+					result[country.id].append(charity.id)
+		return result
+
 	@ajax
 	def get_info(self):
 		client_country_iso = self._geoip.lookup(self._ip_address)
@@ -383,6 +394,7 @@ class Donationswap:
 			'charities': self._get_charities_info(),
 			'client_country': client_country_id,
 			'countries': self._get_countries_info(),
+			'charities_in_countries': self._get_charities_in_countries_info(),
 			'today': {
 				'day': today.day,
 				'month': today.month,
