@@ -1,0 +1,17 @@
+Dear {%NAME%},
+Your offer of a donation swap has not been matched, and your offer has now expired.
+
+We suggest you either make a new offer to swap, or donate directly to the charity you prefer. 
+
+Details of your expired offer:
+Charity you wished to support: {%CHARITY%}
+Amount: {%CURRENCY%} {%AMOUNT%}
+Minimum swap amount: {%CURRENCY%} {%MIN_AMOUNT%}
+
+We have removed your swap offer from our system.
+
+If you want to create another offer just like it, please go to https://donationswap.eahub.org/start/{%ARGS%}. 
+
+Even though your offer was not matched this time, we really appreciate you using the EA donation swap system, and encourage you to make another offer to swap in the future.
+
+Thanks from the EA donation swap team

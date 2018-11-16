@@ -4,7 +4,7 @@ html {
 
 body {
 	background-color: white;
-	color: #512b52;
+	color: black;
 	margin: 0;
 	padding: 0;
 }
@@ -30,6 +30,18 @@ h4 {
 }
 img {
    max-width: 100%;
+}
+a:link {
+    color: #635274;
+}
+a:visited {
+    color: #512B52;
+}
+a:hover {
+    color: #512B52;
+}
+a:active {
+    color: #512B52;
 }
 
 
@@ -58,7 +70,7 @@ table.visuals {
 	text-align: center;
 }
 a.button {
-	box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);
+	/*box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);*/
 	display: inline-block;
 	margin: 1em;
 	padding: 0.5em 1em;
@@ -141,7 +153,7 @@ header .beta {
 }
 
 footer {
-	background-color: #437069;
+	background-color: #512B52;
 	bottom: 0;
 	color: #f4f4f4;
 	left: 0;
