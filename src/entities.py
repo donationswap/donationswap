@@ -340,8 +340,7 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 	@classmethod
 	def get_unmatched_offers(cls, db):
 		query = '''
-			SELECT
-				offer.id AS id
+			SELECT offer.id AS id
 			FROM offers offer
 			JOIN countries country ON offer.country_id = country.id
 			JOIN charities charity ON offer.charity_id = charity.id
@@ -350,7 +349,21 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 				AND offer.expires_ts > now()
 				AND offer.id NOT IN (SELECT old_offer_id FROM matches)
 				AND offer.id NOT IN (SELECT new_offer_id FROM matches)
-			ORDER BY country ASC, charity ASC, expires_ts ASC
+			ORDER BY country ASC, charity ASC, expires_ts ASC;
+		'''
+		return [
+			cls.by_id(i['id'])
+			for i in db.read(query)
+		]
+
+	@classmethod
+	def get_expired_offers(cls, db):
+		query = '''
+			SELECT offer.id AS id
+			FROM offers offer
+			WHERE offer.expires_ts < now()
+			AND offer.id NOT IN (SELECT old_offer_id FROM matches)
+			AND offer.id NOT IN (SELECT new_offer_id FROM matches);
 		'''
 		return [
 			cls.by_id(i['id'])

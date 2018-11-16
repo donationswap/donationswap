@@ -71,7 +71,7 @@ summary {
 	};
 
 	function getSummary(offer) {
-		return `${offer.country}, ${offer.charity}, $${offer.min_amount_NZD}-$${offer.amount_NZD}`;
+		return `${offer.country}, ${offer.charity}, ${offer.min_amount_localized}-${offer.amount_localized} ${offer.currency_localized}`;
 	}
 
 	function renderDetails(details) {
@@ -127,7 +127,7 @@ summary {
 	}
 
 	function renderOffers(offers) {
-		ui.info.textContent = `Found ${offers.length} unmatched offers`;
+		ui.info.textContent = `Found ${offers.length} unmatched offer(s)`;
 
 		ui.offers.innerHTML = '';
 		offers.forEach(offer => {
