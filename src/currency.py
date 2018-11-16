@@ -63,3 +63,11 @@ class Currency:
 		amount *= data['rates'].get(to_currency, 1)
 
 		return int(amount)
+
+	def is_more_money(self, amount_a, currency_a, amount_b, currency_b):
+		data = self._get_data()
+
+		amount_a = self.convert(amount_a, currency_a, data['base'])
+		amount_b = self.convert(amount_b, currency_b, data['base'])
+
+		return amount_a > amount_b

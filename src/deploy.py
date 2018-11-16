@@ -6,7 +6,6 @@ import os
 import shutil
 
 FILE_LIST = [
-	('admin.py', 0o444),
 	('captcha.py', 0o444),
 	('config.py', 0o444),
 	('currency.py', 0o444),
@@ -19,7 +18,7 @@ FILE_LIST = [
 	('main.py', 0o544),
 	('matching', 0o777),
 	('matching/*', 0o444),
-	('matchmaker.py', 0o544),
+	('matchmaker.py', 0o555),
 	('util.py', 0o444),
 	('data', 0o777),
 	('data/*', 0o444),

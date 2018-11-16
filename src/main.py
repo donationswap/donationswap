@@ -65,7 +65,11 @@ class AdminHandler(BaseHandler): # pylint: disable=abstract-method
 	def post(self, action): # pylint: disable=arguments-differ
 		payload = json.loads(self.request.body.decode('utf-8'))
 
-		success, result = self.logic.run_admin_ajax(action, payload)
+		user_secret = self.get_secure_cookie('user', max_age_days=1)
+		if user_secret is not None:
+			user_secret = user_secret.decode('ascii')
+
+		success, result = self.logic.run_admin_ajax(user_secret, action, self.request.remote_ip, payload)
 
 		self.set_header('Content-Type', 'application/json; charset=utf-8')
 		if success:
@@ -81,12 +85,35 @@ class AjaxHandler(BaseHandler): # pylint: disable=abstract-method
 
 		success, result = self.logic.run_ajax(action, self.request.remote_ip, payload)
 
+		if action == 'login' and success:
+			self.set_secure_cookie('user', result, expires_days=1)
+			result = None
+
 		self.set_header('Content-Type', 'application/json; charset=utf-8')
 		if success:
 			self.set_status(200)
 		else:
 			self.set_status(400)
 		self.write(json.dumps(result))
+
+class HousekeepingHandler(BaseHandler): # pylint: disable=abstract-method
+	'''This is so a cronjob can trigger housekeeping like so:
+	`curl --insecure --request POST https://127.4.0.3:8888/housekeeping`
+	'''
+
+	def post(self): # pylint: disable=arguments-differ
+		if self.request.remote_ip in ('127.0.0.1', '::1'):
+			try:
+				result = self.logic.clean_up()
+				self.set_status(200)
+				self.write(result)
+			except Exception as e:
+				self.set_status(500)
+				logging.error('Housekeeping Error', exc_info=True)
+				self.write(str(e))
+		else:
+			logging.warning('internal housekeeping URL called from outside.')
+			self.set_status(404)
 
 class TemplateHandler(BaseHandler): # pylint: disable=abstract-method
 
@@ -139,7 +166,9 @@ def start(port=443, daemonize=True, http_redirect_port=None):
 			(r'/offer/?', TemplateHandler, args({'page_name': 'offer.html'})),
 			(r'/ajax/(.+)', AjaxHandler, args()),
 			(r'/special-secret-admin/(.+)', AdminHandler, args()),
+			(r'/housekeeping/?', HousekeepingHandler, args()),
 		],
+		cookie_secret=logic.get_cookie_key(),
 		static_path=os.path.join(os.path.dirname(__file__), 'static'),
 	)
 
