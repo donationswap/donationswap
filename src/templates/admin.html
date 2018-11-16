@@ -13,23 +13,27 @@ li {
 <title>Admin</title>
 </head>
 <body>
-<h1>Admin</h1>
+<h1>Admin: <span id="adminname"></span></h1>
 <ul>
-	<li>
+	<li class="hidden" id="loginStuff">
 		Log in:<br>
 		<input class="bordered" id="txtEmail" placeholder="Email Address"><br>
 		<input class="bordered" id="txtPassword" placeholder="Password" type="password"><br>
 		<button id="btnLogin" class="purple">Login</button>
 	</li>
-	<li>
+	<li class="hidden" id="logoutStuff">
 		Log out:<br>
 		<button id="btnLogout" class="purple">Logout</button>
 	</li>
-	<li>
+	<li class="hidden" id="changePasswordStuff">
 		Change password:<br>
 		<input class="bordered" id="txtOldPassword" placeholder="Old Password" type="password"><br>
 		<input class="bordered" id="txtNewPassword" placeholder="New Password" type="password"><br>
 		<button id="btnChangePassword" class="purple">Change Password</button>
+	</li>
+	<li class="hidden" id="currencyStuff">
+		Preferred currency:<br>
+		<select id="selCurrency"></select>
 	</li>
 	<li>
 		<a href="/special-secret-admin/data-edit.html" target="_blank">Charities and Countries</a>
@@ -54,6 +58,13 @@ li {
 		alert(`Error: ${response}`);
 	}
 
+	function updateUi(loggedIn) {
+		ui.loginStuff.classList.toggle('hidden', loggedIn);
+		ui.logoutStuff.classList.toggle('hidden', !loggedIn);
+		ui.changePasswordStuff.classList.toggle('hidden', !loggedIn);
+		ui.currencyStuff.classList.toggle('hidden', !loggedIn);
+	}
+
 	ui.btnLogin.onclick = () => {
 		ajax('/ajax/login', {
 			email: ui.txtEmail.value,
@@ -62,17 +73,17 @@ li {
 			.then(() => {
 				ui.txtEmail.value = '';
 				ui.txtPassword.value = '';
-				alert('You are now logged in.');
+				updateUi(true);
 			})
 			.catch(() => {
-				alert('Error. Wrong username? Wrong password?');
+				alert('Error. Wrong name? Wrong password?');
 			});
 	};
 
 	ui.btnLogout.onclick = () => {
 		ajax('/special-secret-admin/logout')
 			.then(() => {
-				alert('You are now logged out.');
+				updateUi(false);
 			})
 			.catch(handleError);
 	};
@@ -89,6 +100,36 @@ li {
 			})
 			.catch(handleError);
 	};
+
+	ajax('/special-secret-admin/get_admin_info')
+		.then(info => {
+			updateUi(true);
+			ui.adminname.textContent = info.email;
+
+			ajax('/special-secret-admin/get_currencies')
+				.then(currencies => {
+					currencies.forEach(currency => {
+						ui.selCurrency.appendChild(createNode({
+							xtype: 'option',
+							a_value: currency.id,
+							p_textContent: currency.name,
+						}));
+					});
+					ui.selCurrency.value = info.currency_id;
+
+					ui.selCurrency.onchange = () => {
+						ajax('/special-secret-admin/set_admin_currency', {
+							currency_id: ui.selCurrency.value
+						});
+					};
+				});
+		})
+		.catch(msg => {
+			updateUi(false);
+			ui.adminname.textContent = '<not logged in>';
+		})
+		.then(() => {
+		});
 }());
 </script>
 </body>

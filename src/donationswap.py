@@ -52,8 +52,6 @@ import util
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
 
-#xxx consolidate databases
-
 #xxx layout html emails
 
 #xxx post MVP features:
@@ -183,6 +181,7 @@ class Donationswap:
 		user = {
 			'id': user['id'],
 			'email': user['email'],
+			'currency_id': user['currency_id'],
 		}
 
 		method = getattr(self, command, None)
@@ -230,15 +229,16 @@ class Donationswap:
 		)
 
 	def _delete_unconfirmed_offers(self):
-		'''An offer is considered unconfirmed if it has not been confirmed
-		for 24 hours. We delete it and send the donor an email.'''
+		'''An offer is considered unconfirmed if it has not
+		been confirmed for 24 hours.
+		We delete it and send the donor an email.'''
 
 		count = 0
 		one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
 
 		with self._database.connect() as db:
 			for offer in entities.Offer.get_all(lambda x: not x.confirmed and x.created_ts < one_day_ago):
-				logging.info('Deleting expired offer %s.', offer.id)
+				logging.info('Deleting unconfirmed offer %s.', offer.id)
 				offer.delete(db)
 				eventlog.offer_unconfirmed(db, offer)
 				self._send_mail_about_unconfirmed_offer(offer)
@@ -246,14 +246,55 @@ class Donationswap:
 
 		return count
 
+	def _send_mail_about_expired_offer(self, offer):
+		replacements = {
+			'{%NAME%}': offer.name,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%CHARITY%}': offer.charity.name,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'country': offer.country_id,
+				'amount': offer.amount,
+				'charity': offer.charity_id,
+				'email': offer.email,
+			}))
+		}
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('offer-expired-email'),
+			util.Template('offer-expired-email.txt').replace(replacements).content,
+			html=util.Template('offer-expired-email.html').replace(replacements).content,
+			to=offer.email
+		)
+
 	def _delete_expired_offers(self):
-		return 0 #xxx offers that are past their expiration date
+		'''An offer is considered expired if its expiration date
+		is in the past and it is not part of a match.
+		We delete it and send the donor an email.'''
+
+		count = 0
+
+		with self._database.connect() as db:
+			for offer in entities.Offer.get_expired_offers(db):
+				logging.info('Deleting expired offer %s.', offer.id)
+				offer.delete(db)
+				eventlog.offer_expired(db, offer)
+				self._send_mail_about_expired_offer(offer)
+				count += 1
+
+		return count
 
 	def _delete_unconfirmed_matches(self):
 		return 0 #xxx not confirmed after 72 hours
 
 	def _delete_expired_matches(self):
-		return 0 #xxx send feedback email one month after creation
+		'''Send a feedback email one month after creation.'''
+		#xxx add "feedback_ts" column
+		#xxx send email to matches older than 4 weeks with empty "feedback_ts"
+		#xxx update feedback_ts
+		#xxx delete two offers and one match one week after feedback_ts
+		return 0 #xxx 
 
 	def clean_up(self):
 		counts = {
@@ -483,7 +524,7 @@ class Donationswap:
 		if offer_a.country_id == offer_b.country_id:
 			return 0, 'same country'
 
-		if offer_a.email == offer_b.email:
+		if offer_a.email.lower() == offer_b.email.lower():
 			return 0, 'same email address'
 
 		amount_a_in_currency_b = self._currency.convert(
@@ -759,6 +800,33 @@ class Donationswap:
 			db.write(query, password_hash=password_hash, admin_id=user['id'])
 
 	@admin_ajax
+	def get_admin_info(self, user):
+		return user
+
+	@admin_ajax
+	def get_currencies(self, _):
+		return [
+			{
+				'id': i.id,
+				'name': '%s (%s)' % (i.iso, i.name),
+			}
+			for i in sorted(
+				entities.Currency.get_all(),
+				key=lambda x: x.iso)
+		]
+
+	@admin_ajax
+	def set_admin_currency(self, user, currency_id):
+		with self._database.connect() as db:
+			query = '''
+				UPDATE admins
+				SET currency_id = %(currency_id)s
+				WHERE id = %(id)s;
+			'''
+			db.write(query, currency_id=currency_id, id=user['id'])
+			return True
+
+	@admin_ajax
 	def read_all(self, _): # pylint: disable=no-self-use
 		return {
 			'currencies': [
@@ -911,7 +979,8 @@ class Donationswap:
 			return entities.Offer.get_unmatched_offers(db)
 
 	@admin_ajax
-	def get_unmatched_offers(self, _):
+	def get_unmatched_offers(self, user):
+		admin_currency = entities.Currency.by_id(user['currency_id'])
 		return [
 			{
 				'id': offer.id,
@@ -922,14 +991,15 @@ class Donationswap:
 				'charity': offer.charity.name,
 				'expires_ts': offer.expires_ts.strftime('%Y-%m-%d %H:%M:%S'),
 				'email': offer.email,
-				'amount_NZD': self._currency.convert(
+				'amount_localized': self._currency.convert(
 					offer.amount,
 					offer.country.currency.iso,
-					'NZD'),
-				'min_amount_NZD': self._currency.convert(
+					admin_currency.iso),
+				'min_amount_localized': self._currency.convert(
 					offer.min_amount,
 					offer.country.currency.iso,
-					'NZD'),
+					admin_currency.iso),
+				'currency_localized': admin_currency.iso
 			}
 			for offer in self._get_unmatched_offers()
 		]
@@ -993,7 +1063,11 @@ class Donationswap:
 			to=my_offer.email
 		)
 
-	def _create_match(self, offer_a, offer_b):
+	@admin_ajax
+	def create_match(self, _, offer_a_id, offer_b_id):
+		offer_a = entities.Offer.by_id(offer_a_id)
+		offer_b = entities.Offer.by_id(offer_b_id)
+
 		match_secret = create_secret()
 
 		if offer_a.created_ts < offer_b.created_ts:
@@ -1006,9 +1080,3 @@ class Donationswap:
 			eventlog.match_generated(db, match)
 			self._send_mail_about_match(old_offer, new_offer, match_secret)
 			self._send_mail_about_match(new_offer, old_offer, match_secret)
-
-	@admin_ajax
-	def create_match(self, _, offer_a_id, offer_b_id):
-		offer_a = entities.Offer.by_id(offer_a_id)
-		offer_b = entities.Offer.by_id(offer_b_id)
-		self._create_match(offer_a, offer_b)

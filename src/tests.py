@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
-import datetime
 import re
 import unittest
 
 import entities
 import donationswap
-import matchmaker
 import util
 
 class MockCaptcha:
