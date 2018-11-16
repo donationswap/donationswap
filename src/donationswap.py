@@ -52,7 +52,10 @@ import util
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
 
+#xxx move all `style="..."` stuff into style.css
 #xxx layout html emails
+
+#xxx make sure certbot works when the time comes
 
 # post MVP features:
 # - a donation offer is pointless if
@@ -100,6 +103,8 @@ class Donationswap:
 			entities.load(db)
 
 		self._ip_address = None
+
+		self.automation_mode = False
 
 	def get_cookie_key(self):
 		return self._config.cookie_key
@@ -294,7 +299,7 @@ class Donationswap:
 		#xxx send email to matches older than 4 weeks with empty "feedback_ts"
 		#xxx update feedback_ts
 		#xxx delete two offers and one match one week after feedback_ts
-		return 0 #xxx 
+		return 0 #xxx
 
 	def clean_up(self):
 		counts = {
@@ -308,7 +313,7 @@ class Donationswap:
 
 	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
-		if not self._captcha.is_legit(self._ip_address, captcha_response):
+		if not self.automation_mode and not self._captcha.is_legit(self._ip_address, captcha_response):
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('bad captcha')
 			)
@@ -461,7 +466,7 @@ class Donationswap:
 	@ajax
 	def create_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
 		errors = util.Template('errors-and-warnings.json')
-		if not self._captcha.is_legit(self._ip_address, captcha_response):
+		if not self.automation_mode and not self._captcha.is_legit(self._ip_address, captcha_response):
 			raise DonationException(errors.json('bad captcha'))
 
 		name, country, amount, min_amount, charity, email, expires_ts = self._validate_offer(name, country, amount, min_amount, charity, email, expiration)
@@ -473,6 +478,9 @@ class Donationswap:
 		with self._database.connect() as db:
 			offer = entities.Offer.create(db, secret, name, email, country.id, amount, min_amount, charity.id, expires_ts)
 			eventlog.created_offer(db, offer)
+
+		if self.automation_mode:
+			return offer
 
 		replacements = {
 			'{%NAME%}': offer.name,
@@ -488,6 +496,8 @@ class Donationswap:
 			html=util.Template('new-post-email.html').replace(replacements).content,
 			to=email
 		)
+
+		return None
 
 	@ajax
 	def confirm_offer(self, secret):
@@ -569,13 +579,27 @@ class Donationswap:
 		if declined:
 			return 0, 'match declined'
 
+		# amounts are equal => score = 1
+		# amounts are vastly different => score = almost 0
+		amount_a_in_nzd = self._currency.convert(
+			offer_a.amount,
+			offer_a.country.currency.iso,
+			'NZD')
+		amount_b_in_nzd = self._currency.convert(
+			offer_b.amount,
+			offer_b.country.currency.iso,
+			'NZD')
+		score = 1 - (amount_a_in_nzd - amount_b_in_nzd)**2 / max(amount_a_in_nzd, amount_b_in_nzd)**2
+
 		if a_will_benefit and b_will_benefit:
 			factor, reason = 1, 'both benefit'
 		else:
 			factor, reason = 0.5, 'only one will benefit'
 
-		return factor, reason
-		#xxx higher score if amounts are closer to each other
+		score *= factor
+
+		score = round(score, 4)
+		return score, reason
 
 	@ajax
 	def get_match(self, secret):
@@ -812,11 +836,11 @@ class Donationswap:
 			db.write(query, password_hash=password_hash, admin_id=user['id'])
 
 	@admin_ajax
-	def get_admin_info(self, user):
+	def get_admin_info(self, user): # pylint: disable=no-self-use
 		return user
 
 	@admin_ajax
-	def get_currencies(self, _):
+	def get_currencies(self, _): # pylint: disable=no-self-use
 		return [
 			{
 				'id': i.id,
@@ -988,6 +1012,7 @@ class Donationswap:
 		not expired and not matched.'''
 
 		with self._database.connect() as db:
+			entities.Offer.load(db) # only necessary because of console.py
 			return entities.Offer.get_unmatched_offers(db)
 
 	@admin_ajax
