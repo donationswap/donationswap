@@ -121,12 +121,18 @@ class Charity(EntityMixin, IdMixin):
 	@classmethod
 	def _load_entity_impl(cls, entity):
 		cls._by_id[entity.id] = entity
+		cls._by_name[entity.name] = entity
 
 	@classmethod
 	def load(cls, db):
 		cls._by_id = {}
+		cls._by_name = {}
 		for row in db.read('''SELECT * FROM charities;'''):
 			cls._load_entity(row)
+
+	@classmethod
+	def by_name(cls, name):
+		return cls._by_name.get(name, None)
 
 	@property
 	def category(self):
@@ -158,6 +164,7 @@ class Charity(EntityMixin, IdMixin):
 			WHERE id=%(id)s'''
 		db.write(query, id=self.id)
 		self._by_id.pop(self.id, None)
+		self._by_name.pop(self.name, None)
 
 class Country(EntityMixin, IdMixin):
 

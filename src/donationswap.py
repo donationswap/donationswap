@@ -104,6 +104,8 @@ class Donationswap:
 
 		self._ip_address = None
 
+		self.automation_mode = False
+
 	def get_cookie_key(self):
 		return self._config.cookie_key
 
@@ -311,7 +313,7 @@ class Donationswap:
 
 	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
-		if not self._captcha.is_legit(self._ip_address, captcha_response):
+		if not self.automation_mode and not self._captcha.is_legit(self._ip_address, captcha_response):
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('bad captcha')
 			)
@@ -464,7 +466,7 @@ class Donationswap:
 	@ajax
 	def create_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
 		errors = util.Template('errors-and-warnings.json')
-		if not self._captcha.is_legit(self._ip_address, captcha_response):
+		if not self.automation_mode and not self._captcha.is_legit(self._ip_address, captcha_response):
 			raise DonationException(errors.json('bad captcha'))
 
 		name, country, amount, min_amount, charity, email, expires_ts = self._validate_offer(name, country, amount, min_amount, charity, email, expiration)
@@ -476,6 +478,9 @@ class Donationswap:
 		with self._database.connect() as db:
 			offer = entities.Offer.create(db, secret, name, email, country.id, amount, min_amount, charity.id, expires_ts)
 			eventlog.created_offer(db, offer)
+
+		if self.automation_mode:
+			return offer
 
 		replacements = {
 			'{%NAME%}': offer.name,
@@ -491,6 +496,8 @@ class Donationswap:
 			html=util.Template('new-post-email.html').replace(replacements).content,
 			to=email
 		)
+
+		return None
 
 	@ajax
 	def confirm_offer(self, secret):
@@ -1005,6 +1012,7 @@ class Donationswap:
 		not expired and not matched.'''
 
 		with self._database.connect() as db:
+			entities.Offer.load(db) # only necessary because of console.py
 			return entities.Offer.get_unmatched_offers(db)
 
 	@admin_ajax
