@@ -52,7 +52,10 @@ import util
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
 
+#xxx move all `style="..."` stuff into style.css
 #xxx layout html emails
+
+#xxx make sure certbot works when the time comes
 
 # post MVP features:
 # - a donation offer is pointless if
@@ -294,7 +297,7 @@ class Donationswap:
 		#xxx send email to matches older than 4 weeks with empty "feedback_ts"
 		#xxx update feedback_ts
 		#xxx delete two offers and one match one week after feedback_ts
-		return 0 #xxx 
+		return 0 #xxx
 
 	def clean_up(self):
 		counts = {
@@ -569,13 +572,19 @@ class Donationswap:
 		if declined:
 			return 0, 'match declined'
 
+		# amounts are equal => score = 1
+		# amounts are vastly different => score = almost 0
+		score = 1 - (amount_a_in_currency_b - offer_b.amount)**2 / max(amount_a_in_currency_b, offer_b.amount)**2
+
 		if a_will_benefit and b_will_benefit:
 			factor, reason = 1, 'both benefit'
 		else:
 			factor, reason = 0.5, 'only one will benefit'
 
-		return factor, reason
-		#xxx higher score if amounts are closer to each other
+		score *= factor
+
+		score = round(score, 4)
+		return score, reason
 
 	@ajax
 	def get_match(self, secret):
@@ -812,11 +821,11 @@ class Donationswap:
 			db.write(query, password_hash=password_hash, admin_id=user['id'])
 
 	@admin_ajax
-	def get_admin_info(self, user):
+	def get_admin_info(self, user): # pylint: disable=no-self-use
 		return user
 
 	@admin_ajax
-	def get_currencies(self, _):
+	def get_currencies(self, _): # pylint: disable=no-self-use
 		return [
 			{
 				'id': i.id,
