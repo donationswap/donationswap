@@ -17,22 +17,46 @@ li {
 	margin: 0.25em;
 	padding: 0.25em;
 }
+li.current {
+	background-color: rgba(81, 43, 82, 0.1);
+}
 details {
 	font-weight: normal;
 	margin: 0 0 0 2em;
 	white-space: pre-wrap;
 }
 summary {
-	cursor: pointer;
 	font-weight: bold;
 	margin: 0 0 0 -2em;
 }
+.menu {
+	float: right;
+}
+.score-number {
+	cursor: pointer;
+	text-decoration: underline;
+}
+.match-button {
+	cursor: pointer;
+	margin-left: 1em;
+	text-decoration: underline;
+}
+#waitText {
+	color: white;
+	font-size: 150%;
+	margin-top: 5em;
+	text-align: center;
+}
 </style>
-<title>Donation Swap Admin</title>
+<title>Unmatched Offers</title>
 </head>
 <body>
 <h1>Unmatched Offers</h1>
 <p id="info"></p>
+<p>
+	Click "Score" on an offer to evaluate all other offers for a potential match.
+	Click the resulting score number on the other offer to create a match.
+</p>
 <ul id="offers"></ul>
 <script>
 /* globals ajax, createNode, getElementsById */
@@ -41,6 +65,14 @@ summary {
 	'use strict';
 
 	const ui = getElementsById();
+	const state = {
+		offersById: {},
+		firstOfferId: 0,
+	};
+
+	function getSummary(offer) {
+		return `${offer.country}, ${offer.charity}, ${offer.min_amount_localized}-${offer.amount_localized} ${offer.currency_localized}`;
+	}
 
 	function renderDetails(details) {
 		const keys = Object.keys(details);
@@ -48,20 +80,94 @@ summary {
 		return keys.map(key => `${key}: ${details[key]}`).join('\n');
 	}
 
+	function startMatch(offerId) {
+		ajax('/special-secret-admin/get_match_scores', {
+			offer_id: offerId,
+		})
+			.then(scores => {
+				state.firstOfferId = offerId;
+				Array.prototype.forEach.call(
+					window.document.body.querySelectorAll('li'),
+					li => li.classList.toggle('current', li.data === offerId)
+				);
+				Array.prototype.forEach.call(
+					window.document.body.querySelectorAll('.score-number'),
+					span => {
+						const id = span.data;
+						if (id !== offerId) {
+							[span.textContent, span.title] = scores[id];
+						} else {
+							span.textContent = ''; // can't match an offer with itself
+						}
+					}
+				);
+			});
+	}
+
+	function completeMatch(offerId) {
+		const first = getSummary(state.offersById[state.firstOfferId]);
+		const second = getSummary(state.offersById[offerId]);
+
+		const confirmed = window.confirm(`Please confirm that you want to create a match for the following two offers:\n\n${first}\n\n${second}`);
+
+		if (confirmed) {
+			ajax('/special-secret-admin/create_match', {
+				offer_a_id: state.firstOfferId,
+				offer_b_id: offerId,
+			})
+				.then(() => {
+					alert('Match created. Emails sent.\n\nRefreshing page now...');
+					window.location.reload();
+				})
+				.catch(error => {
+					console.error(error);
+					window.alert(`Unexpected error: ${error}`);
+				});
+		}
+	}
+
 	function renderOffers(offers) {
-		ui.info.textContent = `Found ${offers.length} unmatched offers`;
+		ui.info.textContent = `Found ${offers.length} unmatched offer(s)`;
 
 		ui.offers.innerHTML = '';
 		offers.forEach(offer => {
 			ui.offers.appendChild(createNode({
 				xtype: 'li',
+				p_data: offer.id,
 				children: [
 					{
 						xtype: 'details',
 						children: [
 							{
 								xtype: 'summary',
-								p_textContent: `${offer.country}, ${offer.charity}, ${offer.amount} ${offer.currency}`,
+								children: [
+									getSummary(offer),
+									{
+										xtype: 'span',
+										a_class: 'menu',
+										children: [
+											{
+												xtype: 'span',
+												a_class: 'score-number',
+												p_data: offer.id,
+												p_onclick() {
+													completeMatch(offer.id);
+													return false; // prevent expand/collapse
+												},
+											},
+											{
+												xtype: 'span',
+												a_class: 'match-button',
+												a_title: 'See how well other offers would match',
+												p_textContent: 'Score',
+												p_onclick() {
+													startMatch(offer.id);
+													return false; // prevent expand/collapse
+												},
+											},
+										],
+									},
+								],
 							},
 							`${renderDetails(offer)}`,
 						],
@@ -72,10 +178,13 @@ summary {
 	}
 
 	ajax('/special-secret-admin/get_unmatched_offers')
-		.then(offers => renderOffers(offers))
+		.then(offers => {
+			state.offersById = offers.toDictionary(i => i.id);
+			renderOffers(offers);
+		})
 		.catch(error => {
 			console.error(error);
-			window.alert('Unexpected error. See console.');
+			window.alert(`Unexpected error: ${error}`);
 		});
 }());
 </script>

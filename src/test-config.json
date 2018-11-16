@@ -4,6 +4,7 @@
 		"to": ["to@test.test"],
 		"bcc": ["bcc@test.test"]
 	},
+	"cookie_key": "ruabseo)ru[pasktuy&aerqw412[05982efh;#!",
 	"currency_cache": "irrelevant",
 	"db_connection_string": "dbname=test host=127.0.0.1 user=postgres password='databasepassword'",
 	"email_password": "irrelevant",

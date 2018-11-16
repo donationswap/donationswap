@@ -4,21 +4,28 @@
 <p>You’ve been matched with a compatible donor through the EA donation swap site.</p>
 <p></p>
 <p>The potential match:</p>
-<p>Charity they wish to support: {%THEIR_CHARITY%}</p>
-<p>Amount: {%THEIR_AMOUNT%} {%THEIR_CURRENCY%}</p>
-<p>Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}</p>
-<p>This is around {%THEIR_AMOUNT_CONVERTED%} in {%YOUR_CURRENCY%}.</p>
-<p>This amount may change a little due to currency fluctuations. 
-</p>
-<p></p>
+<p>
+	Charity they wish to support: {%THEIR_CHARITY%}<br>
+	Amount: {%THEIR_AMOUNT%} {%THEIR_CURRENCY%}<br>
+	This is around {%THEIR_AMOUNT_CONVERTED%} in {%YOUR_CURRENCY%}.<br>
+	This amount may change a little due to currency fluctuations.</p>
+
 <p>For reference, your offer was:</p>
-<p>Charity you wish to support: {%YOUR_CHARITY%}</p>
-<p>Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}</p>
-<p>Minimum swap amount: {%YOUR_MIN_AMOUNT%} {%YOUR_CURRENCY%}}</p>
-<p></p>
-<p>Please visit <a href="https://donationswap.eahub.org/match/#{%SECRET%}" target="_blank">https://donationswap.eahub.org/match/#{%SECRET%}</a>
-to either approve or decline the donation swap.</p>
-<p></p>
+<p>
+	Charity you wish to support: {%YOUR_CHARITY%}<br>
+	Amount: {%YOUR_AMOUNT%} {%YOUR_CURRENCY%}<br>
+	Minimum swap amount: {%YOUR_MIN_AMOUNT%} {%YOUR_CURRENCY%}
+</p>
+<p>
+	If both of you accept the match, you will be donating
+	{%YOUR_ACTUAL_AMOUNT%} {%YOUR_CURRENCY%} to {%THEIR_CHARITY%},
+	and they will be donating the same amount ({%THEIR_ACTUAL_AMOUNT%} {%THEIR_CURRENCY%}) to {%YOUR_CHARITY%}.
+</p>
+
+<p>
+	Please visit <a href="https://donationswap.eahub.org/match/#{%SECRET%}" target="_blank">https://donationswap.eahub.org/match/#{%SECRET%}</a>
+	to either approve or decline the donation swap.
+</p>
 <p>Thanks from the EA donation swap team.</p>
 </body>
 </html>

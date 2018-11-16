@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 
-import datetime
 import re
 import unittest
 
 import entities
 import donationswap
-import matchmaker
 import util
 
 class MockCaptcha:
@@ -120,7 +118,7 @@ class get_info(TestBase):
 
 	def test_all_information_must_be_included(self):
 		info = self.ds.get_info()
-		self.assertEqual(sorted(info.keys()), ['charities', 'charities_in_countries', 'client_country', 'countries', 'today'])
+		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries', 'today'])
 
 	def test_client_country(self):
 		self.geoip.country = 'c1'
@@ -301,9 +299,9 @@ class Templates(unittest.TestCase):
 
 	def _check_expected_placeholders(self, txt, placeholders):
 		for placeholder in placeholders:
-			self.assertTrue(placeholder in txt)
+			self.assertTrue(placeholder in txt, 'Missing expected placeholder %s.' % placeholder)
 		for found_placeholder in re.findall(r'{%.+?%}', txt):
-			self.assertTrue(found_placeholder in placeholders)
+			self.assertTrue(found_placeholder in placeholders, 'Found unused placeholder %s.' % found_placeholder)
 
 	def test_contact_email(self):
 		placeholders = [
@@ -318,20 +316,20 @@ class Templates(unittest.TestCase):
 
 	def test_match_appoved_email(self):
 		placeholders = [
-			'{%OLD_COUNTRY%}',
-			'{%OLD_CHARITY%}',
-			'{%OLD_AMOUNT%}',
-			'{%OLD_CURRENCY%}',
-			'{%OLD_EMAIL%}',
-			'{%OLD_AMOUNT_CONVERTED%}',
-			'{%OLD_INSTRUCTIONS%}',
-			'{%NEW_COUNTRY%}',
-			'{%NEW_CHARITY%}',
-			'{%NEW_AMOUNT%}',
-			'{%NEW_CURRENCY%}',
-			'{%NEW_EMAIL%}',
-			'{%NEW_AMOUNT_CONVERTED%}',
-			'{%NEW_INSTRUCTIONS%}',
+			'{%NAME_A%}',
+			'{%COUNTRY_A%}',
+			'{%CHARITY_A%}',
+			'{%ACTUAL_AMOUNT_A%}',
+			'{%CURRENCY_A%}',
+			'{%EMAIL_A%}',
+			'{%INSTRUCTIONS_A%}',
+			'{%NAME_B%}',
+			'{%COUNTRY_B%}',
+			'{%CHARITY_B%}',
+			'{%ACTUAL_AMOUNT_B%}',
+			'{%CURRENCY_B%}',
+			'{%EMAIL_B%}',
+			'{%INSTRUCTIONS_B%}',
 		]
 		txt = util.Template('match-approved-email.txt').content
 		self._check_expected_placeholders(txt, placeholders)
@@ -340,15 +338,17 @@ class Templates(unittest.TestCase):
 
 	def test_match_suggested_email(self):
 		placeholders = [
-			'{%YOUR_COUNTRY%}',
+			'{%YOUR_NAME%}',
 			'{%YOUR_CHARITY%}',
 			'{%YOUR_AMOUNT%}',
+			'{%YOUR_MIN_AMOUNT%}',
+			'{%YOUR_ACTUAL_AMOUNT%}',
 			'{%YOUR_CURRENCY%}',
-			'{%THEIR_COUNTRY%}',
 			'{%THEIR_CHARITY%}',
 			'{%THEIR_AMOUNT%}',
 			'{%THEIR_CURRENCY%}',
 			'{%THEIR_AMOUNT_CONVERTED%}',
+			'{%THEIR_ACTUAL_AMOUNT%}',
 			'{%SECRET%}',
 		]
 		txt = util.Template('match-suggested-email.txt').content
@@ -358,67 +358,35 @@ class Templates(unittest.TestCase):
 
 	def test_new_post_email(self):
 		placeholders = [
+			'{%NAME%}',
 			'{%SECRET%}',
 			'{%CHARITY%}',
 			'{%CURRENCY%}',
 			'{%AMOUNT%}',
+			'{%MIN_AMOUNT%}',
 		]
 		txt = util.Template('new-post-email.txt').content
 		self._check_expected_placeholders(txt, placeholders)
 		txt = util.Template('new-post-email.html').content
 		self._check_expected_placeholders(txt, placeholders)
 
-class Admin(unittest.TestCase):
+	def test_email_subjects(self):
+		data = util.Template('email-subjects.json').json()
+		self.assertTrue('match-declined-email' in data)
+		self.assertTrue('match-decliner-email' in data)
+		self.assertTrue('new-post-email' in data)
 
-	def setUp(self):
-		ds = donationswap.Donationswap('test-config.json')
-		self.admin = ds._admin
-		self.db = ds._database
-
-	def tearDown(self):
-		if not self.db._connection_string.startswith('dbname=test '):
-			raise ValueError('Only ever clean up the test database.')
-		with self.db.connect() as db:
-			db.write('DELETE FROM matches;')
-			db.write('DELETE FROM offers;')
-			db.write('DELETE FROM charities_in_countries;')
-			db.write('DELETE FROM charities;')
-			db.write('DELETE FROM countries;')
-			db.write('DELETE FROM charity_categories;')
-
-	def test_read_currencies(self):
-		currencies = self.admin.read_currencies()
-		self.assertEqual(len(currencies), 168)
-		for currency in currencies:
-			self.assertEqual(currency['iso'], currency['iso'].upper())
-			self.assertEqual(len(currency['iso']), 3)
-
-	def test_charity_categories(self):
-		self.admin.create_charity_category('dogs')
-		self.admin.create_charity_category('cats')
-		categories = self.admin.read_charity_categories()
-
-		self.assertEqual(len(categories), 2)
-		cats = categories[0]
-		dogs = categories[1]
-		self.assertEqual(cats['name'], 'cats')
-		self.assertEqual(dogs['name'], 'dogs')
-
-		self.admin.update_charity_category(cats['id'], 'cats and more cats')
-		categories = self.admin.read_charity_categories()
-
-		self.assertEqual(len(categories), 2)
-		cats = categories[0]
-		dogs = categories[1]
-		self.assertEqual(cats['name'], 'cats and more cats')
-		self.assertEqual(dogs['name'], 'dogs', 'only cat should have been renamed')
-
-		self.admin.delete_charity_category(dogs['id'])
-		categories = self.admin.read_charity_categories()
-
-		self.assertEqual(len(categories), 1)
-		cats = categories[0]
-		self.assertEqual(cats['name'], 'cats and more cats')
+	def test_errors_and_warnings(self):
+		data = util.Template('errors-and-warnings.json').json()
+		self.assertTrue('bad amount' in data)
+		self.assertTrue('bad captcha' in data)
+		self.assertTrue('bad email address' in data)
+		self.assertTrue('bad expiration date' in data)
+		self.assertTrue('bad min_amount' in data)
+		self.assertTrue('charity not found' in data)
+		self.assertTrue('country not found' in data)
+		self.assertTrue('match not found' in data)
+		self.assertTrue('no name provided' in data)
 
 if __name__ == '__main__':
 	unittest.main(verbosity=2)
