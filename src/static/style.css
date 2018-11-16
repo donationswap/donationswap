@@ -63,6 +63,7 @@ table.visuals {
 }
 a.button {
 	/*box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);*/
+	colour: white;
 	display: inline-block;
 	margin: 1em;
 	padding: 0.5em 1em;
