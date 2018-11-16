@@ -574,7 +574,15 @@ class Donationswap:
 
 		# amounts are equal => score = 1
 		# amounts are vastly different => score = almost 0
-		score = 1 - (amount_a_in_currency_b - offer_b.amount)**2 / max(amount_a_in_currency_b, offer_b.amount)**2
+		amount_a_in_nzd = self._currency.convert(
+			offer_a.amount,
+			offer_a.country.currency.iso,
+			'NZD')
+		amount_b_in_nzd = self._currency.convert(
+			offer_b.amount,
+			offer_b.country.currency.iso,
+			'NZD')
+		score = 1 - (amount_a_in_nzd - amount_b_in_nzd)**2 / max(amount_a_in_nzd, amount_b_in_nzd)**2
 
 		if a_will_benefit and b_will_benefit:
 			factor, reason = 1, 'both benefit'
