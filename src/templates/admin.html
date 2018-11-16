@@ -73,7 +73,7 @@ li {
 			.then(() => {
 				ui.txtEmail.value = '';
 				ui.txtPassword.value = '';
-				updateUi(true);
+				window.location.reload();
 			})
 			.catch(() => {
 				alert('Error. Wrong name? Wrong password?');
