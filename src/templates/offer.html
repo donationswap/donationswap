@@ -23,11 +23,11 @@
 				</tr>
 				<tr>
 					<td>Amount:</td>
-					<td><span id="currency"></span> <span id="amount"></span></td>
+					<td><span id="amount"></span> <span id="currency1"></span></td>
 				</tr>
 				<tr>
 					<td>Minimum swap amount:</td>
-					<td><span id="currency"></span> <span id="minamount"></span></td>
+					<td><span id="minAmount"></span> <span id="currency2"></span></td>
 				</tr>
 				<tr>
 					<td>Swap offer created:</td>
@@ -70,8 +70,10 @@
 		.then(offer => {
 			if (offer) {
 				ui.confirmed.classList.toggle('hidden', offer.was_confirmed);
-				ui.currency.textContent = offer.currency;
+				ui.currency1.textContent = offer.currency;
+				ui.currency2.textContent = offer.currency;
 				ui.amount.textContent = offer.amount;
+				ui.minAmount.textContent = offer.min_amount;
 				ui.charity.textContent = offer.charity;
 				ui.creationDate.textContent = Date.fromUtcIsoString(offer.created_ts).toLocalString('%Y-%m-%d %H:%M');
 				ui.expirationDate.textContent = Date.fromUtcIsoString(offer.expires_ts).toLocalString('%Y-%m-%d %H:%M');
