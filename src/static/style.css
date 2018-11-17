@@ -4,7 +4,7 @@ html {
 
 body {
 	background-color: white;
-	color: #512b52;
+	color: black;
 	margin: 0;
 	padding: 0;
 }
@@ -27,7 +27,23 @@ h4 {
 	color: #437069;
 	font-size: 100%;
 	font-weight: 400;
-}}
+}
+img {
+   max-width: 100%;
+}
+a:link {
+    color: #635274;
+}
+a:visited {
+    color: #512B52;
+}
+a:hover {
+    color: #512B52;
+}
+a:active {
+    color: #512B52;
+}
+
 
 table.visuals {
 	margin-left: auto;
@@ -41,12 +57,21 @@ table.visuals {
 .hidden {
 	display: none;
 }
+.background {
+	background-color: rgba(0, 0, 0, 0.9);
+	bottom: 0;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+}
 
 .buttons {
 	text-align: center;
 }
 a.button {
-	box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);
+	/*box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);*/
+	colour: white;
 	display: inline-block;
 	margin: 1em;
 	padding: 0.5em 1em;
@@ -81,6 +106,8 @@ input:focus,select:focus {
 .bordered {
 	border: 2px solid #512b52;
 	display: inline-block;
+	margin-bottom: 0.1em;
+	margin-top: 0.1em;
 	padding: 0.2em;
 }
 .bordered:focus {
@@ -121,13 +148,19 @@ header .beta {
 	font-weight: 900;
 	padding: 0.5em 0;
 	text-align: center;
-	transform: translate(25%, 50%) rotate(45deg);
+	transform: rotate(45deg) translate(0, 2em);
+	transform-origin: center top;
+	width: 200%;
 }
 
 footer {
-	background-color: #437069;
+	background-color: #512B52;
+	bottom: 0;
 	color: #f4f4f4;
+	left: 0;
 	padding: 0.5em;
+	position: fixed;
+	right: 0;
 	text-align: center;
 }
 footer>a {
@@ -148,6 +181,6 @@ footer .disclaimer a {
 }
 
 .body {
-	margin: 2em auto;
+	margin: 2em auto 10em auto;
 	width: 50em;
 }

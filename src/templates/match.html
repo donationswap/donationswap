@@ -13,31 +13,25 @@
 		<table>
 			<tbody>
 				<tr>
-					<td>My Country:</td>
-					<td id="txtMyCountry"></td>
-				</tr>
-				<tr>
-					<td>My Charity:</td>
-					<td id="txtMyCharity"></td>
-				</tr>
-				<tr>
-					<td>My Amount:</td>
-					<td id="txtMyAmount"></td>
-				</tr>
-				<tr>
-					<td>Their Country:</td>
-					<td id="txtTheirCountry"></td>
-				</tr>
-				<tr>
-					<td>Their Charity:</td>
+					<td>Charity your matched donor wishes to support:</td>
 					<td id="txtTheirCharity"></td>
 				</tr>
 				<tr>
-					<td>Their Amount:</td>
+					<td>Charity you wish to support:</td>
+					<td id="txtMyCharity"></td>
+				</tr>
+				<tr>
+					<td>Amount you would be donating:</td>
+					<td id="txtMyAmount"></td>
+				</tr>
+				<tr>
+					<td>Amount your matched donor would be donating:</td>
 					<td id="txtTheirAmount"></td>
 				</tr>
 			</tbody>
 		</table>
+		<p>If you and your matched donor both approve the match within 72 hours from when this link was sent, you will get the name and contact details of your matched donor. <b>Please wait until you have had personal contact with your matched donor before donating.</b> 
+		</p>
 		<button id="btnApprove">Approve</button>
 		<button id="btnDecline">Decline</button>
 	</div>
@@ -58,27 +52,38 @@
 				window.location.pathname = '/';
 				return;
 			}
-			ui.txtMyCountry.textContent = match.my_country;
 			ui.txtMyCharity.textContent = match.my_charity;
 			ui.txtMyAmount.textContent = `${match.my_amount} ${match.my_currency}`;
-			ui.txtTheirCountry.textContent = match.their_country;
 			ui.txtTheirCharity.textContent = match.their_charity;
 			ui.txtTheirAmount.textContent = (match.my_currency === match.their_currency)
 				? `${match.their_amount} ${match.their_currency}`
-				: `${match.their_amount} ${match.their_currency} (${match.their_amount_converted} ${match.my_currency})`
+				: `${match.their_amount} ${match.their_currency}`;
+			ui.btnApprove.disabled = !match.can_edit;
+			ui.btnDecline.disabled = !match.can_edit;
+			ui.btnApprove.title = ui.btnDecline.title = match.can_edit ? '' : 'You have already approved or declined this match';
 		});
 
 	ui.btnApprove.onclick = () => {
+		ui.btnApprove.disabled = true;
+		ui.btnDecline.disabled = true;
 		ajax('/ajax/approve_match', { secret })
 			.then(() => {
-				//xxx Say "we're waiting for the other person's response"
-				//xxx or say "we sent you an email"
+				//xxx say "you'll get an email soon."
 				alert('Thanks!');
 			});
 	};
 
 	ui.btnDecline.onclick = () => {
-		alert('Sorry, not this part is not implemented yet.');
+		ui.btnApprove.disabled = true;
+		ui.btnDecline.disabled = true;
+
+		//xxx un-hide feedback form and actual decline button
+		const feedback = 'xxx not implemented yet';
+		ajax('/ajax/decline_match', { secret, feedback })
+			.then(() => {
+				//xxx let them know their offer has been suspended
+				alert('Bummer!');
+			});
 	};
 }());
 </script>

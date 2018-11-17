@@ -1,23 +1,37 @@
-Success!
+Dear {%NAME_A%} and {%NAME_B%}, 
 
-Both of you have approved our suggested match.
-Here are your details and instructions:
+Success! You have been matched by the EA donation swap site. 
 
-{%OLD_EMAIL%}:
-Country: {%OLD_COUNTRY%}
-Charity: {%OLD_CHARITY%}
-Amount: {%OLD_AMOUNT%} {%OLD_CURRENCY%} (= {%OLD_AMOUNT_CONVERTED%} {%NEW_CURRENCY%})
-Instructions: {%OLD_INSTRUCTIONS%}
+{%NAME_A%} is from {%COUNTRY_A%}, and wants to support {%CHARITY_A%}. Their email address is {%EMAIL_A%}.
+{%NAME_B%} is from {%COUNTRY_B%}, and wants to support {%CHARITY_B%}. Their email address is {%EMAIL_B%}.
 
-{%NEW_EMAIL%}:
-Country: {%NEW_COUNTRY%}
-Charity: {%NEW_CHARITY%}
-Amount: {%NEW_AMOUNT%} {%NEW_CURRENCY%} (={%NEW_AMOUNT_CONVERTED%} in {%OLD_CURRENCY%})
-Instructions: {%NEW_INSTRUCTIONS%}
+If you choose to proceed with your donation swap, here are your instructions:
 
-Now it is time for you to introduce yourselves to each other,
-donate the money, send each other the receipts, and continue to be awesome.
+________________________________________________________________
 
-Go forth and do the most good!
+{%NAME_A%}:
 
-Your friends from Donation Swap.
+{%NAME_A%} will donate {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} to the charity {%CHARITY_B%}.
+Instructions to donate: {%INSTRUCTIONS_A%}
+
+________________________________________________________________
+
+{%NAME_B%}:
+
+{%NAME_B%} will donate {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} to the charity {%CHARITY_A%}.
+Instructions to donate: {%INSTRUCTIONS_B%}
+
+________________________________________________________________
+
+Please get in contact with each other, and wait until you are both comfortable with the donation swap before donating. Once you have donated, please send each other the donation receipts.
+
+Now that you have been matched, your swap offer has been taken off our database. If this swap is for only part of the money you have to donate, please go to https://donationswap.eahub.org/start to make another swap offer with the amount you have remaining.
+
+Please let us know if you have any questions. 
+
+Go forth and continue making the world a better place!
+
+Your friends from EA donation swap.
+
+
+CALCULATION:

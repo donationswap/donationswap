@@ -2,7 +2,9 @@
 
 import email.mime.multipart
 import email.mime.text
+import logging
 import smtplib
+import threading
 
 class Mail: # pylint: disable=too-few-public-methods
 
@@ -20,7 +22,7 @@ class Mail: # pylint: disable=too-few-public-methods
 			else:
 				msg[key] = value
 
-	def send(self, subject, text, html=None, to=None, cc=None, bcc=None):
+	def _prepare_msg(self, subject, text, html, to, cc, bcc):
 		if html is None:
 			msg = email.mime.text.MIMEText(text)
 		else:
@@ -38,7 +40,20 @@ class Mail: # pylint: disable=too-few-public-methods
 		self._populate(msg, 'Cc', cc)
 		self._populate(msg, 'Bcc', bcc)
 
+		return msg
+
+	def _send_msg(self, msg):
 		with smtplib.SMTP(self._smtp_host) as s:
 			s.starttls()
 			s.login(user=self._user, password=self._password)
 			s.send_message(msg)
+
+	def send(self, subject, text, html=None, to=None, cc=None, bcc=None, send_async=True):
+		msg = self._prepare_msg(subject, text, html, to, cc, bcc)
+
+		logging.info('Sending email. to=%s, cc=%s, bcc=%s.', to, cc, bcc)
+
+		if send_async:
+			threading.Thread(target=self._send_msg, args=(msg,)).start()
+		else:
+			self._send_msg(msg)

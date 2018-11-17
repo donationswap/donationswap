@@ -38,13 +38,13 @@ class Connection:
 	def __init__(self, connection_string):
 		self._connection = psycopg2.connect(connection_string)
 		self._cursor = self._connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-		self._written = False
+		self.written = False
 
 	def __enter__(self):
 		return self
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
-		if self._written:
+		if self.written:
 			if exc_type: # do not commit on exception
 				logging.error('exception during transaction', exc_info=True)
 				self._connection.rollback()
@@ -70,8 +70,14 @@ class Connection:
 
 	def write(self, cmd, **args):
 		self._cursor.execute(cmd, args)
-		self._written = True
+		self.written = True
 
 	def write_read_one(self, query, **args):
-		self._written = True
+		self.written = True
 		return self.read_one(query, **args)
+
+	def execute_script(self, script):
+		self._cursor.execute(script)
+
+	def escape(self, query, **args):
+		return self._cursor.mogrify(query, args).decode('utf-8')
