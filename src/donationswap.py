@@ -955,9 +955,9 @@ class Donationswap:
 			entities.Charity.by_id(charity_id).delete(db)
 
 	@admin_ajax
-	def create_country(self, _, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+	def create_country(self, _, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid):
 		with self._database.connect() as db:
-			entities.Country.create(db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
+			entities.Country.create(db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid)
 
 	@admin_ajax
 	def update_country(self, _, country_id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):

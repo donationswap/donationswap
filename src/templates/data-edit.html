@@ -156,6 +156,10 @@
 				<td>Min Donation Currency</td>
 				<td><select id="countryMinDonationCurrencyId"></select></td>
 			</tr>
+			<tr>
+				<td>Gift Aid (0 is none, 0.25 is 25%)</td>
+				<td><input id="giftAid" type="number" step="0.01" value="0.0"></td>
+			</tr>
 		</tbody>
 		<tfoot>
 			<tr>
@@ -240,6 +244,7 @@
 		ui.countryCurrency.value = country.currency_id;
 		ui.countryMinDonationAmount.value = country.min_donation_amount;
 		ui.countryMinDonationCurrencyId.value = country.min_donation_currency_id;
+		ui.giftAid.value = country.gift_aid;
 
 		ui.editCountry.classList.remove('hidden');
 		ui.countryName.select();
@@ -504,6 +509,7 @@
 			currency_id: parseInt(ui.countryCurrency.value, 10),
 			min_donation_amount: parseInt(ui.countryMinDonationAmount.value, 10),
 			min_donation_currency_id: parseInt(ui.countryMinDonationCurrencyId.value, 10),
+			gift_aid: parseFloat(ui.giftAid)
 		};
 
 		if (ui.countryId.textContent) {
