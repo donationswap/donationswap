@@ -320,7 +320,6 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 		self.created_ts = row['created_ts']
 		self.expires_ts = row['expires_ts']
 		self.confirmed = row['confirmed']
-		self.name = row['name']
 
 	def __repr__(self):
 		return '{id}:{name}:{email}:{amount}'.format(**self.__dict__)
