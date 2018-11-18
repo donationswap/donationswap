@@ -201,6 +201,10 @@ class Country(EntityMixin, IdMixin):
 	def min_donation_currency(self):
 		return Currency.by_id(self.min_donation_currency_id)
 
+	@property
+	def gift_aid_multipler(self):
+		return (self.gift_aid / 100.0) + 1
+
 	@classmethod
 	def by_iso_name(cls, iso_name):
 		return cls._by_iso_name.get(iso_name, None)
