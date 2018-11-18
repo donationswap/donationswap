@@ -1087,20 +1087,20 @@ class Donationswap:
 			my_offer.country.currency.iso)
 
 		if self._currency.is_more_money(
-			my_offer.amount,
+			my_offer.amount / my_offer.country.gift_aid,
 			my_offer.country.currency.iso,
-			their_offer.amount,
+			their_offer.amount / their_offer.country.gift_aid,
 			their_offer.country.currency.iso
 		):
 			my_actual_amount = self._currency.convert(
-				their_offer.amount,
+				their_offer.amount / my_offer.country.gift_aid,
 				their_offer.country.currency.iso,
 				my_offer.country.currency.iso)
-			their_actual_amount = their_offer.amount
+			their_actual_amount = their_offer.amount / their_offer.country.gift_aid
 		else:
-			my_actual_amount = my_offer.amount
+			my_actual_amount = my_offer.amount / my_offer.country.gift_aid
 			their_actual_amount = self._currency.convert(
-				my_actual_amount,
+				my_actual_amount / their_offer.country.gift_aid,
 				my_offer.country.currency.iso,
 				their_offer.country.currency.iso)
 
