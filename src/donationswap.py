@@ -576,22 +576,18 @@ class Donationswap:
 		if offer_a.email.lower() == offer_b.email.lower():
 			return 0, 'same email address'
 
-		# Gift Aid \o/
-		gift_aid_a = 1 + (offer_a.country.gift_aid / 100.0)
-		gift_aid_b = 1 + (offer_b.country.gift_aid / 100.0)
-
 		amount_a_in_currency_b = self._currency.convert(
 			offer_a.amount,
 			offer_a.country.currency.iso,
-			offer_b.country.currency.iso) * gift_aid_a
+			offer_b.country.currency.iso) * offer_a.country.gift_aid_multiplier
 		amount_b_in_currency_a = self._currency.convert(
 			offer_b.amount,
 			offer_b.country.currency.iso,
-			offer_a.country.currency.iso) * gift_aid_b
+			offer_a.country.currency.iso) * offer_b.country.gift_aid_multiplier
 
-		if amount_a_in_currency_b < offer_b.min_amount * gift_aid_b:
+		if amount_a_in_currency_b < offer_b.min_amount * offer_b.country.gift_aid_multiplier:
 			return 0, 'amount mismatch'
-		if amount_b_in_currency_a < offer_a.min_amount * gift_aid_a:
+		if amount_b_in_currency_a < offer_a.min_amount * offer_a.country.gift_aid_multiplier:
 			return 0, 'amount mismatch'
 
 		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
@@ -615,11 +611,11 @@ class Donationswap:
 		amount_a_in_nzd = self._currency.convert(
 			offer_a.amount,
 			offer_a.country.currency.iso,
-			'NZD') * gift_aid_a
+			'NZD') * offer_a.country.gift_aid_multipler
 		amount_b_in_nzd = self._currency.convert(
 			offer_b.amount,
 			offer_b.country.currency.iso,
-			'NZD') * gift_aid_b
+			'NZD') * offer_b.country.gift_aid_multipler
 
 		score = 1 - (amount_a_in_nzd - amount_b_in_nzd)**2 / max(amount_a_in_nzd, amount_b_in_nzd)**2
 
@@ -633,29 +629,34 @@ class Donationswap:
 		score = round(score, 4)
 		return score, reason
 
-	@ajax
-	def get_match(self, secret):
-		match, old_offer, new_offer, my_offer, their_offer = self._get_match_and_offers(secret)
-		if my_offer is None or their_offer is None:
-			return None
-
+	def getActualAmounts(self, my_offer, their_offer):
 		if self._currency.is_more_money(
-			my_offer.amount,
+			my_offer.amount * my_offer.country.gift_aid_multiplier,
 			my_offer.country.currency.iso,
-			their_offer.amount,
+			their_offer.amount * their_offer.country.gift_aid_multiplier,
 			their_offer.country.currency.iso
 		):
 			my_actual_amount = self._currency.convert(
-				their_offer.amount,
+				their_offer.amount * their_offer.country.gift_aid_multiplier / my_offer.country.gift_aid_multiplier,
 				their_offer.country.currency.iso,
 				my_offer.country.currency.iso)
 			their_actual_amount = their_offer.amount
 		else:
 			my_actual_amount = my_offer.amount
 			their_actual_amount = self._currency.convert(
-				my_offer.amount,
+				my_offer.amount  * my_offer.country.gift_aid_multiplier / their_offer.country.gift_aid_multiplier,
 				my_offer.country.currency.iso,
 				their_offer.country.currency.iso)
+
+		return my_actual_amount, their_actual_amount
+
+	@ajax
+	def get_match(self, secret):
+		match, old_offer, new_offer, my_offer, their_offer = self._get_match_and_offers(secret)
+		if my_offer is None or their_offer is None:
+			return None
+
+		my_actual_amount, their_actual_amount = self.getActualAmounts(my_offer, their_offer)
 
 		can_edit = False
 		if my_offer.id == new_offer.id:
@@ -935,6 +936,7 @@ class Donationswap:
 					'currency_id': i.currency_id,
 					'min_donation_amount': i.min_donation_amount,
 					'min_donation_currency_id': i.min_donation_currency_id,
+					'gift_aid': i.gift_aid
 				}
 				for i in sorted(
 					entities.Country.get_all(),
@@ -1089,23 +1091,7 @@ class Donationswap:
 			their_offer.country.currency.iso,
 			my_offer.country.currency.iso)
 
-		if self._currency.is_more_money(
-			my_offer.amount,
-			my_offer.country.currency.iso,
-			their_offer.amount,
-			their_offer.country.currency.iso
-		):
-			my_actual_amount = self._currency.convert(
-				their_offer.amount,
-				their_offer.country.currency.iso,
-				my_offer.country.currency.iso)
-			their_actual_amount = their_offer.amount
-		else:
-			my_actual_amount = my_offer.amount
-			their_actual_amount = self._currency.convert(
-				my_actual_amount,
-				my_offer.country.currency.iso,
-				their_offer.country.currency.iso)
+		my_actual_amount, their_actual_amount = self.getActualAmounts(my_offer, their_offer)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
