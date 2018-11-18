@@ -549,18 +549,22 @@ class Donationswap:
 		if offer_a.email.lower() == offer_b.email.lower():
 			return 0, 'same email address'
 
+		# Gift Aid \o/
+		gift_aid_a = 1 + (offer_a.country.gift_aid / 100.0)
+		gift_aid_b = 1 + (offer_b.country.gift_aid / 100.0)
+
 		amount_a_in_currency_b = self._currency.convert(
 			offer_a.amount,
 			offer_a.country.currency.iso,
-			offer_b.country.currency.iso)
+			offer_b.country.currency.iso) * gift_aid_a
 		amount_b_in_currency_a = self._currency.convert(
 			offer_b.amount,
 			offer_b.country.currency.iso,
-			offer_a.country.currency.iso)
+			offer_a.country.currency.iso) * gift_aid_b
 
-		if amount_a_in_currency_b < offer_b.min_amount:
+		if amount_a_in_currency_b < offer_b.min_amount * gift_aid_b:
 			return 0, 'amount mismatch'
-		if amount_b_in_currency_a < offer_a.min_amount:
+		if amount_b_in_currency_a < offer_a.min_amount * gift_aid_a:
 			return 0, 'amount mismatch'
 
 		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
@@ -584,11 +588,12 @@ class Donationswap:
 		amount_a_in_nzd = self._currency.convert(
 			offer_a.amount,
 			offer_a.country.currency.iso,
-			'NZD')
+			'NZD') * gift_aid_a
 		amount_b_in_nzd = self._currency.convert(
 			offer_b.amount,
 			offer_b.country.currency.iso,
-			'NZD')
+			'NZD') * gift_aid_b
+
 		score = 1 - (amount_a_in_nzd - amount_b_in_nzd)**2 / max(amount_a_in_nzd, amount_b_in_nzd)**2
 
 		if a_will_benefit and b_will_benefit:
