@@ -202,7 +202,7 @@ class Country(EntityMixin, IdMixin):
 		return Currency.by_id(self.min_donation_currency_id)
 
 	@property
-	def gift_aid_multipler(self):
+	def gift_aid_multiplier(self):
 		return (self.gift_aid / 100.0) + 1
 
 	@classmethod
