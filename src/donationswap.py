@@ -590,6 +590,8 @@ class Donationswap:
 		if amount_b_in_currency_a < offer_a.min_amount * offer_a.country.gift_aid_multiplier:
 			return 0, 'amount mismatch'
 
+		#xxx only count as "benefit" if own charity isn't tax-deductible, but other donor's one is
+		#    (otherwise we would reward pointless swaps, where both donors already get their tax back)
 		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
 		b_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_b.country_id) is not None
 
@@ -680,6 +682,7 @@ class Donationswap:
 		}
 
 	def _send_mail_about_approved_match(self, offer_a, offer_b):
+		#xxx presumably, getActualAmounts can be used here, too.
 		if self._currency.is_more_money(
 			offer_a.amount,
 			offer_a.country.currency.iso,
@@ -1086,12 +1089,7 @@ class Donationswap:
 			}
 
 	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		their_amount_in_your_currency = self._currency.convert(
-			their_offer.amount,
-			their_offer.country.currency.iso,
-			my_offer.country.currency.iso)
-
-		my_actual_amount, their_actual_amount = self.getActualAmounts(my_offer, their_offer)
+		my_actual_amount, _ = self.getActualAmounts(my_offer, their_offer)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
@@ -1101,10 +1099,6 @@ class Donationswap:
 			'{%YOUR_ACTUAL_AMOUNT%}': my_actual_amount,
 			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
 			'{%THEIR_CHARITY%}': their_offer.charity.name,
-			'{%THEIR_AMOUNT%}': their_offer.amount,
-			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
-			'{%THEIR_AMOUNT_CONVERTED%}': their_amount_in_your_currency,
-			'{%THEIR_ACTUAL_AMOUNT%}': their_actual_amount,
 			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
 			# Do NOT put their email address here.
 			# Wait until both parties approved the match.
