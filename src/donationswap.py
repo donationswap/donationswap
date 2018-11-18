@@ -931,6 +931,7 @@ class Donationswap:
 					'currency_id': i.currency_id,
 					'min_donation_amount': i.min_donation_amount,
 					'min_donation_currency_id': i.min_donation_currency_id,
+					'gift_aid': i.gift_aid
 				}
 				for i in sorted(
 					entities.Country.get_all(),
