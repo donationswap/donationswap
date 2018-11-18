@@ -66,6 +66,7 @@ import util
 # - blacklist users who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
 # - add link to match email for user to create offer for remaining amount.
+# - add charities should have hyperlinks.
 
 # pylint: disable=too-many-lines
 
@@ -302,6 +303,8 @@ class Donationswap:
 		return 0 #xxx
 
 	def clean_up(self):
+		'''This method gets called once per hour by a cronjob.'''
+
 		counts = {
 			'unconfirmed_offers': self._delete_unconfirmed_offers(),
 			'expired_offers': self._delete_expired_offers(),
@@ -523,6 +526,7 @@ class Donationswap:
 			'was_confirmed': was_confirmed,
 			'currency': offer.country.currency.iso,
 			'amount': offer.amount,
+			'min_amount': offer.min_amount,
 			'charity': offer.charity.name,
 			'created_ts': offer.created_ts.isoformat(' '),
 			'expires_ts': offer.expires_ts.isoformat(' '),

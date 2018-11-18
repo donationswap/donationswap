@@ -29,7 +29,11 @@ h4 {
 	font-weight: 400;
 }
 img {
-   max-width: 100%;
+	width: 50em;
+	max-width: 100%;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
 }
 a:link {
     color: #635274;
@@ -124,10 +128,10 @@ header {
 	background-repeat: no-repeat;
 	background-size: 4em;
 	color: #f4f4f4;
-	font-size: 130%;
+	font-size: 200%;
 	font-weight: 400;
 	margin: 0;
-	padding: 0.5em;
+	padding: 1.2em 0.5em;
 	text-align: center;
 }
 header b {
@@ -144,7 +148,7 @@ header .beta-container {
 	top: 0;
 }
 header .beta {
-	font-size: 115%;
+	font-size: 50%;
 	font-weight: 900;
 	padding: 0.5em 0;
 	text-align: center;
@@ -162,6 +166,7 @@ footer {
 	position: fixed;
 	right: 0;
 	text-align: center;
+	font-size:80%;
 }
 footer>a {
 	color: #f4f4f4;
@@ -182,5 +187,5 @@ footer .disclaimer a {
 
 .body {
 	margin: 2em auto 10em auto;
-	width: 50em;
+	padding:0 3em;
 }
