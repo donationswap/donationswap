@@ -60,9 +60,8 @@ def _is_good_match(self, offer1, offer2):
 	dbCountry1 = offer1.country
 	dbCountry2 = offer2.country
 
-	# TODO: UK and ireland(?) GiftAid
-	multiplier1 = 1
-	multiplier2 = 1
+	multiplier1 = (dbCountry1.gift_aid / 100.0) + 1
+	multiplier2 = (dbCountry2.gift_aid / 100.0) + 1
 
 	exchangeRate1VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
 	exchangeRate2VsUSA = self._currency.convert(1000, dbCountry2.currency.iso, 'USD') / 1000.0
