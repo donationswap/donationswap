@@ -322,7 +322,7 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 		self.confirmed = row['confirmed']
 
 	def __repr__(self):
-		return '{id}:{email}:{amount}'.format(**self.__dict__)
+		return '{id}:{name}:{email}:{amount}'.format(**self.__dict__)
 
 	@classmethod
 	def _load_entity_impl(cls, entity):
