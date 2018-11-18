@@ -49,24 +49,43 @@ import geoip
 import mail
 import util
 
+#xxx separate js files
+
+#xxx add etags
+
 #xxx find out what information the matching algorithm provides
 #    (and add it to the email)
 
+#xxx add minimum donation amount to offer validation
+
 #xxx move all `style="..."` stuff into style.css
+
 #xxx layout html emails
 
+#xxx delete db backups after 3 months
+
+#xxx feedback page
+
+#xxx use local time on admin pages
+
+#xxx remove tax factor
+
+#xxx anonymize (remove name+email) event log after 3 months
+
 #xxx make sure certbot works when the time comes
+
+#xxx revoke external db access from /etc/postgresql/9.6/main/pg_hba.conf
 
 # post MVP features:
 # - a donation offer is pointless if
 #   - it is to the only tax-deductible charity in the country OR
-#   - it is to a charity that is tax-decuctible everywhere
-# - add "never match me with any of these charity" blacklist button.
+#   - it is to a charity that is tax-decuctible everywhere OR
+#   - it is to a charity that is tax-deductible nowhere.
 # - add "blacklist charity" to offer.
 # - blacklist users who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
 # - add link to match email for user to create offer for remaining amount.
-# - add charities should have hyperlinks.
+# - charities should have hyperlinks.
 
 # pylint: disable=too-many-lines
 
@@ -1032,6 +1051,7 @@ class Donationswap:
 				'charity': offer.charity.name,
 				'expires_ts': offer.expires_ts.strftime('%Y-%m-%d %H:%M:%S'),
 				'email': offer.email,
+				'name': offer.name,
 				'amount_localized': self._currency.convert(
 					offer.amount,
 					offer.country.currency.iso,
