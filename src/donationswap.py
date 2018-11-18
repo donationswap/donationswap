@@ -49,13 +49,6 @@ import geoip
 import mail
 import util
 
-#xxx separate js files
-
-#xxx add etags
-
-#xxx find out what information the matching algorithm provides
-#    (and add it to the email)
-
 #xxx add minimum donation amount to offer validation
 
 #xxx move all `style="..."` stuff into style.css
@@ -82,7 +75,7 @@ import util
 #   - it is to a charity that is tax-decuctible everywhere OR
 #   - it is to a charity that is tax-deductible nowhere.
 # - add "blacklist charity" to offer.
-# - blacklist users who agreed to the match but didn't acutally donate.
+# - blacklist donors who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
 # - add link to match email for user to create offer for remaining amount.
 # - charities should have hyperlinks.
@@ -108,6 +101,8 @@ class DonationException(Exception):
 class Donationswap:
 	# pylint: disable=too-many-instance-attributes
 	# pylint: disable=too-many-public-methods
+
+	STATIC_VERSION = 3 # cache-breaker
 
 	def __init__(self, config_path):
 		self._config = config.Config(config_path)
@@ -227,9 +222,18 @@ class Donationswap:
 			logging.error('Ajax Admin Error', exc_info=True)
 			return False, str(e)
 
-	@staticmethod
-	def get_page(name):
-		return util.Template(name).content
+	def get_page(self, name):
+		content = util.Template(name).content
+
+		# This acts as a cache breaker -- just increment
+		# self.STATIC_VERSION whenever a static file has changed,
+		# so the client will know to re-request it from the server.
+		# The only exception are files referenced in style.css,
+		# which must be handled manually.
+		content = re.sub('src="/static/(.*?)"', lambda m: 'src="/static/%s?v=%s"' % (m.group(1), self.STATIC_VERSION), content)
+		content = re.sub('href="/static/(.*?)"', lambda m: 'href="/static/%s?v=%s"' % (m.group(1), self.STATIC_VERSION), content)
+
+		return content
 
 	def _send_mail_about_unconfirmed_offer(self, offer):
 		replacements = {
@@ -586,6 +590,8 @@ class Donationswap:
 		if amount_b_in_currency_a < offer_a.min_amount * offer_a.country.gift_aid_multiplier:
 			return 0, 'amount mismatch'
 
+		#xxx only count as "benefit" if own charity isn't tax-deductible, but other donor's one is
+		#    (otherwise we would reward pointless swaps, where both donors already get their tax back)
 		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
 		b_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_b.country_id) is not None
 
@@ -625,7 +631,7 @@ class Donationswap:
 		score = round(score, 4)
 		return score, reason
 
-	def getActualAmounts(self, my_offer, their_offer):
+	def _get_actual_amounts(self, my_offer, their_offer):
 		if self._currency.is_more_money(
 			my_offer.amount * my_offer.country.gift_aid_multiplier,
 			my_offer.country.currency.iso,
@@ -652,7 +658,7 @@ class Donationswap:
 		if my_offer is None or their_offer is None:
 			return None
 
-		my_actual_amount, their_actual_amount = self.getActualAmounts(my_offer, their_offer)
+		my_actual_amount, their_actual_amount = self._get_actual_amounts(my_offer, their_offer)
 
 		can_edit = False
 		if my_offer.id == new_offer.id:
@@ -676,6 +682,7 @@ class Donationswap:
 		}
 
 	def _send_mail_about_approved_match(self, offer_a, offer_b):
+		#xxx presumably, _get_actual_amounts can be used here, too.
 		if self._currency.is_more_money(
 			offer_a.amount,
 			offer_a.country.currency.iso,
@@ -1082,12 +1089,7 @@ class Donationswap:
 			}
 
 	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		their_amount_in_your_currency = self._currency.convert(
-			their_offer.amount,
-			their_offer.country.currency.iso,
-			my_offer.country.currency.iso)
-
-		my_actual_amount, their_actual_amount = self.getActualAmounts(my_offer, their_offer)
+		my_actual_amount, _ = self._get_actual_amounts(my_offer, their_offer)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
@@ -1097,10 +1099,6 @@ class Donationswap:
 			'{%YOUR_ACTUAL_AMOUNT%}': my_actual_amount,
 			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
 			'{%THEIR_CHARITY%}': their_offer.charity.name,
-			'{%THEIR_AMOUNT%}': their_offer.amount,
-			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
-			'{%THEIR_AMOUNT_CONVERTED%}': their_amount_in_your_currency,
-			'{%THEIR_ACTUAL_AMOUNT%}': their_actual_amount,
 			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
 			# Do NOT put their email address here.
 			# Wait until both parties approved the match.
