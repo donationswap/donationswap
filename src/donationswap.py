@@ -75,7 +75,7 @@ import util
 #   - it is to a charity that is tax-decuctible everywhere OR
 #   - it is to a charity that is tax-deductible nowhere.
 # - add "blacklist charity" to offer.
-# - blacklist users who agreed to the match but didn't acutally donate.
+# - blacklist donors who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
 # - add link to match email for user to create offer for remaining amount.
 # - charities should have hyperlinks.
@@ -631,7 +631,7 @@ class Donationswap:
 		score = round(score, 4)
 		return score, reason
 
-	def getActualAmounts(self, my_offer, their_offer):
+	def _get_actual_amounts(self, my_offer, their_offer):
 		if self._currency.is_more_money(
 			my_offer.amount * my_offer.country.gift_aid_multiplier,
 			my_offer.country.currency.iso,
@@ -658,7 +658,7 @@ class Donationswap:
 		if my_offer is None or their_offer is None:
 			return None
 
-		my_actual_amount, their_actual_amount = self.getActualAmounts(my_offer, their_offer)
+		my_actual_amount, their_actual_amount = self._get_actual_amounts(my_offer, their_offer)
 
 		can_edit = False
 		if my_offer.id == new_offer.id:
@@ -682,7 +682,7 @@ class Donationswap:
 		}
 
 	def _send_mail_about_approved_match(self, offer_a, offer_b):
-		#xxx presumably, getActualAmounts can be used here, too.
+		#xxx presumably, _get_actual_amounts can be used here, too.
 		if self._currency.is_more_money(
 			offer_a.amount,
 			offer_a.country.currency.iso,
@@ -1089,7 +1089,7 @@ class Donationswap:
 			}
 
 	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		my_actual_amount, _ = self.getActualAmounts(my_offer, their_offer)
+		my_actual_amount, _ = self._get_actual_amounts(my_offer, their_offer)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
