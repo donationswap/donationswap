@@ -49,13 +49,6 @@ import geoip
 import mail
 import util
 
-#xxx separate js files
-
-#xxx add etags
-
-#xxx find out what information the matching algorithm provides
-#    (and add it to the email)
-
 #xxx add minimum donation amount to offer validation
 
 #xxx move all `style="..."` stuff into style.css
@@ -108,6 +101,8 @@ class DonationException(Exception):
 class Donationswap:
 	# pylint: disable=too-many-instance-attributes
 	# pylint: disable=too-many-public-methods
+
+	STATIC_VERSION = 3 # cache-breaker
 
 	def __init__(self, config_path):
 		self._config = config.Config(config_path)
@@ -227,9 +222,18 @@ class Donationswap:
 			logging.error('Ajax Admin Error', exc_info=True)
 			return False, str(e)
 
-	@staticmethod
-	def get_page(name):
-		return util.Template(name).content
+	def get_page(self, name):
+		content = util.Template(name).content
+
+		# This acts as a cache breaker -- just increment
+		# self.STATIC_VERSION whenever a static file has changed,
+		# so the client will know to re-request it from the server.
+		# The only exception are files referenced in style.css,
+		# which must be handled manually.
+		content = re.sub('src="/static/(.*?)"', lambda m: 'src="/static/%s?v=%s"' % (m.group(1), self.STATIC_VERSION), content)
+		content = re.sub('href="/static/(.*?)"', lambda m: 'href="/static/%s?v=%s"' % (m.group(1), self.STATIC_VERSION), content)
+
+		return content
 
 	def _send_mail_about_unconfirmed_offer(self, offer):
 		replacements = {
