@@ -1,13 +1,12 @@
 Hello {%NAME%},
 
-Four weeks ago our algorithm matched your donation offer with a similar offer made by {%NAME_OTHER%} ({%EMAIL_OTHER%}).
+Four weeks ago you were matched with {%NAME_OTHER%} to do a donation swap. 
 
 {%NAME_OTHER%} was going to donate {%AMOUNT_OTHER%} {%CURRENCY_OTHER%} ({%AMOUNT_OTHER_CONVERTED%} {%CURRENCY%}) to {%CHARITY%}.
 
 You were going to donate {%AMOUNT%} {%CURRENCY%} ({%AMOUNT_CONVERTED%} {%CURRENCY_OTHER%}) to {%CHARITY_OTHER%}.
 
-If you have some time, we would like some feedback.
+Did it go well? We would like your feedback! Please fill in this very short form to let us know how it went and how we can do better: 
+https://donationswap.eahub.org/feedback/#{%MATCH_SECRET%} 
 
-Please visit https://donationswap.eahub.org/feedback/#{%MATCH_SECRET%} and let us know how it went and how we can do better.
-
-Thank you!
+- Thanks from the EA donation swap team
