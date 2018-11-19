@@ -613,11 +613,11 @@ class Donationswap:
 		amount_a_in_nzd = self._currency.convert(
 			offer_a.amount,
 			offer_a.country.currency.iso,
-			'NZD') * offer_a.country.gift_aid_multipler
+			'NZD') * offer_a.country.gift_aid_multiplier
 		amount_b_in_nzd = self._currency.convert(
 			offer_b.amount,
 			offer_b.country.currency.iso,
-			'NZD') * offer_b.country.gift_aid_multipler
+			'NZD') * offer_b.country.gift_aid_multiplier
 
 		score = 1 - (amount_a_in_nzd - amount_b_in_nzd)**2 / max(amount_a_in_nzd, amount_b_in_nzd)**2
 
@@ -682,7 +682,7 @@ class Donationswap:
 		}
 
 	def _get_gift_aid_insert(self, offer, to_charity_amount):
-		if offer.country.gift_aid_multipler <= 1:
+		if offer.country.gift_aid_multiplier <= 1:
 			return "", ""
 
 		# hardcoding might be bad practice,
