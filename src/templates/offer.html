@@ -40,9 +40,11 @@
 				</tr>
 			</tbody>
 		</table>
-		<p class="hidden" id="confirmed">Thank you for activating your offer.</p>
+		<div class="hidden" id="confirmed">
+		<p>Thank you for activating your offer.</p>
 		<p>We will send you an email when we find a match. You can create another offer <a href="/start/">here</a>.</p>
 		<p>If you have changed your mind please delete your offer.</p>
+		</div>
 		<button class="hidden" id="btnDelete">Delete Your Offer</button>
 		<div id="message">Loading...</div>
 	</div>
@@ -59,6 +61,7 @@
 	function setVisibility(offer) {
 		ui.table.classList.toggle('hidden', !offer);
 		ui.btnDelete.classList.toggle('hidden', !offer);
+		ui.confirmed.classList.toggle('hidden', !offer);
 		ui.message.classList.toggle('hidden', !ui.message.textContent);
 	}
 
