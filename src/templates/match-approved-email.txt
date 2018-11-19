@@ -12,14 +12,14 @@ ________________________________________________________________
 {%NAME_A%}:
 
 {%NAME_A%} will donate {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} to the charity {%CHARITY_B%}.
-Instructions to donate: {%INSTRUCTIONS_A%}
+{%GIFT_AID_INSERT_A_TXT%}Instructions to donate: {%INSTRUCTIONS_A%}
 
 ________________________________________________________________
 
 {%NAME_B%}:
 
 {%NAME_B%} will donate {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} to the charity {%CHARITY_A%}.
-Instructions to donate: {%INSTRUCTIONS_B%}
+{%GIFT_AID_INSERT_B_TXT%}Instructions to donate: {%INSTRUCTIONS_B%}
 
 ________________________________________________________________
 

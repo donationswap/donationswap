@@ -1,0 +1,2 @@
+Because of {%GIFT_AID_NAME%} of {%GIFT_AID_AMOUNT%} the charity will receive {%TO_CHARITY%}.
+For more information visit {%GIFT_AID_LINK%}
