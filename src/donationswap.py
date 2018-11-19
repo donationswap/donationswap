@@ -699,6 +699,7 @@ class Donationswap:
 			'{%GIFT_AID_LINK%}': gift_aid_link,
 			'{%GIFT_AID_AMOUNT%}': offer.country.gift_aid,
 			'{%TO_CHARITY%}': to_charity_amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
 		}
 
 		txt = util.Template('gift-aid-insert.txt').replace(replacements).content
