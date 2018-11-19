@@ -732,6 +732,15 @@ class Donationswap:
 		gift_aid_insert_a_txt, gift_aid_insert_a_html = self._get_gift_aid_insert(offer_a, to_charity_a)
 		gift_aid_insert_b_txt, gift_aid_insert_b_html = self._get_gift_aid_insert(offer_b, to_charity_b)
 
+		currency_a_as_b = self._currency.convert(
+			1000,
+			offer_a.country.currency.iso,
+			offer_b.country.currency.iso) / 1000.0
+		currency_b_as_a = self._currency.convert(
+			1000,
+			offer_b.country.currency.iso,
+			offer_a.country.currency.iso) / 1000.0
+
 		replacements = {
 			#xxx add calculation
 			'{%NAME_A%}': offer_a.name,
@@ -744,6 +753,7 @@ class Donationswap:
 			'{%TO_CHARITY_A%}': to_charity_a, # the amount received from A's donation
 			'{%GIFT_AID_INSERT_A_TXT%}': gift_aid_insert_a_txt,
 			'{%GIFT_AID_INSERT_A_HTML%}': gift_aid_insert_a_html,
+			'{%ONE_CURRENCY_A_AS_B%}': currency_a_as_b,
 			'{%NAME_B%}': offer_b.name,
 			'{%COUNTRY_B%}': offer_b.country.name,
 			'{%CHARITY_B%}': offer_b.charity.name,
@@ -754,6 +764,7 @@ class Donationswap:
 			'{%TO_CHARITY_B%}': to_charity_b,
 			'{%GIFT_AID_INSERT_B_TXT%}': gift_aid_insert_b_txt,
 			'{%GIFT_AID_INSERT_B_HTML%}': gift_aid_insert_b_html,
+			'{%ONE_CURRENCY_B_AS_A%}': currency_b_as_a,
 		}
 
 		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
