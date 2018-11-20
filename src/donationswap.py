@@ -690,7 +690,7 @@ class Donationswap:
 		# I'm also happy to move this to the database eventually
 		gift_aid_name = "UK government Gift Aid"
 		if offer.country.iso_name == "IE":
-			gift_aid_name = "Irish Government contribution"
+			gift_aid_name = "Irish government contribution"
 
 		replacements = {
 			'{%GIFT_AID_NAME%}': gift_aid_name,
