@@ -121,12 +121,18 @@ class Charity(EntityMixin, IdMixin):
 	@classmethod
 	def _load_entity_impl(cls, entity):
 		cls._by_id[entity.id] = entity
+		cls._by_name[entity.name] = entity
 
 	@classmethod
 	def load(cls, db):
 		cls._by_id = {}
+		cls._by_name = {}
 		for row in db.read('''SELECT * FROM charities;'''):
 			cls._load_entity(row)
+
+	@classmethod
+	def by_name(cls, name):
+		return cls._by_name.get(name, None)
 
 	@property
 	def category(self):
@@ -158,6 +164,7 @@ class Charity(EntityMixin, IdMixin):
 			WHERE id=%(id)s'''
 		db.write(query, id=self.id)
 		self._by_id.pop(self.id, None)
+		self._by_name.pop(self.name, None)
 
 class Country(EntityMixin, IdMixin):
 
@@ -169,6 +176,7 @@ class Country(EntityMixin, IdMixin):
 		self.currency_id = row['currency_id']
 		self.min_donation_amount = row['min_donation_amount']
 		self.min_donation_currency_id = row['min_donation_currency_id']
+		self.gift_aid = row['gift_aid']
 
 	def __repr__(self):
 		return '{id}:{name}:{iso_name}:{currency_id}'.format(**self.__dict__)
@@ -193,15 +201,19 @@ class Country(EntityMixin, IdMixin):
 	def min_donation_currency(self):
 		return Currency.by_id(self.min_donation_currency_id)
 
+	@property
+	def gift_aid_multiplier(self):
+		return (self.gift_aid / 100.0) + 1
+
 	@classmethod
 	def by_iso_name(cls, iso_name):
 		return cls._by_iso_name.get(iso_name, None)
 
 	@classmethod
-	def create(cls, db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+	def create(cls, db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid):
 		query = '''
-			INSERT INTO countries (name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
-			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s, %(min_donation_amount)s, %(min_donation_currency_id)s)
+			INSERT INTO countries (name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid)
+			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s, %(min_donation_amount)s, %(min_donation_currency_id)s, %(gift_aid)s)
 			RETURNING *;'''
 		row = db.read_one(query, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
 		db.written = True
@@ -219,7 +231,8 @@ class Country(EntityMixin, IdMixin):
 			iso_name=self.iso_name,
 			currency_id=self.currency_id,
 			min_donation_amount=self.min_donation_amount,
-			min_donation_currency_id=self.min_donation_currency_id)
+			min_donation_currency_id=self.min_donation_currency_id,
+			gift_aid=self.gift_aid)
 
 	def delete(self, db):
 		query = '''
@@ -315,7 +328,7 @@ class Offer(EntityMixin, IdMixin, SecretMixin): # pylint: disable=too-many-insta
 		self.confirmed = row['confirmed']
 
 	def __repr__(self):
-		return '{id}:{email}:{amount}'.format(**self.__dict__)
+		return '{id}:{name}:{email}:{amount}'.format(**self.__dict__)
 
 	@classmethod
 	def _load_entity_impl(cls, entity):

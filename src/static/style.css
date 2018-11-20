@@ -123,7 +123,7 @@ input:focus,select:focus {
 
 header {
 	background-color: #7bb0a8;
-	background-image: url('/static/logo-white.png');
+	background-image: url('/static/logo-white.png?v=1');
 	background-position: 5px 5px;
 	background-repeat: no-repeat;
 	background-size: 4em;

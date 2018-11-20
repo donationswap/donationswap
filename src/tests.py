@@ -73,10 +73,10 @@ class TestBase(unittest.TestCase):
 				(2, 'charity2', 2);
 				''')
 			db.write('''
-				INSERT INTO countries (id, name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
+				INSERT INTO countries (id, name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid)
 				VALUES
-				(1, 'country1', 'c1', %(currency)s, 0, %(currency)s),
-				(2, 'country1', 'c2', %(currency)s, 0, %(currency)s);
+				(1, 'country1', 'c1', %(currency)s, 0, %(currency)s, 100),
+				(2, 'country1', 'c2', %(currency)s, 0, %(currency)s, 100);
 				''', currency=currency)
 			entities.load(db)
 
@@ -118,7 +118,7 @@ class get_info(TestBase):
 
 	def test_all_information_must_be_included(self):
 		info = self.ds.get_info()
-		self.assertEqual(sorted(info.keys()), ['charities', 'client_country', 'countries', 'today'])
+		self.assertEqual(sorted(info.keys()), ['charities', 'charities_in_countries', 'client_country', 'countries', 'today'])
 
 	def test_client_country(self):
 		self.geoip.country = 'c1'
@@ -345,10 +345,6 @@ class Templates(unittest.TestCase):
 			'{%YOUR_ACTUAL_AMOUNT%}',
 			'{%YOUR_CURRENCY%}',
 			'{%THEIR_CHARITY%}',
-			'{%THEIR_AMOUNT%}',
-			'{%THEIR_CURRENCY%}',
-			'{%THEIR_AMOUNT_CONVERTED%}',
-			'{%THEIR_ACTUAL_AMOUNT%}',
 			'{%SECRET%}',
 		]
 		txt = util.Template('match-suggested-email.txt').content

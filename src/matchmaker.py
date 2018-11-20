@@ -47,6 +47,8 @@ class Matchmaker:
 
 #xxx move this into donationswap.py when I understand it
 
+import entities
+
 from matching.charity import Charity
 from matching.country import Country
 from matching.donor import Donor
@@ -58,9 +60,8 @@ def _is_good_match(self, offer1, offer2):
 	dbCountry1 = offer1.country
 	dbCountry2 = offer2.country
 
-	# TODO: UK and ireland(?) GiftAid
-	multiplier1 = 1
-	multiplier2 = 1
+	multiplier1 = (dbCountry1.gift_aid / 100.0) + 1
+	multiplier2 = (dbCountry2.gift_aid / 100.0) + 1
 
 	exchangeRate1VsUSA = self._currency.convert(1000, dbCountry1.currency.iso, 'USD') / 1000.0
 	exchangeRate2VsUSA = self._currency.convert(1000, dbCountry2.currency.iso, 'USD') / 1000.0
@@ -95,8 +96,8 @@ def _is_good_match(self, offer1, offer2):
 	offer2Created = 0
 	amount1 = offer1.amount
 	amount2 = offer2.amount
-	donor1 = Donor(offer1.email, country1)
-	donor2 = Donor(offer2.email, country2)
+	donor1 = Donor(offer1.name, offer1.email, country1)
+	donor2 = Donor(offer2.name, offer2.email, country2)
 
 	#xxx offers SHOULD have approximately the same amount (taking tax benefits into account)
 	#    for development, however, everthing goes.
