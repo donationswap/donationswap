@@ -547,6 +547,7 @@ class Donationswap:
 
 		return {
 			'was_confirmed': was_confirmed,
+			'name': offer.name,
 			'currency': offer.country.currency.iso,
 			'amount': offer.amount,
 			'min_amount': offer.min_amount,

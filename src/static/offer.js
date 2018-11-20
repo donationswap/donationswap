@@ -24,6 +24,7 @@
 				ui.confirmed.classList.toggle('hidden', offer.was_confirmed);
 				ui.currency1.textContent = offer.currency;
 				ui.currency2.textContent = offer.currency;
+				ui.name.textContent = offer.name;
 				ui.amount.textContent = offer.amount;
 				ui.minAmount.textContent = offer.min_amount;
 				ui.charity.textContent = offer.charity;
