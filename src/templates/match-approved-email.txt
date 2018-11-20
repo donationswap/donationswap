@@ -33,7 +33,7 @@ This is how the amounts were calculated:
 
 The exchange rate is currently 1 {%CURRENCY_A%} = {%ONE_CURRENCY_A_AS_B%} {%CURRENCY_B%}. 
 
-So {%TO_CHARITY_A%} {%CURRENCY_A%}={%TO_CHARITY_B%} {%CURRENCY_B%}, and both charities receive the same amount of money.  
+So {%TO_CHARITY_B%} {%CURRENCY_A%}={%TO_CHARITY_A%} {%CURRENCY_B%}, and both charities receive the same amount of money.  
 
 ________________________________________________________________
 
