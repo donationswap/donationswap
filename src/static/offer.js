@@ -9,6 +9,7 @@
 	function setVisibility(offer) {
 		ui.table.classList.toggle('hidden', !offer);
 		ui.btnDelete.classList.toggle('hidden', !offer);
+		ui.confirmed.classList.toggle('hidden', !offer);
 		ui.message.classList.toggle('hidden', !ui.message.textContent);
 	}
 

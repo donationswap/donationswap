@@ -12,7 +12,7 @@ ________________________________________________________________
 {%NAME_A%}:
 
 {%NAME_A%} will donate {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} to the charity {%CHARITY_B%}.
-{%GIFT_AID_INSERT_A_TXT%}Instructions to donate: {%INSTRUCTIONS_A%}
+Instructions to donate: {%INSTRUCTIONS_A%}
 
 ________________________________________________________________
 
@@ -20,6 +20,20 @@ ________________________________________________________________
 
 {%NAME_B%} will donate {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} to the charity {%CHARITY_A%}.
 {%GIFT_AID_INSERT_B_TXT%}Instructions to donate: {%INSTRUCTIONS_B%}
+
+________________________________________________________________
+
+This is how the amounts were calculated:
+
+{%CHARITY_B%} recieves {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} from {%NAME_A%}. 
+{%GIFT_AID_INSERT_A_TXT%} 
+
+{%CHARITY_A%} recieves {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} from {%NAME_B%}. 
+{%GIFT_AID_INSERT_B_TXT%}
+
+The exchange rate is currently 1 {%CURRENCY_A%} = {%ONE_CURRENCY_A_AS_B%} {%CURRENCY_B%}. 
+
+So {%TO_CHARITY_B%} {%CURRENCY_A%}={%TO_CHARITY_A%} {%CURRENCY_B%}, and both charities receive the same amount of money.  
 
 ________________________________________________________________
 
@@ -31,17 +45,6 @@ Please let us know if you have any questions.
 
 Go forth and continue making the world a better place!
 
-Your friends from EA donation swap.
+ - Your friends from EA donation swap.
 
 
-CALCULATION:
-
-Exchange Rate
-1 {%CURRENCY_A%} = {%ONE_CURRENCY_A_AS_B%} {%CURRENCY_B%}
-1 {%CURRENCY_B%} = {%ONE_CURRENCY_B_AS_A%} {%CURRENCY_A%}
-
-{%NAME_A%}
-Money to charity ({%TO_CHARITY_A%} {%CURRENCY_A%}) * exchange rate to {%CURRENCY_B%} ({%ONE_CURRENCY_A_AS_B%}) = Money to charity from {%NAME_B%} ({%TO_CHARITY_B%} {%CURRENCY_B%})
-
-{%NAME_B%}
-Money to charity ({%TO_CHARITY_B%} {%CURRENCY_B%}) * exchange rate to {%CURRENCY_A%} ({%ONE_CURRENCY_B_AS_A%}) = Money to charity from {%NAME_A%} ({%TO_CHARITY_A%} {%CURRENCY_A%})

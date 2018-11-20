@@ -9,13 +9,23 @@
 <hr>
 <p>{%NAME_A%}:</p>
 <p>{%NAME_A%} will donate {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} to the charity {%CHARITY_B%}.</p>
-{%GIFT_AID_INSERT_A_HTML%}
 <p>Instructions to donate: {%INSTRUCTIONS_A%}</p>
 <hr>
 <p>{%NAME_B%}:</p>
 <p>{%NAME_B%} will donate {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} to the charity {%CHARITY_A%}.</p>
-{%GIFT_AID_INSERT_B_HTML%}
 <p>Instructions to donate: {%INSTRUCTIONS_B%}</p>
+<hr>
+<p>This is how the amounts were calculated:</p>
+<p></p>
+<p>{%CHARITY_B%} recieves {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} from {%NAME_A%}. </p>
+{%GIFT_AID_INSERT_A_HTML%} 
+<p></p>
+<p>{%CHARITY_A%} recieves {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} from {%NAME_B%}. </p>
+{%GIFT_AID_INSERT_B_HTML%}
+<p></p>
+The exchange rate is currently 1 {%CURRENCY_A%} = {%ONE_CURRENCY_A_AS_B%} {%CURRENCY_B%}. 
+<p></p>
+<p>So {%TO_CHARITY_B%} {%CURRENCY_A%}={%TO_CHARITY_A%} {%CURRENCY_B%}, and both charities receive the same amount of money.</p>
 <hr>
 <p>Please get in contact with each other, and wait until you are both comfortable with the donation swap before donating. Once you have donated, please send each other the donation receipts.</p>
 <p></p>
@@ -23,16 +33,6 @@
 <p></p>
 <p>Go forth and continue making the world a better place!</p>
 <p></p>
-<p>Your friends from Donation Swap.</p>
+<p>- Your friends from EA donation Swap.</p>
 <p></p>
 <hr>
-<p>CALCULATION:</p>
-<p>Exchange Rate<br />
-1 {%CURRENCY_A%} = {%ONE_CURRENCY_A_AS_B%} {%CURRENCY_B%}<br />
-1 {%CURRENCY_B%} = {%ONE_CURRENCY_B_AS_A%} {%CURRENCY_A%}</p>
-<p></p>
-<p>{%NAME_A%}<br />
-Money to charity ({%TO_CHARITY_A%} {%CURRENCY_A%}) * exchange rate to {%CURRENCY_B%} ({%ONE_CURRENCY_A_AS_B%}) = Money to charity from {%NAME_B%} ({%TO_CHARITY_B%} {%CURRENCY_B%})</p>
-<p></p>
-<p>{%NAME_B%}<br />
-Money to charity ({%TO_CHARITY_B%} {%CURRENCY_B%}) * exchange rate to {%CURRENCY_A%} ({%ONE_CURRENCY_B_AS_A%}) = Money to charity from {%NAME_A%} ({%TO_CHARITY_A%} {%CURRENCY_A%})</p>
