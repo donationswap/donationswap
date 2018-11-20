@@ -1,2 +1,2 @@
-Because of the {%GIFT_AID_NAME%} of {%GIFT_AID_AMOUNT%}% the charity will receive a total amount of {%TO_CHARITY%} {%CURRENCY%}.
+Because of the {%GIFT_AID_NAME%} of {%GIFT_AID_AMOUNT%}%, {%CHARITY_NAME%} will receive a total amount of {%TO_CHARITY%} {%CURRENCY%}.
 For more information visit https://donationswap.eahub.org/howto/#tocGiftaid
