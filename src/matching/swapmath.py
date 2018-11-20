@@ -82,6 +82,8 @@ class SwapMath():
 			'baseCurrency': self.baseCurrency,
 			'person1': self.offerA.donor.email,
 			'person2': self.offerB.donor.email,
+			'name1': self.offerA.donor.name,
+			'name2': self.offerB.donor.name,
 			'charity1': self.charityADonatingToForB,
 			'charity2': self.charityBDonatingToForA,
 			'country1ExchangeRate': self.countryAExchangeVsUSA,

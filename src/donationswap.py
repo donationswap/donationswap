@@ -49,20 +49,36 @@ import geoip
 import mail
 import util
 
-#xxx find out what information the matching algorithm provides
-#    (and add it to the email)
+#xxx add minimum donation amount to offer validation
+
+#xxx move all `style="..."` stuff into style.css
 
 #xxx layout html emails
 
-#xxx post MVP features:
+#xxx delete db backups after 3 months
+
+#xxx feedback page
+
+#xxx use local time on admin pages
+
+#xxx remove tax factor
+
+#xxx anonymize (remove name+email) event log after 3 months
+
+#xxx make sure certbot works when the time comes
+
+#xxx revoke external db access from /etc/postgresql/9.6/main/pg_hba.conf
+
+# post MVP features:
 # - a donation offer is pointless if
-#  - it is to the only tax-deductible charity in the country OR
-#  - it is to a charity that is tax-decuctible everywhere
-# - add "never match me with any of these charity" blacklist button.
+#   - it is to the only tax-deductible charity in the country OR
+#   - it is to a charity that is tax-decuctible everywhere OR
+#   - it is to a charity that is tax-deductible nowhere.
 # - add "blacklist charity" to offer.
-# - blacklist users who agreed to the match but didn't acutally donate.
+# - blacklist donors who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
-# - add link to match email for user to create offer for remaining amount
+# - add link to match email for user to create offer for remaining amount.
+# - charities should have hyperlinks.
 
 # pylint: disable=too-many-lines
 
@@ -86,6 +102,8 @@ class Donationswap:
 	# pylint: disable=too-many-instance-attributes
 	# pylint: disable=too-many-public-methods
 
+	STATIC_VERSION = 3 # cache-breaker
+
 	def __init__(self, config_path):
 		self._config = config.Config(config_path)
 
@@ -100,6 +118,8 @@ class Donationswap:
 			entities.load(db)
 
 		self._ip_address = None
+
+		self.automation_mode = False
 
 	def get_cookie_key(self):
 		return self._config.cookie_key
@@ -202,9 +222,18 @@ class Donationswap:
 			logging.error('Ajax Admin Error', exc_info=True)
 			return False, str(e)
 
-	@staticmethod
-	def get_page(name):
-		return util.Template(name).content
+	def get_page(self, name):
+		content = util.Template(name).content
+
+		# This acts as a cache breaker -- just increment
+		# self.STATIC_VERSION whenever a static file has changed,
+		# so the client will know to re-request it from the server.
+		# The only exception are files referenced in style.css,
+		# which must be handled manually.
+		content = re.sub('src="/static/(.*?)"', lambda m: 'src="/static/%s?v=%s"' % (m.group(1), self.STATIC_VERSION), content)
+		content = re.sub('href="/static/(.*?)"', lambda m: 'href="/static/%s?v=%s"' % (m.group(1), self.STATIC_VERSION), content)
+
+		return content
 
 	def _send_mail_about_unconfirmed_offer(self, offer):
 		replacements = {
@@ -294,9 +323,11 @@ class Donationswap:
 		#xxx send email to matches older than 4 weeks with empty "feedback_ts"
 		#xxx update feedback_ts
 		#xxx delete two offers and one match one week after feedback_ts
-		return 0 #xxx 
+		return 0 #xxx
 
 	def clean_up(self):
+		'''This method gets called once per hour by a cronjob.'''
+
 		counts = {
 			'unconfirmed_offers': self._delete_unconfirmed_offers(),
 			'expired_offers': self._delete_expired_offers(),
@@ -308,7 +339,7 @@ class Donationswap:
 
 	@ajax
 	def send_contact_message(self, captcha_response, message, name=None, email=None):
-		if not self._captcha.is_legit(self._ip_address, captcha_response):
+		if not self.automation_mode and not self._captcha.is_legit(self._ip_address, captcha_response):
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('bad captcha')
 			)
@@ -366,6 +397,17 @@ class Donationswap:
 			for i in sorted(entities.Country.get_all(), key=lambda i: i.name)
 		]
 
+	@staticmethod
+	def _get_charities_in_countries_info():
+		result = {}
+		for country in entities.Country.get_all():
+			result[country.id] = []
+			for charity in entities.Charity.get_all():
+				charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity.id, country.id)
+				if charity_in_country is not None:
+					result[country.id].append(charity.id)
+		return result
+
 	@ajax
 	def get_info(self):
 		client_country_iso = self._geoip.lookup(self._ip_address)
@@ -383,6 +425,7 @@ class Donationswap:
 			'charities': self._get_charities_info(),
 			'client_country': client_country_id,
 			'countries': self._get_countries_info(),
+			'charities_in_countries': self._get_charities_in_countries_info(),
 			'today': {
 				'day': today.day,
 				'month': today.month,
@@ -449,7 +492,7 @@ class Donationswap:
 	@ajax
 	def create_offer(self, captcha_response, name, country, amount, min_amount, charity, email, expiration):
 		errors = util.Template('errors-and-warnings.json')
-		if not self._captcha.is_legit(self._ip_address, captcha_response):
+		if not self.automation_mode and not self._captcha.is_legit(self._ip_address, captcha_response):
 			raise DonationException(errors.json('bad captcha'))
 
 		name, country, amount, min_amount, charity, email, expires_ts = self._validate_offer(name, country, amount, min_amount, charity, email, expiration)
@@ -461,6 +504,9 @@ class Donationswap:
 		with self._database.connect() as db:
 			offer = entities.Offer.create(db, secret, name, email, country.id, amount, min_amount, charity.id, expires_ts)
 			eventlog.created_offer(db, offer)
+
+		if self.automation_mode:
+			return offer
 
 		replacements = {
 			'{%NAME%}': offer.name,
@@ -476,6 +522,8 @@ class Donationswap:
 			html=util.Template('new-post-email.html').replace(replacements).content,
 			to=email
 		)
+
+		return None
 
 	@ajax
 	def confirm_offer(self, secret):
@@ -501,6 +549,7 @@ class Donationswap:
 			'was_confirmed': was_confirmed,
 			'currency': offer.country.currency.iso,
 			'amount': offer.amount,
+			'min_amount': offer.min_amount,
 			'charity': offer.charity.name,
 			'created_ts': offer.created_ts.isoformat(' '),
 			'expires_ts': offer.expires_ts.isoformat(' '),
@@ -530,17 +579,19 @@ class Donationswap:
 		amount_a_in_currency_b = self._currency.convert(
 			offer_a.amount,
 			offer_a.country.currency.iso,
-			offer_b.country.currency.iso)
+			offer_b.country.currency.iso) * offer_a.country.gift_aid_multiplier
 		amount_b_in_currency_a = self._currency.convert(
 			offer_b.amount,
 			offer_b.country.currency.iso,
-			offer_a.country.currency.iso)
+			offer_a.country.currency.iso) * offer_b.country.gift_aid_multiplier
 
-		if amount_a_in_currency_b < offer_b.min_amount:
+		if amount_a_in_currency_b < offer_b.min_amount * offer_b.country.gift_aid_multiplier:
 			return 0, 'amount mismatch'
-		if amount_b_in_currency_a < offer_a.min_amount:
+		if amount_b_in_currency_a < offer_a.min_amount * offer_a.country.gift_aid_multiplier:
 			return 0, 'amount mismatch'
 
+		#xxx only count as "benefit" if own charity isn't tax-deductible, but other donor's one is
+		#    (otherwise we would reward pointless swaps, where both donors already get their tax back)
 		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
 		b_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_b.country_id) is not None
 
@@ -557,13 +608,49 @@ class Donationswap:
 		if declined:
 			return 0, 'match declined'
 
+		# amounts are equal => score = 1
+		# amounts are vastly different => score = almost 0
+		amount_a_in_nzd = self._currency.convert(
+			offer_a.amount,
+			offer_a.country.currency.iso,
+			'NZD') * offer_a.country.gift_aid_multiplier
+		amount_b_in_nzd = self._currency.convert(
+			offer_b.amount,
+			offer_b.country.currency.iso,
+			'NZD') * offer_b.country.gift_aid_multiplier
+
+		score = 1 - (amount_a_in_nzd - amount_b_in_nzd)**2 / max(amount_a_in_nzd, amount_b_in_nzd)**2
+
 		if a_will_benefit and b_will_benefit:
 			factor, reason = 1, 'both benefit'
 		else:
 			factor, reason = 0.5, 'only one will benefit'
 
-		return factor, reason
-		#xxx higher score if amounts are closer to each other
+		score *= factor
+
+		score = round(score, 4)
+		return score, reason
+
+	def _get_actual_amounts(self, my_offer, their_offer):
+		if self._currency.is_more_money(
+			my_offer.amount * my_offer.country.gift_aid_multiplier,
+			my_offer.country.currency.iso,
+			their_offer.amount * their_offer.country.gift_aid_multiplier,
+			their_offer.country.currency.iso
+		):
+			my_actual_amount = self._currency.convert(
+				their_offer.amount * their_offer.country.gift_aid_multiplier / my_offer.country.gift_aid_multiplier,
+				their_offer.country.currency.iso,
+				my_offer.country.currency.iso)
+			their_actual_amount = their_offer.amount
+		else:
+			my_actual_amount = my_offer.amount
+			their_actual_amount = self._currency.convert(
+				my_offer.amount  * my_offer.country.gift_aid_multiplier / their_offer.country.gift_aid_multiplier,
+				my_offer.country.currency.iso,
+				their_offer.country.currency.iso)
+
+		return my_actual_amount, their_actual_amount
 
 	@ajax
 	def get_match(self, secret):
@@ -571,23 +658,7 @@ class Donationswap:
 		if my_offer is None or their_offer is None:
 			return None
 
-		if self._currency.is_more_money(
-			my_offer.amount,
-			my_offer.country.currency.iso,
-			their_offer.amount,
-			their_offer.country.currency.iso
-		):
-			my_actual_amount = self._currency.convert(
-				their_offer.amount,
-				their_offer.country.currency.iso,
-				my_offer.country.currency.iso)
-			their_actual_amount = their_offer.amount
-		else:
-			my_actual_amount = my_offer.amount
-			their_actual_amount = self._currency.convert(
-				my_offer.amount,
-				my_offer.country.currency.iso,
-				their_offer.country.currency.iso)
+		my_actual_amount, their_actual_amount = self._get_actual_amounts(my_offer, their_offer)
 
 		can_edit = False
 		if my_offer.id == new_offer.id:
@@ -610,24 +681,37 @@ class Donationswap:
 			# Wait until both parties approved the match.
 		}
 
+	def _get_gift_aid_insert(self, offer, to_charity_amount):
+		if offer.country.gift_aid_multiplier <= 1:
+			return "", ""
+
+		# hardcoding might be bad practice,
+		# but if we have to do more work due to more gift aid, it's not such a bad thing,
+		# I'm also happy to move this to the database eventually
+		gift_aid_name = "Gift Aid"
+		gift_aid_link = "https://en.wikipedia.org/wiki/Gift_Aid"
+		if offer.country.iso_name == "IE":
+			gift_aid_name = "the Government contributions"
+			gift_aid_link = "http://www.thegoodform.ie/"
+
+		replacements = {
+			'{%GIFT_AID_NAME%}': gift_aid_name,
+			'{%GIFT_AID_LINK%}': gift_aid_link,
+			'{%GIFT_AID_AMOUNT%}': offer.country.gift_aid,
+			'{%TO_CHARITY%}': to_charity_amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
+		}
+
+		txt = util.Template('gift-aid-insert.txt').replace(replacements).content
+		html = util.Template('gift-aid-insert.html').replace(replacements).content
+
+		return txt, html
+
 	def _send_mail_about_approved_match(self, offer_a, offer_b):
-		if self._currency.is_more_money(
-			offer_a.amount,
-			offer_a.country.currency.iso,
-			offer_b.amount,
-			offer_b.country.currency.iso
-		):
-			actual_amount_a = self._currency.convert(
-				offer_b.amount,
-				offer_b.country.currency.iso,
-				offer_a.country.currency.iso)
-			actual_amount_b = offer_b.amount
-		else:
-			actual_amount_a = offer_a.amount
-			actual_amount_b = self._currency.convert(
-				offer_a.amount,
-				offer_a.country.currency.iso,
-				offer_b.country.currency.iso)
+		
+		actual_amount_a, actual_amount_b = self._get_actual_amounts(offer_a, offer_b)
+		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
+		to_charity_b = actual_amount_b * offer_b.country.gift_aid_multiplier
 
 		tmp = entities.CharityInCountry.by_charity_and_country_id(
 			offer_b.charity.id,
@@ -645,15 +729,31 @@ class Donationswap:
 		else:
 			instructions_b = 'Sorry, there are no instructions available (yet).'
 
+		gift_aid_insert_a_txt, gift_aid_insert_a_html = self._get_gift_aid_insert(offer_a, to_charity_a)
+		gift_aid_insert_b_txt, gift_aid_insert_b_html = self._get_gift_aid_insert(offer_b, to_charity_b)
+
+		currency_a_as_b = self._currency.convert(
+			1000,
+			offer_a.country.currency.iso,
+			offer_b.country.currency.iso) / 1000.0
+		currency_b_as_a = self._currency.convert(
+			1000,
+			offer_b.country.currency.iso,
+			offer_a.country.currency.iso) / 1000.0
+
 		replacements = {
 			#xxx add calculation
 			'{%NAME_A%}': offer_a.name,
 			'{%COUNTRY_A%}': offer_a.country.name,
 			'{%CHARITY_A%}': offer_a.charity.name,
-			'{%ACTUAL_AMOUNT_A%}': actual_amount_a,
+			'{%ACTUAL_AMOUNT_A%}': actual_amount_a, # the amount A donates
 			'{%CURRENCY_A%}': offer_a.country.currency.iso,
 			'{%EMAIL_A%}': offer_a.email,
 			'{%INSTRUCTIONS_A%}': instructions_a,
+			'{%TO_CHARITY_A%}': to_charity_a, # the amount received from A's donation
+			'{%GIFT_AID_INSERT_A_TXT%}': gift_aid_insert_a_txt,
+			'{%GIFT_AID_INSERT_A_HTML%}': gift_aid_insert_a_html,
+			'{%ONE_CURRENCY_A_AS_B%}': currency_a_as_b,
 			'{%NAME_B%}': offer_b.name,
 			'{%COUNTRY_B%}': offer_b.country.name,
 			'{%CHARITY_B%}': offer_b.charity.name,
@@ -661,6 +761,10 @@ class Donationswap:
 			'{%CURRENCY_B%}': offer_b.country.currency.iso,
 			'{%EMAIL_B%}': offer_b.email,
 			'{%INSTRUCTIONS_B%}': instructions_b,
+			'{%TO_CHARITY_B%}': to_charity_b,
+			'{%GIFT_AID_INSERT_B_TXT%}': gift_aid_insert_b_txt,
+			'{%GIFT_AID_INSERT_B_HTML%}': gift_aid_insert_b_html,
+			'{%ONE_CURRENCY_B_AS_A%}': currency_b_as_a,
 		}
 
 		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
@@ -800,11 +904,11 @@ class Donationswap:
 			db.write(query, password_hash=password_hash, admin_id=user['id'])
 
 	@admin_ajax
-	def get_admin_info(self, user):
+	def get_admin_info(self, user): # pylint: disable=no-self-use
 		return user
 
 	@admin_ajax
-	def get_currencies(self, _):
+	def get_currencies(self, _): # pylint: disable=no-self-use
 		return [
 			{
 				'id': i.id,
@@ -867,6 +971,7 @@ class Donationswap:
 					'currency_id': i.currency_id,
 					'min_donation_amount': i.min_donation_amount,
 					'min_donation_currency_id': i.min_donation_currency_id,
+					'gift_aid': i.gift_aid
 				}
 				for i in sorted(
 					entities.Country.get_all(),
@@ -919,9 +1024,9 @@ class Donationswap:
 			entities.Charity.by_id(charity_id).delete(db)
 
 	@admin_ajax
-	def create_country(self, _, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+	def create_country(self, _, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid):
 		with self._database.connect() as db:
-			entities.Country.create(db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id)
+			entities.Country.create(db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid)
 
 	@admin_ajax
 	def update_country(self, _, country_id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
@@ -976,6 +1081,7 @@ class Donationswap:
 		not expired and not matched.'''
 
 		with self._database.connect() as db:
+			entities.Offer.load(db) # only necessary because of console.py
 			return entities.Offer.get_unmatched_offers(db)
 
 	@admin_ajax
@@ -991,6 +1097,7 @@ class Donationswap:
 				'charity': offer.charity.name,
 				'expires_ts': offer.expires_ts.strftime('%Y-%m-%d %H:%M:%S'),
 				'email': offer.email,
+				'name': offer.name,
 				'amount_localized': self._currency.convert(
 					offer.amount,
 					offer.country.currency.iso,
@@ -1014,28 +1121,7 @@ class Donationswap:
 			}
 
 	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		their_amount_in_your_currency = self._currency.convert(
-			their_offer.amount,
-			their_offer.country.currency.iso,
-			my_offer.country.currency.iso)
-
-		if self._currency.is_more_money(
-			my_offer.amount,
-			my_offer.country.currency.iso,
-			their_offer.amount,
-			their_offer.country.currency.iso
-		):
-			my_actual_amount = self._currency.convert(
-				their_offer.amount,
-				their_offer.country.currency.iso,
-				my_offer.country.currency.iso)
-			their_actual_amount = their_offer.amount
-		else:
-			my_actual_amount = my_offer.amount
-			their_actual_amount = self._currency.convert(
-				my_actual_amount,
-				my_offer.country.currency.iso,
-				their_offer.country.currency.iso)
+		my_actual_amount, _ = self._get_actual_amounts(my_offer, their_offer)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
@@ -1045,10 +1131,6 @@ class Donationswap:
 			'{%YOUR_ACTUAL_AMOUNT%}': my_actual_amount,
 			'{%YOUR_CURRENCY%}': my_offer.country.currency.iso,
 			'{%THEIR_CHARITY%}': their_offer.charity.name,
-			'{%THEIR_AMOUNT%}': their_offer.amount,
-			'{%THEIR_CURRENCY%}': their_offer.country.currency.iso,
-			'{%THEIR_AMOUNT_CONVERTED%}': their_amount_in_your_currency,
-			'{%THEIR_ACTUAL_AMOUNT%}': their_actual_amount,
 			'{%SECRET%}': '%s%s' % (my_offer.secret, match_secret),
 			# Do NOT put their email address here.
 			# Wait until both parties approved the match.
