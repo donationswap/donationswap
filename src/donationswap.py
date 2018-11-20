@@ -738,7 +738,7 @@ class Donationswap:
 		replacements = {
 			#xxx add calculation
 			'{%NAME_A%}': offer_a.name,
-			'{%COUNTRY_A%}': offer_a.country.live_in_name,
+			'{%COUNTRY_A%}': offer_a.country.name,
 			'{%CHARITY_A%}': offer_a.charity.name,
 			'{%ACTUAL_AMOUNT_A%}': actual_amount_a, # the amount A donates
 			'{%CURRENCY_A%}': offer_a.country.currency.iso,
@@ -749,7 +749,7 @@ class Donationswap:
 			'{%GIFT_AID_INSERT_A_HTML%}': gift_aid_insert_a_html,
 			'{%ONE_CURRENCY_A_AS_B%}': currency_a_as_b,
 			'{%NAME_B%}': offer_b.name,
-			'{%COUNTRY_B%}': offer_b.country.live_in_name,
+			'{%COUNTRY_B%}': offer_b.country.name,
 			'{%CHARITY_B%}': offer_b.charity.name,
 			'{%ACTUAL_AMOUNT_B%}': actual_amount_b,
 			'{%CURRENCY_B%}': offer_b.country.currency.iso,
