@@ -681,7 +681,7 @@ class Donationswap:
 			# Wait until both parties approved the match.
 		}
 
-	def _get_gift_aid_insert(self, offer, to_charity_amount):
+	def _get_gift_aid_insert(self, offer, to_charity_amount, charity_receiving):
 		if offer.country.gift_aid_multiplier <= 1:
 			return "", ""
 
@@ -689,17 +689,15 @@ class Donationswap:
 		# but if we have to do more work due to more gift aid, it's not such a bad thing,
 		# I'm also happy to move this to the database eventually
 		gift_aid_name = "UK government Gift Aid"
-		gift_aid_link = "https://en.wikipedia.org/wiki/Gift_Aid"
 		if offer.country.iso_name == "IE":
 			gift_aid_name = "Irish Government contribution"
-			gift_aid_link = "http://www.thegoodform.ie/"
 
 		replacements = {
 			'{%GIFT_AID_NAME%}': gift_aid_name,
-			'{%GIFT_AID_LINK%}': gift_aid_link,
 			'{%GIFT_AID_AMOUNT%}': offer.country.gift_aid,
 			'{%TO_CHARITY%}': to_charity_amount,
 			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%CHARITY_NAME%}': charity_receiving,
 		}
 
 		txt = util.Template('gift-aid-insert.txt').replace(replacements).content
@@ -729,8 +727,8 @@ class Donationswap:
 		else:
 			instructions_b = 'Sorry, there are no instructions available (yet).'
 
-		gift_aid_insert_a_txt, gift_aid_insert_a_html = self._get_gift_aid_insert(offer_a, to_charity_a)
-		gift_aid_insert_b_txt, gift_aid_insert_b_html = self._get_gift_aid_insert(offer_b, to_charity_b)
+		gift_aid_insert_a_txt, gift_aid_insert_a_html = self._get_gift_aid_insert(offer_a, to_charity_a, offer_b.charity.name)
+		gift_aid_insert_b_txt, gift_aid_insert_b_html = self._get_gift_aid_insert(offer_b, to_charity_b, offer_a.charity.name)
 
 		currency_a_as_b = self._currency.convert(
 			1000,
