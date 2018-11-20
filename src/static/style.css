@@ -139,12 +139,12 @@ header b {
 }
 header .beta-container {
 	display: table-cell;
-	height: 10em;
+	height: 4em;
 	overflow: hidden;
 	position: absolute;
 	right: 0;
 	vertical-align: middle;
-	width: 10em;
+	width: 4em;
 	top: 0;
 }
 header .beta {
