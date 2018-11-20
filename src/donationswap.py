@@ -688,10 +688,10 @@ class Donationswap:
 		# hardcoding might be bad practice,
 		# but if we have to do more work due to more gift aid, it's not such a bad thing,
 		# I'm also happy to move this to the database eventually
-		gift_aid_name = "Gift Aid"
+		gift_aid_name = "UK government Gift Aid"
 		gift_aid_link = "https://en.wikipedia.org/wiki/Gift_Aid"
 		if offer.country.iso_name == "IE":
-			gift_aid_name = "the Government contributions"
+			gift_aid_name = "Irish Government contribution"
 			gift_aid_link = "http://www.thegoodform.ie/"
 
 		replacements = {
