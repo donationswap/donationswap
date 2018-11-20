@@ -613,11 +613,11 @@ class Donationswap:
 		amount_a_in_nzd = self._currency.convert(
 			offer_a.amount,
 			offer_a.country.currency.iso,
-			'NZD') * offer_a.country.gift_aid_multipler
+			'NZD') * offer_a.country.gift_aid_multiplier
 		amount_b_in_nzd = self._currency.convert(
 			offer_b.amount,
 			offer_b.country.currency.iso,
-			'NZD') * offer_b.country.gift_aid_multipler
+			'NZD') * offer_b.country.gift_aid_multiplier
 
 		score = 1 - (amount_a_in_nzd - amount_b_in_nzd)**2 / max(amount_a_in_nzd, amount_b_in_nzd)**2
 
@@ -681,25 +681,37 @@ class Donationswap:
 			# Wait until both parties approved the match.
 		}
 
+	def _get_gift_aid_insert(self, offer, to_charity_amount):
+		if offer.country.gift_aid_multiplier <= 1:
+			return "", ""
+
+		# hardcoding might be bad practice,
+		# but if we have to do more work due to more gift aid, it's not such a bad thing,
+		# I'm also happy to move this to the database eventually
+		gift_aid_name = "Gift Aid"
+		gift_aid_link = "https://en.wikipedia.org/wiki/Gift_Aid"
+		if offer.country.iso_name == "IE":
+			gift_aid_name = "the Government contributions"
+			gift_aid_link = "http://www.thegoodform.ie/"
+
+		replacements = {
+			'{%GIFT_AID_NAME%}': gift_aid_name,
+			'{%GIFT_AID_LINK%}': gift_aid_link,
+			'{%GIFT_AID_AMOUNT%}': offer.country.gift_aid,
+			'{%TO_CHARITY%}': to_charity_amount,
+			'{%CURRENCY%}': offer.country.currency.iso,
+		}
+
+		txt = util.Template('gift-aid-insert.txt').replace(replacements).content
+		html = util.Template('gift-aid-insert.html').replace(replacements).content
+
+		return txt, html
+
 	def _send_mail_about_approved_match(self, offer_a, offer_b):
-		#xxx presumably, _get_actual_amounts can be used here, too.
-		if self._currency.is_more_money(
-			offer_a.amount,
-			offer_a.country.currency.iso,
-			offer_b.amount,
-			offer_b.country.currency.iso
-		):
-			actual_amount_a = self._currency.convert(
-				offer_b.amount,
-				offer_b.country.currency.iso,
-				offer_a.country.currency.iso)
-			actual_amount_b = offer_b.amount
-		else:
-			actual_amount_a = offer_a.amount
-			actual_amount_b = self._currency.convert(
-				offer_a.amount,
-				offer_a.country.currency.iso,
-				offer_b.country.currency.iso)
+		
+		actual_amount_a, actual_amount_b = self._get_actual_amounts(offer_a, offer_b)
+		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
+		to_charity_b = actual_amount_b * offer_b.country.gift_aid_multiplier
 
 		tmp = entities.CharityInCountry.by_charity_and_country_id(
 			offer_b.charity.id,
@@ -717,15 +729,31 @@ class Donationswap:
 		else:
 			instructions_b = 'Sorry, there are no instructions available (yet).'
 
+		gift_aid_insert_a_txt, gift_aid_insert_a_html = self._get_gift_aid_insert(offer_a, to_charity_a)
+		gift_aid_insert_b_txt, gift_aid_insert_b_html = self._get_gift_aid_insert(offer_b, to_charity_b)
+
+		currency_a_as_b = self._currency.convert(
+			1000,
+			offer_a.country.currency.iso,
+			offer_b.country.currency.iso) / 1000.0
+		currency_b_as_a = self._currency.convert(
+			1000,
+			offer_b.country.currency.iso,
+			offer_a.country.currency.iso) / 1000.0
+
 		replacements = {
 			#xxx add calculation
 			'{%NAME_A%}': offer_a.name,
 			'{%COUNTRY_A%}': offer_a.country.name,
 			'{%CHARITY_A%}': offer_a.charity.name,
-			'{%ACTUAL_AMOUNT_A%}': actual_amount_a,
+			'{%ACTUAL_AMOUNT_A%}': actual_amount_a, # the amount A donates
 			'{%CURRENCY_A%}': offer_a.country.currency.iso,
 			'{%EMAIL_A%}': offer_a.email,
 			'{%INSTRUCTIONS_A%}': instructions_a,
+			'{%TO_CHARITY_A%}': to_charity_a, # the amount received from A's donation
+			'{%GIFT_AID_INSERT_A_TXT%}': gift_aid_insert_a_txt,
+			'{%GIFT_AID_INSERT_A_HTML%}': gift_aid_insert_a_html,
+			'{%ONE_CURRENCY_A_AS_B%}': currency_a_as_b,
 			'{%NAME_B%}': offer_b.name,
 			'{%COUNTRY_B%}': offer_b.country.name,
 			'{%CHARITY_B%}': offer_b.charity.name,
@@ -733,6 +761,10 @@ class Donationswap:
 			'{%CURRENCY_B%}': offer_b.country.currency.iso,
 			'{%EMAIL_B%}': offer_b.email,
 			'{%INSTRUCTIONS_B%}': instructions_b,
+			'{%TO_CHARITY_B%}': to_charity_b,
+			'{%GIFT_AID_INSERT_B_TXT%}': gift_aid_insert_b_txt,
+			'{%GIFT_AID_INSERT_B_HTML%}': gift_aid_insert_b_html,
+			'{%ONE_CURRENCY_B_AS_A%}': currency_b_as_a,
 		}
 
 		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
