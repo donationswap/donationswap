@@ -1093,12 +1093,12 @@ class Donationswap:
 				'expires_ts': offer.expires_ts.strftime('%Y-%m-%d %H:%M:%S'),
 				'email': offer.email,
 				'name': offer.name,
-				'amount_localized': self._currency.convert(
-					offer.amount,
+				'amount_for_charity_localized': self._currency.convert(
+					offer.amount * offer.country.gift_aid_multiplier,
 					offer.country.currency.iso,
 					admin_currency.iso),
-				'min_amount_localized': self._currency.convert(
-					offer.min_amount,
+				'min_amount_for_charity_localized': self._currency.convert(
+					offer.min_amount * offer.country.gift_aid_multiplier,
 					offer.country.currency.iso,
 					admin_currency.iso),
 				'currency_localized': admin_currency.iso
