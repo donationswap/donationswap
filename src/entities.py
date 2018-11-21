@@ -87,8 +87,10 @@ class CharityCategory(EntityMixin, IdMixin):
 		query = '''
 			INSERT INTO charity_categories (name)
 			VALUES (%(name)s)
-			RETURNING *;'''
-		row = db.read_one(query, name=name)
+			RETURNING *;
+		'''
+		row = db.read_one(query,
+			name=name)
 		db.written = True
 		return cls._load_entity(row)
 
@@ -143,8 +145,11 @@ class Charity(EntityMixin, IdMixin):
 		query = '''
 			INSERT INTO charities (name, category_id)
 			VALUES (%(name)s, %(category_id)s)
-			RETURNING *;'''
-		row = db.read_one(query, name=name, category_id=category_id)
+			RETURNING *;
+		'''
+		row = db.read_one(query,
+			name=name,
+			category_id=category_id)
 		db.written = True
 		return cls._load_entity(row)
 
@@ -214,8 +219,16 @@ class Country(EntityMixin, IdMixin):
 		query = '''
 			INSERT INTO countries (name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid)
 			VALUES (%(name)s, %(live_in_name)s, %(iso_name)s, %(currency_id)s, %(min_donation_amount)s, %(min_donation_currency_id)s, %(gift_aid)s)
-			RETURNING *;'''
-		row = db.read_one(query, name=name, live_in_name=live_in_name, iso_name=iso_name, currency_id=currency_id, min_donation_amount=min_donation_amount, min_donation_currency_id=min_donation_currency_id)
+			RETURNING *;
+		'''
+		row = db.read_one(query,
+			name=name,
+			live_in_name=live_in_name,
+			iso_name=iso_name,
+			currency_id=currency_id,
+			min_donation_amount=min_donation_amount,
+			min_donation_currency_id=min_donation_currency_id,
+			gift_aid=gift_aid)
 		db.written = True
 		return cls._load_entity(row)
 
@@ -288,8 +301,13 @@ class CharityInCountry(EntityMixin):
 		query = '''
 			INSERT INTO charities_in_countries (charity_id, country_id, tax_factor, instructions)
 			VALUES (%(charity_id)s, %(country_id)s, %(tax_factor)s, %(instructions)s)
-			RETURNING *;'''
-		row = db.read_one(query, charity_id=charity_id, country_id=country_id, tax_factor=tax_factor, instructions=instructions)
+			RETURNING *;
+		'''
+		row = db.read_one(query,
+			charity_id=charity_id,
+			country_id=country_id,
+			tax_factor=tax_factor,
+			instructions=instructions)
 		db.written = True
 		return cls._load_entity(row)
 
@@ -476,7 +494,10 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			(%(s)s, %(noid)s, %(ooid)s)
 			RETURNING *;
 		'''
-		row = db.write_read_one(query, s=secret, noid=new_offer_id, ooid=old_offer_id)
+		row = db.write_read_one(query,
+			s=secret,
+			noid=new_offer_id,
+			ooid=old_offer_id)
 		return cls._load_entity(row)
 
 	def agree_old(self, db):
