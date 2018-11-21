@@ -1030,7 +1030,7 @@ class Donationswap:
 			entities.Country.create(db, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid)
 
 	@admin_ajax
-	def update_country(self, _, country_id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id):
+	def update_country(self, _, country_id, name, live_in_name, iso_name, currency_id, min_donation_amount, min_donation_currency_id, gift_aid):
 		country = entities.Country.by_id(country_id)
 		country.name = name
 		country.live_in_name = live_in_name
@@ -1038,6 +1038,7 @@ class Donationswap:
 		country.currency_id = currency_id
 		country.min_donation_amount = min_donation_amount
 		country.min_donation_currency_id = min_donation_currency_id
+		country.gift_aid = gift_aid
 		with self._database.connect() as db:
 			country.save(db)
 

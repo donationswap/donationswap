@@ -235,7 +235,7 @@ class Country(EntityMixin, IdMixin):
 	def save(self, db):
 		query = '''
 			UPDATE countries
-			SET name = %(name)s, live_in_name = %(live_in_name)s, iso_name = %(iso_name)s, currency_id = %(currency_id)s, min_donation_amount = %(min_donation_amount)s, min_donation_currency_id = %(min_donation_currency_id)s
+			SET name = %(name)s, live_in_name = %(live_in_name)s, iso_name = %(iso_name)s, currency_id = %(currency_id)s, min_donation_amount = %(min_donation_amount)s, min_donation_currency_id = %(min_donation_currency_id)s, gift_aid = %(gift_aid)s
 			WHERE id = %(id)s;'''
 		db.write(query,
 			id=self.id,
