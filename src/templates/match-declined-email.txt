@@ -1,4 +1,4 @@
-Dear {%YOUR_NAME%},
+Dear {%NAME%},
 
 The donor you have matched with has chosen to decline the swap. Your information remains on our database and you will be matched with another compatible donor as soon as one arrives. 
 

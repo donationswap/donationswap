@@ -802,8 +802,12 @@ class Donationswap:
 
 		with self._database.connect() as db:
 			query = '''
-				INSERT INTO declined_matches (new_offer_id, old_offer_id)
-				VALUES (%(id_old)s, %(id_new)s);
+				do $$ begin
+					IF NOT EXISTS (SELECT * FROM declined_matches WHERE new_offer_id=%(id_old)s AND old_offer_id=%(id_new)s) THEN
+						INSERT INTO declined_matches (new_offer_id, old_offer_id)
+						VALUES (%(id_old)s, %(id_new)s);
+					END IF;
+				end $$;
 			'''
 			db.write(query, id_old=old_offer.id, id_new=new_offer.id)
 			match.delete(db)
@@ -815,7 +819,7 @@ class Donationswap:
 				'{%OFFER_SECRET%}': my_offer.secret,
 			}
 			self._mail.send(
-				util.Template('match-decliner-email.json').json('new-post-email'),
+				util.Template('email-subjects.json').json('match-decliner-email'),
 				util.Template('match-decliner-email.txt').replace(replacements).content,
 				html=util.Template('match-decliner-email.html').replace(replacements).content,
 				to=my_offer.email
@@ -826,7 +830,7 @@ class Donationswap:
 				'{%OFFER_SECRET%}': other_offer.secret,
 			}
 			self._mail.send(
-				util.Template('match-declined-email.json').json('new-post-email'),
+				util.Template('email-subjects.json').json('match-declined-email'),
 				util.Template('match-declined-email.txt').replace(replacements).content,
 				html=util.Template('match-declined-email.html').replace(replacements).content,
 				to=other_offer.email
