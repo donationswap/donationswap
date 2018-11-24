@@ -330,6 +330,11 @@ class Templates(unittest.TestCase):
 			'{%CURRENCY_B%}',
 			'{%EMAIL_B%}',
 			'{%INSTRUCTIONS_B%}',
+			'{%ONE_CURRENCY_A_AS_B%}',
+			'{%TO_CHARITY_A%}',
+			'{%TO_CHARITY_B%}',
+			'{%GIFT_AID_INSERT_A_TXT%}',
+			'{%GIFT_AID_INSERT_B_TXT%}',
 		]
 		txt = util.Template('match-approved-email.txt').content
 		self._check_expected_placeholders(txt, placeholders)
