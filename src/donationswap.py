@@ -668,7 +668,6 @@ class Donationswap:
 			can_edit = match.old_agrees is None
 
 		return {
-			#xxx add calculation
 			'my_country': my_offer.country.name,
 			'my_charity': my_offer.charity.name,
 			'my_amount': my_actual_amount,
@@ -737,7 +736,6 @@ class Donationswap:
 			offer_b.country.currency.iso) / 1000.0
 
 		replacements = {
-			#xxx add calculation
 			'{%NAME_A%}': offer_a.name,
 			'{%COUNTRY_A%}': offer_a.country.name,
 			'{%CHARITY_A%}': offer_a.charity.name,
