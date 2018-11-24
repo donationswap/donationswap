@@ -46,11 +46,10 @@
 		ui.charityInCountryCharity.textContent = data.charities.filter(charity => charity.id === charityInCountry.charity_id)[0].name;
 		ui.charityInCountryCountry.data = charityInCountry.country_id;
 		ui.charityInCountryCountry.textContent = data.countries.filter(country => country.id === charityInCountry.country_id)[0].name;
-		ui.charityInCountryTaxFactor.value = charityInCountry.tax_factor || 0;
 		ui.charityInCountryInstructions.value = charityInCountry.instructions || '';
 
 		ui.editCharityInCountry.classList.remove('hidden');
-		ui.charityInCountryTaxFactor.focus();
+		ui.charityInCountryInstructions.focus();
 	}
 
 	function populateUi(data) {
@@ -332,7 +331,6 @@
 		const args = {
 			charity_id: ui.charityInCountryCharity.data,
 			country_id: ui.charityInCountryCountry.data,
-			tax_factor: ui.charityInCountryTaxFactor.value,
 			instructions: ui.charityInCountryInstructions.value.trim(),
 		};
 		if (data.charities_in_countries.find(cic => cic.charity_id === args.charity_id && cic.country_id === args.country_id)) {

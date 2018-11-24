@@ -57,8 +57,6 @@ import util
 
 #xxx use local time on admin pages
 
-#xxx remove tax factor
-
 #xxx anonymize (remove name+email) event log after 3 months
 
 #xxx make sure certbot works when the time comes
@@ -980,7 +978,6 @@ class Donationswap:
 				{
 					'charity_id': i.charity_id,
 					'country_id': i.country_id,
-					'tax_factor': i.tax_factor,
 					'instructions': i.instructions,
 				}
 				for i in entities.CharityInCountry.get_all()
@@ -1046,14 +1043,13 @@ class Donationswap:
 			entities.Country.by_id(country_id).delete(db)
 
 	@admin_ajax
-	def create_charity_in_country(self, _, charity_id, country_id, tax_factor, instructions):
+	def create_charity_in_country(self, _, charity_id, country_id, instructions):
 		with self._database.connect() as db:
-			entities.CharityInCountry.create(db, charity_id, country_id, tax_factor, instructions)
+			entities.CharityInCountry.create(db, charity_id, country_id, instructions)
 
 	@admin_ajax
-	def update_charity_in_country(self, _, charity_id, country_id, tax_factor, instructions):
+	def update_charity_in_country(self, _, charity_id, country_id, instructions):
 		charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity_id, country_id)
-		charity_in_country.tax_factor = tax_factor
 		charity_in_country.instructions = instructions
 		with self._database.connect() as db:
 			charity_in_country.save(db)

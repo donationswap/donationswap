@@ -260,11 +260,10 @@ class CharityInCountry(EntityMixin):
 	def __init__(self, row):
 		self.charity_id = row['charity_id']
 		self.country_id = row['country_id']
-		self.tax_factor = row['tax_factor']
 		self.instructions = row['instructions']
 
 	def __repr__(self):
-		return '{charity_id}:{country_id}:{tax_factor}'.format(**self.__dict__)
+		return '{charity_id}:{country_id}'.format(**self.__dict__)
 
 	@classmethod
 	def _load_entity_impl(cls, entity):
@@ -297,16 +296,15 @@ class CharityInCountry(EntityMixin):
 		return list(filter(callback, cls._all[:]))
 
 	@classmethod
-	def create(cls, db, charity_id, country_id, tax_factor, instructions):
+	def create(cls, db, charity_id, country_id, instructions):
 		query = '''
-			INSERT INTO charities_in_countries (charity_id, country_id, tax_factor, instructions)
-			VALUES (%(charity_id)s, %(country_id)s, %(tax_factor)s, %(instructions)s)
+			INSERT INTO charities_in_countries (charity_id, country_id, instructions)
+			VALUES (%(charity_id)s, %(country_id)s, %(instructions)s)
 			RETURNING *;
 		'''
 		row = db.read_one(query,
 			charity_id=charity_id,
 			country_id=country_id,
-			tax_factor=tax_factor,
 			instructions=instructions)
 		db.written = True
 		return cls._load_entity(row)
@@ -314,12 +312,11 @@ class CharityInCountry(EntityMixin):
 	def save(self, db):
 		query = '''
 			UPDATE charities_in_countries
-			SET tax_factor = %(tax_factor)s, instructions = %(instructions)s
+			SET instructions = %(instructions)s
 			WHERE charity_id = %(charity_id)s AND country_id = %(country_id)s;'''
 		db.write(query,
 			charity_id=self.charity_id,
 			country_id=self.country_id,
-			tax_factor=self.tax_factor,
 			instructions=self.instructions)
 
 	def delete(self, db):
