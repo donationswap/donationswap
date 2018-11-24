@@ -1,4 +1,4 @@
-Dear {%YOUR_NAME%},
+Dear {%NAME%},
 
 You have declined a match of your donation swap offer.
 
