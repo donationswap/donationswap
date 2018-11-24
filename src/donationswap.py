@@ -53,8 +53,6 @@ import util
 
 #xxx layout html emails
 
-#xxx automatically download new GeoIP zipfile every month
-
 #xxx feedback page
 
 #xxx use local time on admin pages
@@ -325,6 +323,13 @@ class Donationswap:
 
 	def clean_up(self):
 		'''This method gets called once per hour by a cronjob.'''
+
+		# We _may_ have downloaded a new geoip database,
+		# in which case we have to load it.
+		# This is rare (once per month), and this method
+		# gets called often (once per hour), but loading is fast,
+		# so I guess it's alright.
+		self._geoip.clear()
 
 		counts = {
 			'unconfirmed_offers': self._delete_unconfirmed_offers(),

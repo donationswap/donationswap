@@ -33,6 +33,9 @@ class GeoIpCountry: # pylint: disable=too-few-public-methods
 		logging.info('Loading geoip data from "%s"...', filename)
 		self._reader = None
 
+	def clear(self):
+		self._reader = None
+
 	def lookup(self, ip_address):
 		try:
 			if self._reader is None:
