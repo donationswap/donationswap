@@ -114,6 +114,7 @@
 			ui.txtCurrency1.setAttribute('title', currency.name);
 			ui.txtCurrency2.textContent = currency.iso;
 			ui.txtCurrency2.setAttribute('title', currency.name);
+			validate();
 		};
 
 		ui.intAmount.oninput = () => {
