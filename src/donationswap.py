@@ -53,7 +53,7 @@ import util
 
 #xxx layout html emails
 
-#xxx delete db backups after 3 months
+#xxx automatically download new GeoIP zipfile every month
 
 #xxx feedback page
 
