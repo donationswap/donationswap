@@ -49,8 +49,6 @@ import geoip
 import mail
 import util
 
-#xxx add minimum donation amount to offer validation
-
 #xxx layout html emails
 
 #xxx feedback page
@@ -460,6 +458,17 @@ class Donationswap:
 		if min_amount < 0:
 			raise DonationException(errors.json('bad min_amount'))
 
+		if min_amount > amount:
+			raise DonationException(errors.json('min_amount_larger'))
+
+		min_allowed_amount = self._currency.convert(
+			country.min_donation_amount,
+			country.min_donation_currency,
+			country.currency)
+
+		if min_amount < min_allowed_amount:
+			raise DonationException(errors.json('min_amount_too_small') % (
+				country.min_donation_amount, country.min_donation_currency.iso))
 
 		charity = entities.Charity.by_id(charity)
 		if charity is None:

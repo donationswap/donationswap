@@ -110,7 +110,6 @@
 
 		ui.idCountry.onchange = () => {
 			const currency = currencyByCountry[ui.idCountry.value];
-			//xxx ui.intAmount.setAttribute('min', 'xxx')
 			ui.txtCurrency1.textContent = currency.iso;
 			ui.txtCurrency1.setAttribute('title', currency.name);
 			ui.txtCurrency2.textContent = currency.iso;
