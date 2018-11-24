@@ -51,8 +51,6 @@ import util
 
 #xxx add minimum donation amount to offer validation
 
-#xxx move all `style="..."` stuff into style.css
-
 #xxx layout html emails
 
 #xxx delete db backups after 3 months
