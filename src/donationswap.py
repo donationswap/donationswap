@@ -682,7 +682,8 @@ class Donationswap:
 			# Wait until both parties approved the match.
 		}
 
-	def _get_gift_aid_insert(self, offer, to_charity_amount, charity_receiving):
+	@staticmethod
+	def _get_gift_aid_insert(offer, to_charity_amount, charity_receiving):
 		if offer.country.gift_aid_multiplier <= 1:
 			return "", ""
 
@@ -707,7 +708,7 @@ class Donationswap:
 		return txt, html
 
 	def _send_mail_about_approved_match(self, offer_a, offer_b):
-		
+
 		actual_amount_a, actual_amount_b = self._get_actual_amounts(offer_a, offer_b)
 		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
 		to_charity_b = actual_amount_b * offer_b.country.gift_aid_multiplier
