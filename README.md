@@ -20,6 +20,9 @@ Start the server
 
 	sudo ./main.py
 
+Using automatic updates via `sudo apt-get install unattended-upgrades`
+is also recommended.
+
 ## Database
 
 Install PostgreSQL
@@ -78,11 +81,11 @@ We're using Tornado.
 Run it like this:
 
 	cd web
-	sudo ./main.py -d
+	sudo ./main.py -p 443 -d
 
 If it's running as a daemon, kill it like this:
 
-	kill `cat /var/run/webserver.pid`
+	kill `cat /var/run/webserver-443.pid`
 
 Get help like this:
 
