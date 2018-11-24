@@ -9,7 +9,7 @@
 	ajax('/ajax/get_match', { secret })
 		.then(match => {
 			if (match === null) {
-				alert('We cannot find the requested offer. Maybe it expired or was declined.');
+				alert('We cannot find the requested offer. Maybe it expired or was declined. Redirecting you to the home page.');
 				window.location.pathname = '/';
 				return;
 			}
