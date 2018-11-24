@@ -32,7 +32,7 @@
 				ui.expirationDate.textContent = Date.fromUtcIsoString(offer.expires_ts).toLocalString('%Y-%m-%d %H:%M');
 				ui.message.textContent = '';
 			} else {
-				ui.message.innerHTML = '<p>The requested post could not be found.</p><p>Maybe it was deleted or expired?</p><p>You can create a new one <a href="/">here</a>.</p>';
+				ui.message.innerHTML = '<p>The requested post could not be found.</p><p>Maybe it was deleted or expired?</p><p>You can create a new one <a href="/start/">here</a>.</p>';
 			}
 			setVisibility(offer);
 		})
@@ -42,7 +42,7 @@
 		if (confirm('Do you want to delete this offer?')) {
 			ajax('/ajax/delete_offer', { secret })
 				.then(response => {
-					ui.message.innerHTML = '<p>The offer has been deleted. Click <a href="/">here</a> to create a new one.</p>';
+					ui.message.innerHTML = '<p>The offer has been deleted. Click <a href="/start/">here</a> to create a new one.</p>';
 					setVisibility(null);
 				})
 				.catch(handleError);
