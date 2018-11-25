@@ -773,6 +773,7 @@ class Donationswap:
 		match, old_offer, new_offer, my_offer, _ = self._get_match_and_offers(secret)
 
 		if match is None:
+			# this error is shown directly to the user, don't put any sensitive details in it!
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('match not found')
 			)
@@ -794,6 +795,7 @@ class Donationswap:
 		match, old_offer, new_offer, my_offer, other_offer = self._get_match_and_offers(secret)
 
 		if match is None:
+			# this error is shown directly to the user, don't put any sensitive details in it!
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('match not found')
 			)
