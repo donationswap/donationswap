@@ -315,7 +315,7 @@ class Templates(unittest.TestCase):
 		self._check_expected_placeholders(txt, placeholders)
 
 	def test_match_appoved_email(self):
-		placeholders = [
+		placeholders_txt = [
 			'{%NAME_A%}',
 			'{%COUNTRY_A%}',
 			'{%CHARITY_A%}',
@@ -336,10 +336,31 @@ class Templates(unittest.TestCase):
 			'{%GIFT_AID_INSERT_A_TXT%}',
 			'{%GIFT_AID_INSERT_B_TXT%}',
 		]
+		placeholders_html = [
+			'{%NAME_A%}',
+			'{%COUNTRY_A%}',
+			'{%CHARITY_A%}',
+			'{%ACTUAL_AMOUNT_A%}',
+			'{%CURRENCY_A%}',
+			'{%EMAIL_A%}',
+			'{%INSTRUCTIONS_A%}',
+			'{%NAME_B%}',
+			'{%COUNTRY_B%}',
+			'{%CHARITY_B%}',
+			'{%ACTUAL_AMOUNT_B%}',
+			'{%CURRENCY_B%}',
+			'{%EMAIL_B%}',
+			'{%INSTRUCTIONS_B%}',
+			'{%ONE_CURRENCY_A_AS_B%}',
+			'{%TO_CHARITY_A%}',
+			'{%TO_CHARITY_B%}',
+			'{%GIFT_AID_INSERT_A_HTML%}',
+			'{%GIFT_AID_INSERT_B_HTML%}',
+		]
 		txt = util.Template('match-approved-email.txt').content
-		self._check_expected_placeholders(txt, placeholders)
+		self._check_expected_placeholders(txt, placeholders_txt)
 		txt = util.Template('match-approved-email.html').content
-		self._check_expected_placeholders(txt, placeholders)
+		self._check_expected_placeholders(txt, placeholders_html)
 
 	def test_match_suggested_email(self):
 		placeholders = [

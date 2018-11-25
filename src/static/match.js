@@ -30,7 +30,7 @@
 				alert('Thanks!');
 			})
 			.catch((err) => {
-				alert("Something went wrong:\n" + err + "\nmaybe check your emails or reload the page?")
+				alert(`Something went wrong:\n${err}\nmaybe check your emails or reload the page?`);
 			});
 	};
 
@@ -46,7 +46,7 @@
 				alert('The match has been declined.');
 			})
 			.catch((err) => {
-				alert("Something went wrong:\n" + err + "\nmaybe check your emails or reload the page?")
+				alert(`Something went wrong:\n${err}\nmaybe check your emails or reload the page?`);
 			});
 	};
 }());
