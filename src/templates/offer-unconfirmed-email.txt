@@ -11,3 +11,5 @@ We have removed your swap offer from our system.
 If you want to create another offer just like it, please go to https://donationswap.eahub.org/start/{%ARGS%}. Remember to check your email to confirm your offer. 
 
 Thanks from the EA donation swap team
+
+If you didn't set up this swap, please ignore this email. Sorry!
