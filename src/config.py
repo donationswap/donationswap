@@ -32,6 +32,7 @@ class Config:
 		self.email_user = data['email_user']
 		self.fixer_apikey = data['fixer_apikey']
 		self.geoip_datafile = data['geoip_datafile']
+		self.watchdog_receivers = data['watchdog_receivers']
 
 		# could just do this, but explicit is better than implicit
 		#for k, v in data.items():

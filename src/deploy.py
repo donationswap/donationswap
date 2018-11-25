@@ -29,6 +29,7 @@ FILE_LIST = [
 	('static/*', 0o444),
 	('templates', 0o777),
 	('templates/*', 0o444),
+	('watchdog.py', 0o544),
 ]
 
 def deploy(target):
