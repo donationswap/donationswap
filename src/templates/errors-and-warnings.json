@@ -7,5 +7,7 @@
 	"charity not found": "The charity you provided in your donation offer does not exist in our database.",
 	"country not found": "The country you provided in your donation offer does not exist in our database.",
 	"match not found": "Could not find that match. Deleted? Declined? Expired?",
+	"min_amount_too_small": "The minimum supported smallest match amount for your country is %s %s.",
+	"min_amount_larger": "The smallest match amount cannot be more than the actual amount.",
 	"no name provided": "Please enter the name by which we will address you in our emails."
 }

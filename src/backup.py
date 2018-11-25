@@ -14,16 +14,20 @@ import glob
 import os
 import subprocess
 
+FILENAME_PATTERN = '????-??-??_??-??.%s.sql'
+
 def _get_latest_backup_filename(path, db_name):
-	pattern = os.path.join(path, '????-??-??_??-??.%s.sql' % db_name)
+	pattern = os.path.join(path, FILENAME_PATTERN % db_name)
 	names = glob.glob(pattern)
 	names.sort()
 	if names:
 		return names[-1]
 	return None
 
-def _generate_backup_filename(path, db_name):
-	timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%d_%H-%M')
+def _generate_backup_filename(path, db_name, now=None):
+	if now is None:
+		now = datetime.datetime.utcnow()
+	timestamp = now.strftime('%Y-%m-%d_%H-%M')
 	filename = '%s.%s.sql' % (timestamp, db_name)
 	return os.path.join(path, filename)
 
@@ -73,15 +77,6 @@ def _files_are_identical(filename_a, filename_b):
 				if chunk_a != chunk_b:
 					return False
 
-def remove_all_duplicates(path, pattern):
-	pattern = os.path.join(path, pattern)
-	names = glob.glob(pattern)
-	names.sort()
-
-	for i in range(1, len(names)):
-		if _files_are_identical(names[i-1], names[i]):
-			os.remove(names[i])
-
 def backup(path, db_name):
 	previous_filename = _get_latest_backup_filename(path, db_name)
 	filename = _generate_backup_filename(path, db_name)
@@ -93,6 +88,15 @@ def backup(path, db_name):
 	else:
 		print('done.')
 
+def delete_old_backups(path, db_name):
+	now = datetime.datetime.utcnow()
+	oldest = now - datetime.timedelta(days=90)
+	filename = _generate_backup_filename(path, db_name, now=oldest)
+	for i in sorted(glob.glob(os.path.join(path, FILENAME_PATTERN % db_name))):
+		if i < filename:
+			print('Deleting %s' % i)
+			os.remove(i)
+
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('path')
@@ -100,6 +104,7 @@ def main():
 	args = parser.parse_args()
 	for i in args.db_names:
 		backup(args.path, i)
+		delete_old_backups(args.path, i)
 
 if __name__ == '__main__':
 	main()
