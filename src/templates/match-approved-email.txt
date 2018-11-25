@@ -19,7 +19,7 @@ ________________________________________________________________
 {%NAME_B%}:
 
 {%NAME_B%} will donate {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} to the charity {%CHARITY_A%}.
-{%GIFT_AID_INSERT_B_TXT%}Instructions to donate: {%INSTRUCTIONS_B%}
+Instructions to donate: {%INSTRUCTIONS_B%}
 
 ________________________________________________________________
 
