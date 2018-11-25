@@ -825,12 +825,18 @@ class Donationswap:
 				to=my_offer.email
 			)
 
+			email_subject = 'match-declined-email'
+			if other_offer == old_offer and match.old_agrees:
+				email_subject = 'match-approved-declined-email'
+			elif other_offer == new_offer and match.new_agrees:
+				email_subject = 'match-approved-declined-email'
+
 			replacements = {
 				'{%NAME%}': other_offer.name,
 				'{%OFFER_SECRET%}': other_offer.secret,
 			}
 			self._mail.send(
-				util.Template('email-subjects.json').json('match-declined-email'),
+				util.Template('email-subjects.json').json(email_subject),
 				util.Template('match-declined-email.txt').replace(replacements).content,
 				html=util.Template('match-declined-email.html').replace(replacements).content,
 				to=other_offer.email

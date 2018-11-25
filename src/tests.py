@@ -374,6 +374,7 @@ class Templates(unittest.TestCase):
 	def test_email_subjects(self):
 		data = util.Template('email-subjects.json').json()
 		self.assertTrue('match-declined-email' in data)
+		self.assertTrue('match-approved-declined-email' in data)
 		self.assertTrue('match-decliner-email' in data)
 		self.assertTrue('new-post-email' in data)
 
