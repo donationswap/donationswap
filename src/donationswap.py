@@ -49,19 +49,11 @@ import geoip
 import mail
 import util
 
-#xxx add minimum donation amount to offer validation
-
-#xxx move all `style="..."` stuff into style.css
-
 #xxx layout html emails
-
-#xxx delete db backups after 3 months
 
 #xxx feedback page
 
 #xxx use local time on admin pages
-
-#xxx remove tax factor
 
 #xxx anonymize (remove name+email) event log after 3 months
 
@@ -328,6 +320,13 @@ class Donationswap:
 	def clean_up(self):
 		'''This method gets called once per hour by a cronjob.'''
 
+		# We _may_ have downloaded a new geoip database,
+		# in which case we have to load it.
+		# This is rare (once per month), and this method
+		# gets called often (once per hour), but loading is fast,
+		# so I guess it's alright.
+		self._geoip.clear()
+
 		counts = {
 			'unconfirmed_offers': self._delete_unconfirmed_offers(),
 			'expired_offers': self._delete_expired_offers(),
@@ -459,6 +458,17 @@ class Donationswap:
 		if min_amount < 0:
 			raise DonationException(errors.json('bad min_amount'))
 
+		if min_amount > amount:
+			raise DonationException(errors.json('min_amount_larger'))
+
+		min_allowed_amount = self._currency.convert(
+			country.min_donation_amount,
+			country.min_donation_currency,
+			country.currency)
+
+		if min_amount < min_allowed_amount:
+			raise DonationException(errors.json('min_amount_too_small') % (
+				country.min_donation_amount, country.min_donation_currency.iso))
 
 		charity = entities.Charity.by_id(charity)
 		if charity is None:
@@ -681,7 +691,8 @@ class Donationswap:
 			# Wait until both parties approved the match.
 		}
 
-	def _get_gift_aid_insert(self, offer, to_charity_amount, charity_receiving):
+	@staticmethod
+	def _get_gift_aid_insert(offer, to_charity_amount, charity_receiving):
 		if offer.country.gift_aid_multiplier <= 1:
 			return "", ""
 
@@ -706,7 +717,7 @@ class Donationswap:
 		return txt, html
 
 	def _send_mail_about_approved_match(self, offer_a, offer_b):
-		
+
 		actual_amount_a, actual_amount_b = self._get_actual_amounts(offer_a, offer_b)
 		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
 		to_charity_b = actual_amount_b * offer_b.country.gift_aid_multiplier
@@ -977,7 +988,6 @@ class Donationswap:
 				{
 					'charity_id': i.charity_id,
 					'country_id': i.country_id,
-					'tax_factor': i.tax_factor,
 					'instructions': i.instructions,
 				}
 				for i in entities.CharityInCountry.get_all()
@@ -1043,14 +1053,13 @@ class Donationswap:
 			entities.Country.by_id(country_id).delete(db)
 
 	@admin_ajax
-	def create_charity_in_country(self, _, charity_id, country_id, tax_factor, instructions):
+	def create_charity_in_country(self, _, charity_id, country_id, instructions):
 		with self._database.connect() as db:
-			entities.CharityInCountry.create(db, charity_id, country_id, tax_factor, instructions)
+			entities.CharityInCountry.create(db, charity_id, country_id, instructions)
 
 	@admin_ajax
-	def update_charity_in_country(self, _, charity_id, country_id, tax_factor, instructions):
+	def update_charity_in_country(self, _, charity_id, country_id, instructions):
 		charity_in_country = entities.CharityInCountry.by_charity_and_country_id(charity_id, country_id)
-		charity_in_country.tax_factor = tax_factor
 		charity_in_country.instructions = instructions
 		with self._database.connect() as db:
 			charity_in_country.save(db)

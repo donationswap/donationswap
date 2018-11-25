@@ -1,5 +1,7 @@
+/* jigsaw.w3.org/css-validator/validator?uri=https%3A%2F%2Fdonationswap.eahub.org%2Fstatic%2Fstyle.css */
+
 html {
-	font-family: Open Sans, Arial, sans-serif;
+	font-family: "Open Sans", Arial, sans-serif;
 }
 
 body {
@@ -47,7 +49,15 @@ a:hover {
 a:active {
     color: #512B52;
 }
-
+a.white {
+	color: white;
+}
+a.silent {
+	text-decoration: none;
+}
+a.silent:hover {
+	text-decoration: underline;
+}
 
 table.visuals {
 	margin-left: auto;
@@ -74,8 +84,7 @@ table.visuals {
 	text-align: center;
 }
 a.button {
-	/*box-shadow: 0.2em 0.2em 0.4em rgba(0, 0, 0, 0.5);*/
-	colour: white;
+	color: white;
 	display: inline-block;
 	margin: 1em;
 	padding: 0.5em 1em;
@@ -133,6 +142,10 @@ header {
 	margin: 0;
 	padding: 1.2em 0.5em;
 	text-align: center;
+}
+header a {
+	color: #f4f4f4 !important;
+	text-decoration: none !important;
 }
 header b {
 	font-weight: 800;
