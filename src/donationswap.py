@@ -49,12 +49,6 @@ import geoip
 import mail
 import util
 
-#xxx layout html emails
-
-#xxx feedback page
-
-#xxx use local time on admin pages
-
 #xxx anonymize (remove name+email) event log after 3 months
 
 #xxx make sure certbot works when the time comes
@@ -65,12 +59,13 @@ import util
 # - a donation offer is pointless if
 #   - it is to the only tax-deductible charity in the country OR
 #   - it is to a charity that is tax-decuctible everywhere OR
-#   - it is to a charity that is tax-deductible nowhere.
+#   - it is to a charity that is not tax-deductible anywhere.
 # - add "blacklist charity" to offer.
 # - blacklist donors who agreed to the match but didn't acutally donate.
 # - support crypto currencies.
 # - add link to match email for user to create offer for remaining amount.
 # - charities should have hyperlinks.
+# - layout html emails.
 
 # pylint: disable=too-many-lines
 
