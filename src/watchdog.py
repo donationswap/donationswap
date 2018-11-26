@@ -2,7 +2,6 @@
 
 '''
 xxx do not hardcode paths
-xxx add various cronjobs to README.txt
 '''
 
 import datetime

@@ -112,3 +112,14 @@ Add a cronjob
 with the following line
 
 	42 6 * * * certbot renew --standalone --preferred-challenges http-01 --http-01-port 5433 >> /srv/certlog.txt 2>&1
+
+## Other cronjobs
+
+Here are all the cronjobs that are set up:
+
+	# minute  hour  dayOfMonth  month  dayOfWeek  command
+	  0       *     *           *      *          /srv/web/backup.py /srv/backup/ marc dev
+	  1       6     *           *      *          certbot renew --webroot --webroot-path /srv/web/static/ >> /srv/certlog.txt 2>&1
+	  27      *     *           *      *          curl --insecure --request POST https://localhost/housekeeping
+	  5       19    *           *      wed        /srv/web/download-geoip.sh
+	  42      */6   *           *      *          /srv/web/watchdog.py
