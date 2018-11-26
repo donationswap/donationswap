@@ -9,7 +9,7 @@
 	ajax('/ajax/get_match', { secret })
 		.then(match => {
 			if (match === null) {
-				alert('We cannot find the requested offer. Maybe it expired or was declined.');
+				alert('We cannot find the requested offer. Maybe it expired or was declined. Redirecting you to the home page.');
 				window.location.pathname = '/';
 				return;
 			}
@@ -28,6 +28,9 @@
 			.then(() => {
 				//xxx say "you'll get an email soon."
 				alert('Thanks!');
+			})
+			.catch((err) => {
+				alert(`Something went wrong:\n${err}\nmaybe check your emails or reload the page?`);
 			});
 	};
 
@@ -40,7 +43,10 @@
 		ajax('/ajax/decline_match', { secret, feedback })
 			.then(() => {
 				//xxx let them know their offer has been suspended
-				alert('Bummer!');
+				alert('The match has been declined.');
+			})
+			.catch((err) => {
+				alert(`Something went wrong:\n${err}\nmaybe check your emails or reload the page?`);
 			});
 	};
 }());

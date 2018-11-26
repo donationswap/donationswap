@@ -784,6 +784,7 @@ class Donationswap:
 		match, old_offer, new_offer, my_offer, _ = self._get_match_and_offers(secret)
 
 		if match is None:
+			# this error is shown directly to the user, don't put any sensitive details in it!
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('match not found')
 			)
@@ -805,6 +806,7 @@ class Donationswap:
 		match, old_offer, new_offer, my_offer, other_offer = self._get_match_and_offers(secret)
 
 		if match is None:
+			# this error is shown directly to the user, don't put any sensitive details in it!
 			raise DonationException(
 				util.Template('errors-and-warnings.json').json('match not found')
 			)
@@ -834,12 +836,18 @@ class Donationswap:
 				to=my_offer.email
 			)
 
+			email_subject = 'match-declined-email'
+			if other_offer == old_offer and match.old_agrees:
+				email_subject = 'match-approved-declined-email'
+			elif other_offer == new_offer and match.new_agrees:
+				email_subject = 'match-approved-declined-email'
+
 			replacements = {
 				'{%NAME%}': other_offer.name,
 				'{%OFFER_SECRET%}': other_offer.secret,
 			}
 			self._mail.send(
-				util.Template('email-subjects.json').json('match-declined-email'),
+				util.Template('email-subjects.json').json(email_subject),
 				util.Template('match-declined-email.txt').replace(replacements).content,
 				html=util.Template('match-declined-email.html').replace(replacements).content,
 				to=other_offer.email
