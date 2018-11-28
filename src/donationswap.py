@@ -1115,7 +1115,8 @@ class Donationswap:
 					offer.min_amount * offer.country.gift_aid_multiplier,
 					offer.country.currency.iso,
 					admin_currency.iso),
-				'currency_localized': admin_currency.iso
+				'currency_localized': admin_currency.iso,
+				'offer_secret': offer.secret,
 			}
 			for offer in self._get_unmatched_offers()
 		]

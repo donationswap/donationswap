@@ -14,6 +14,7 @@
 	}
 
 	function renderDetails(details) {
+		details.url = `https://donationswap.eahub.org/offer/#${details.offer_secret}`;
 		const keys = Object.keys(details);
 		keys.sort();
 		return keys.map(key => `${key}: ${details[key]}`).join('\n');
