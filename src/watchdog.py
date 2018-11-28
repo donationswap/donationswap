@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 
 '''
-xxx check number of days until certificate expires
-xxx check number of pending software updates
+xxx do not hardcode paths
 '''
 
 import datetime
 import glob
 import os
 import random
+import re
+import subprocess
 import sys
 
 import config
@@ -56,6 +57,22 @@ def check_backups():
 	for i in filenames[-5:]:
 		_print_file_info(i)
 
+def check_certificate_expiration():
+	command = 'echo | openssl s_client -connect donationswap.eahub.org:443 2> /dev/null | openssl x509 -noout -enddate'
+	proc = subprocess.run(command, shell=True, stdout=subprocess.PIPE)
+	print(proc.stdout.decode('utf-8'))
+
+def check_disk_space():
+	command = 'du -hs /srv/*'
+	print(command)
+	proc = subprocess.run(command, shell=True, stdout=subprocess.PIPE, timeout=5)
+	print(proc.stdout.decode('utf-8'))
+
+	command = 'df -h'
+	print(command)
+	proc = subprocess.run(command, shell=True, stdout=subprocess.PIPE, timeout=5)
+	print(proc.stdout.decode('utf-8'))
+
 def check_entities():
 	cfg = config.Config(CONFIG_FILENAME)
 	dat = database.Database(cfg.db_connection_string)
@@ -97,19 +114,22 @@ def check_logfiles():
 		_print_file_info(i)
 
 def check_website_visits():
+	PATTERN = r'.* Website visitor from .. with IP address "(?P<ip>.+)"'
 	visits_by_date = {}
 
 	for filename in glob.glob('/srv/web/log/*'):
 		with open(filename, 'r') as f:
 			for line in f:
-				if 'Website visitor from' not in line:
+				match = re.match(PATTERN, line)
+				if not match:
 					continue
+				ip = match.group('ip')
 				date = line[:10]
-				visits_by_date.setdefault(date, 0)
-				visits_by_date[date] += 1
+				visits_by_date.setdefault(date, set())
+				visits_by_date[date].add(ip)
 
 	for date, count in sorted(visits_by_date.items()):
-		print('%s: %s' % (date, count))
+		print('%s: %s' % (date, len(count)))
 
 def _execute_one(fn):
 	result = [
@@ -138,6 +158,8 @@ def _execute_one(fn):
 def main(enable_email=True):
 	CHECKS = [
 		check_backups,
+		check_certificate_expiration,
+		check_disk_space,
 		check_entities,
 		check_exchange_rate,
 		check_geoip,
