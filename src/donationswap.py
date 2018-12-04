@@ -598,6 +598,13 @@ class Donationswap:
 
 		#xxx only count as "benefit" if own charity isn't tax-deductible, but other donor's one is
 		#    (otherwise we would reward pointless swaps, where both donors already get their tax back)
+		#    J -> we can start by checking whether we would have gotten a benefit by donating to our chosen charity anyway
+		a_would_have_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_a.country_id) is not None
+		b_would_have_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_b.country_id) is not None
+
+		if a_would_have_benefit and b_would_have_benefit:
+			return 0, 'both would benefit from donating to their chosen charity anyway'
+
 		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
 		b_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_b.country_id) is not None
 
@@ -613,6 +620,11 @@ class Donationswap:
 		declined = db.read_one(query, id_a=offer_a.id, id_b=offer_b.id) or False
 		if declined:
 			return 0, 'match declined'
+
+		# TODO
+		#xxx
+		# scoring should be impacted by a_would_have_benefit and b_would_have_benefit
+		# if either it true *0.5?
 
 		# amounts are equal => score = 1
 		# amounts are vastly different => score = almost 0
