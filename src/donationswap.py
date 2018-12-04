@@ -624,7 +624,7 @@ class Donationswap:
 		# TODO
 		#xxx
 		# scoring should be impacted by a_would_have_benefit and b_would_have_benefit
-		# if either it true *0.5?
+		# if either is true *0.5?
 
 		# amounts are equal => score = 1
 		# amounts are vastly different => score = almost 0
