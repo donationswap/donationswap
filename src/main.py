@@ -27,7 +27,7 @@ class BaseHandler(tornado.web.RequestHandler): # pylint: disable=abstract-method
 	def initialize(self, logic): # pylint: disable=arguments-differ
 		self.logic = logic # pylint: disable=attribute-defined-outside-init
 
-class CertbotHandler(BaseHandler): # pylint: disable=abstract-method
+class CertbotHandler(tornado.web.RequestHandler): # pylint: disable=abstract-method
 	'''
 	sudo certbot renew --webroot --webroot-path /srv/web/static/
 	'''
@@ -107,7 +107,7 @@ class HousekeepingHandler(BaseHandler): # pylint: disable=abstract-method
 				result = self.logic.clean_up()
 				self.set_status(200)
 				self.write(result)
-			except Exception as e:
+			except Exception as e: # pylint: disable=broad-except
 				self.set_status(500)
 				logging.error('Housekeeping Error', exc_info=True)
 				self.write(str(e))
