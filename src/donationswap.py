@@ -80,7 +80,9 @@ def admin_ajax(f):
 def create_secret():
 	timestamp_bytes = struct.pack('!d', time.time())
 	random_bytes = os.urandom(10)
-	return base64.b64encode(timestamp_bytes + random_bytes).decode('utf-8')
+	raw_secret = timestamp_bytes + random_bytes
+	secret = base64.b64encode(raw_secret, altchars=b'-_')
+	return secret.decode('utf-8')
 
 class DonationException(Exception):
 	pass
