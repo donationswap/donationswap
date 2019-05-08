@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
+<meta charset="utf-8">
+<script src="/static/code.js"></script>
+<style>
+.number {
+	cursor: default;
+	display: inline-block;
+	margin-right: 1em;
+}
+.number.clickable {
+	cursor: pointer;
+	text-decoration: underline;
+}
+#stats {
+	cursor: default;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+body {
+	margin: 10px;
+}
+</style>
+<title>Offer Stats</title>
+</head>
+<body>
+<h1>Offer Stats</h1>
+<p>
+	Note, country 1 donated to charity 2 and country 2 donated to charity 1
+</p>
+<p>
+	Offers 
+	<label>between <input class="bordered" id="minTimestamp" placeholder="yyyy-mm-dd HH:MM:SS"></label>
+	<label>and <input class="bordered" id="maxTimestamp" placeholder="yyyy-mm-dd HH:MM:SS"></label>
+</p>
+<p id="info"></p>
+<p id="numbers"></p>
+<ul id="stats"></ul>
+<script src="/static/offerstats.js"></script>
+</body>
+</html>
