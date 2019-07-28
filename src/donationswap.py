@@ -600,6 +600,13 @@ class Donationswap:
 
 		#xxx only count as "benefit" if own charity isn't tax-deductible, but other donor's one is
 		#    (otherwise we would reward pointless swaps, where both donors already get their tax back)
+		#    J -> we can start by checking whether we would have gotten a benefit by donating to our chosen charity anyway
+		a_would_have_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_a.country_id) is not None
+		b_would_have_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_b.country_id) is not None
+
+		if a_would_have_benefit and b_would_have_benefit:
+			return 0, 'both would benefit from donating to their chosen charity anyway'
+
 		a_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_b.charity_id, offer_a.country_id) is not None
 		b_will_benefit = entities.CharityInCountry.by_charity_and_country_id(offer_a.charity_id, offer_b.country_id) is not None
 
@@ -615,6 +622,11 @@ class Donationswap:
 		declined = db.read_one(query, id_a=offer_a.id, id_b=offer_b.id) or False
 		if declined:
 			return 0, 'match declined'
+
+		# TODO
+		#xxx
+		# scoring should be impacted by a_would_have_benefit and b_would_have_benefit
+		# if either is true *0.5?
 
 		# amounts are equal => score = 1
 		# amounts are vastly different => score = almost 0
@@ -1086,6 +1098,66 @@ class Donationswap:
 				limit=limit,
 			)
 		return events
+
+	@admin_ajax
+	def read_log_stats(self, _, min_timestamp, max_timestamp, offset, limit):
+		approved = {}
+		final = {
+			'total_count': 0,
+			'filtered_count': 0,
+			'offset': offset,
+			'limit': limit,
+			'data': [],
+		}
+		finalData = []
+
+		# get generated and accepted events
+		events = self.read_log(_, min_timestamp, max_timestamp, [21, 22], offset, limit)
+
+		with self._database.connect() as db:
+			for event in events["data"]:
+				if event["event_type"] == "match generated":
+					# take the generated events as a base
+					try:
+						newOffer = entities.Offer.by_id(event["details"]["new_offer_id"])
+						oldOffer = entities.Offer.by_id(event["details"]["old_offer_id"])
+						newval, _ = self._get_actual_amounts(newOffer, oldOffer)
+						newval = newval * newOffer.country.gift_aid_multiplier
+						event["value"] = self._currency.convert(newval, newOffer.country.currency.iso, "USD")
+					except:
+						event["value"] = "ERR"
+					finalData.append(event)
+				else:
+					# record approved offers against their match id
+					try:
+						if event["details"]["match_id"] in approved:
+							approved[event["details"]["match_id"]].append(event["details"]["offer_id"])
+						else:
+							approved[event["details"]["match_id"]] = [ event["details"]["offer_id"] ]
+					except:
+						pass
+
+		final["total_count"] = len(finalData)
+
+		# remove generated matches that were not approved by both sides
+		idx = len(finalData) - 1
+		while (idx > 0):
+			rem = True
+			try:
+				match_id = finalData[idx]["details"]["match_id"]
+				if (match_id in approved) and (finalData[idx]["details"]["new_offer_id"] in approved[match_id]) and (finalData[idx]["details"]["old_offer_id"] in approved[match_id]):
+					rem = False
+			except:
+				pass
+
+			if rem:
+				del finalData[idx]
+			idx -= 1
+
+		final["filtered_count"] = len(finalData)
+		final["data"] = finalData
+		return final
+			
 
 	def _get_unmatched_offers(self):
 		'''Returns all offers that are confirmed and

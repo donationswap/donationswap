@@ -13,6 +13,7 @@ FILE_LIST = [
 	('currency.py', 0o444),
 	('database.py', 0o444),
 	('donationswap.py', 0o444),
+	('download-geoip.sh', 0o544),
 	('entities.py', 0o444),
 	('eventlog.py', 0o444),
 	('geoip.py', 0o444),
