@@ -37,6 +37,9 @@ if __name__ == "__main__":
 	min_timestamp = "{0}-{1:0>2}-01".format(nowYear, nowMonth)
 	max_timestamp = "{0}-{1:0>2}-01".format(lastYear, lastMonth)
 
+	# cache issues?
+	swapper._currency._read_live()
+
 	data = swapper.read_log_stats(None, min_timestamp, max_timestamp, 0, 1000000)['data']
 
 	filename = "StatsUpdate-{}-{}.csv".format(nowMonth, nowYear)
