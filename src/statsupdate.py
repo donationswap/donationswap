@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import datetime
+from email.mime.application import MIMEApplication
 
 import config
 import mail
@@ -8,20 +9,26 @@ import donationswap
 
 CONFIG_FILENAME = '/srv/web/app-config.json'
 
-def send_mail(msg, to, filename):
+def send_mail(msg, to, filename, data):
 	cfg = config.Config(CONFIG_FILENAME)
-	m = mail.Mail(cfg.email_user, cfg.email_password, cfg.email_smtp, cfg.email_sender_name)
-	m.send('Donation Swap Stats Update', msg, to=to, send_async=False)
 
-def makeFile(filename, data):
-	fileData = "date match generated, USD value, charity1, country1, charity2, country2\n"
+	m = mail.Mail(cfg.email_user, cfg.email_password, cfg.email_smtp, cfg.email_sender_name)
+
+	smtp_msg = m._prepare_msg('Donation Swap Stats Update', msg, msg, to, None, None)
+
+	part = MIMEApplication(data, Name=filename)
+	part['Content-Disposition'] = 'attachment; filename="' + filename + '"'
+	smtp_msg.attach(part)
+
+	m._send_msg(smtp_msg)
+
+def makeData(data):
+	compiledData = "date match generated, USD value, charity1, country1, charity2, country2\n"
 
 	for match in data:
-		fileData += "{}, {}, {}, {}, {}, {}\n".format(match['created_ts'], match['value'], match['details']['new_offer_charity'], match['details']['new_offer_country'], match['details']['old_offer_charity'], match['details']['old_offer_country'])
+		compiledData += "{}, {}, {}, {}, {}, {}\n".format(match['created_ts'], match['value'], match['details']['new_offer_charity'], match['details']['new_offer_country'], match['details']['old_offer_charity'], match['details']['old_offer_country'])
 
-	FILE = open(filename, 'w')
-	FILE.write(fileData)
-	FILE.close()
+	return compiledData
 
 if __name__ == "__main__":
 	swapper = donationswap.Donationswap(CONFIG_FILENAME)
@@ -34,17 +41,18 @@ if __name__ == "__main__":
 		lastMonth += 12
 		lastYear -= 1
 
-	min_timestamp = "{0}-{1:0>2}-01".format(nowYear, nowMonth)
-	max_timestamp = "{0}-{1:0>2}-01".format(lastYear, lastMonth)
+	min_timestamp = "{0}-{1:0>2}-01".format(lastYear, lastMonth)
+	max_timestamp = "{0}-{1:0>2}-01".format(nowYear, nowMonth)
 
 	# cache issues?
 	swapper._currency._read_live()
 
 	data = swapper.read_log_stats(None, min_timestamp, max_timestamp, 0, 1000000)['data']
 
-	filename = "StatsUpdate-{}-{}.csv".format(nowMonth, nowYear)
-	makeFile(filename, data)
+	filename = "StatsUpdate-{}-{}.csv".format(lastMonth, lastYear)
+	send_mail(
+		"See Attached: '" + filename + "'",
+		["j.lallu25@gmail.com"],
+		filename,
+		makeData(data))
 
-	print(data)
-	print()
-	#send_mail("Testing!", ["j.lallu25@gmail.com"], filename)
