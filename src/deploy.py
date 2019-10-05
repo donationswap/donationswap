@@ -28,6 +28,7 @@ FILE_LIST = [
 	('log', 0o777),
 	('static', 0o777),
 	('static/*', 0o444),
+	('statsupdate.py', 0o777),
 	('templates', 0o777),
 	('templates/*', 0o444),
 	('watchdog.py', 0o544),

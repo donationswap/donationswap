@@ -7,12 +7,14 @@ import config
 import mail
 import donationswap
 
+'''
+xxx do not hardcode paths
+'''
 CONFIG_FILENAME = '/srv/web/app-config.json'
+CONFIG = config.Config(CONFIG_FILENAME)
 
 def send_mail(msg, to, filename, data):
-	cfg = config.Config(CONFIG_FILENAME)
-
-	m = mail.Mail(cfg.email_user, cfg.email_password, cfg.email_smtp, cfg.email_sender_name)
+	m = mail.Mail(CONFIG.email_user, CONFIG.email_password, CONFIG.email_smtp, CONFIG.email_sender_name)
 
 	smtp_msg = m._prepare_msg('Donation Swap Stats Update', msg, msg, to, None, None)
 
@@ -50,9 +52,10 @@ if __name__ == "__main__":
 	data = swapper.read_log_stats(None, min_timestamp, max_timestamp, 0, 1000000)['data']
 
 	filename = "StatsUpdate-{}-{}.csv".format(lastMonth, lastYear)
+
 	send_mail(
 		"See Attached: '" + filename + "'",
-		["j.lallu25@gmail.com"],
+		CONFIG.contact_message_receivers['to'],
 		filename,
 		makeData(data))
 
