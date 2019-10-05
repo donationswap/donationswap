@@ -5,6 +5,7 @@
 	"match-decliner-email": "You declined a match",
 	"match-suggested-email": "We may have found a matching donation for you",
 	"new-post-email": "Please confirm your donation offer",
+	"post-confirmed-email": "New Offer Confirmed",
 	"offer-expired-email": "Your offer has expired",
 	"offer-unconfirmed-email": "You did not confirm your offer"
 }

@@ -552,6 +552,21 @@ class Donationswap:
 				offer.confirm(db)
 				eventlog.confirmed_offer(db, offer)
 
+		replacements = {
+			'{%CHARITY%}': offer.charity.name,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
+			'{%COUNTRY%}': offer.country.name
+		}
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('post-confirmed-email'),
+			util.Template('post-confirmed-email.txt').replace(replacements).content,
+			html=util.Template('post-confirmed-email.html').replace(replacements).content,
+			to=self._config.contact_message_receivers['to']
+		)
+
 		return {
 			'was_confirmed': was_confirmed,
 			'name': offer.name,
