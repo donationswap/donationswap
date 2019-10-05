@@ -199,8 +199,8 @@
 				email: '',
 				expires: {
 					day: info.today.day,
-					month: info.today.month,
-					year: info.today.year + 1
+					month: ((info.today.month + 3) > 12) ? (info.today.month - 9) : (info.today.month + 3),
+					year: ((info.today.month + 3) > 12) ? (info.today.year + 1) : info.today.year
 				},
 			};
 			try {

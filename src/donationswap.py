@@ -91,7 +91,7 @@ class Donationswap:
 	# pylint: disable=too-many-instance-attributes
 	# pylint: disable=too-many-public-methods
 
-	STATIC_VERSION = 3 # cache-breaker
+	STATIC_VERSION = 4 # cache-breaker
 
 	def __init__(self, config_path):
 		self._config = config.Config(config_path)
