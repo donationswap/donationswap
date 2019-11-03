@@ -155,7 +155,7 @@
 		ui.idCountry.value = obj.country || fallback.country;
 		ui.intAmount.value = obj.amount || fallback.amount;
 		ui.idCharity.value = obj.charity || fallback.charity;
-		ui.intMinAmount.value = obj.min_amount;
+		ui.intMinAmount.value = obj.min_amount || fallback.min_amount;
 		ui.intExpirationDay.value = (obj.expires || {}).day || fallback.expires.day;
 		ui.intExpirationMonth.value = (obj.expires || {}).month || fallback.expires.month;
 		ui.intExpirationYear.value = (obj.expires || {}).year || fallback.expires.year;

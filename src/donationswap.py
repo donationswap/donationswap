@@ -234,8 +234,14 @@ class Donationswap:
 			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
 				'country': offer.country_id,
 				'amount': offer.amount,
+				'min_amount': offer.min_amount,
 				'charity': offer.charity_id,
 				'email': offer.email,
+				'expires': {
+					'day': offer.expires_ts.day,
+					'month': offer.expires_ts.month,
+					'year': offer.expires_ts.year,
+				}
 			}))
 		}
 
@@ -272,10 +278,17 @@ class Donationswap:
 			'{%CURRENCY%}': offer.country.currency.iso,
 			'{%CHARITY%}': offer.charity.name,
 			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': offer.name,
 				'country': offer.country_id,
 				'amount': offer.amount,
+				'min_amount': offer.min_amount,
 				'charity': offer.charity_id,
 				'email': offer.email,
+				'expires': {
+					'day': offer.expires_ts.day,
+					'month': offer.expires_ts.month,
+					'year': offer.expires_ts.year,
+				}
 			}))
 		}
 
