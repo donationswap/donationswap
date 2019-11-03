@@ -91,7 +91,7 @@ class Donationswap:
 	# pylint: disable=too-many-instance-attributes
 	# pylint: disable=too-many-public-methods
 
-	STATIC_VERSION = 3 # cache-breaker
+	STATIC_VERSION = 4 # cache-breaker
 
 	def __init__(self, config_path):
 		self._config = config.Config(config_path)
@@ -232,10 +232,17 @@ class Donationswap:
 			'{%CURRENCY%}': offer.country.currency.iso,
 			'{%CHARITY%}': offer.charity.name,
 			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': offer.name,
 				'country': offer.country_id,
 				'amount': offer.amount,
+				'min_amount': offer.min_amount,
 				'charity': offer.charity_id,
 				'email': offer.email,
+				'expires': {
+					'day': offer.expires_ts.day,
+					'month': offer.expires_ts.month,
+					'year': offer.expires_ts.year,
+				}
 			}))
 		}
 
@@ -265,6 +272,7 @@ class Donationswap:
 		return count
 
 	def _send_mail_about_expired_offer(self, offer):
+		newExpirey = offer.expires_ts + (offer.expires_ts - offer.created_ts)
 		replacements = {
 			'{%NAME%}': offer.name,
 			'{%AMOUNT%}': offer.amount,
@@ -272,10 +280,17 @@ class Donationswap:
 			'{%CURRENCY%}': offer.country.currency.iso,
 			'{%CHARITY%}': offer.charity.name,
 			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': offer.name,
 				'country': offer.country_id,
 				'amount': offer.amount,
+				'min_amount': offer.min_amount,
 				'charity': offer.charity_id,
 				'email': offer.email,
+				'expires': {
+					'day': newExpirey.day,
+					'month': newExpirey.month,
+					'year': newExpirey.year,
+				}
 			}))
 		}
 
@@ -551,6 +566,21 @@ class Donationswap:
 			with self._database.connect() as db:
 				offer.confirm(db)
 				eventlog.confirmed_offer(db, offer)
+
+		replacements = {
+			'{%CHARITY%}': offer.charity.name,
+			'{%CURRENCY%}': offer.country.currency.iso,
+			'{%AMOUNT%}': offer.amount,
+			'{%MIN_AMOUNT%}': offer.min_amount,
+			'{%COUNTRY%}': offer.country.name
+		}
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('post-confirmed-email'),
+			util.Template('post-confirmed-email.txt').replace(replacements).content,
+			html=util.Template('post-confirmed-email.html').replace(replacements).content,
+			to=self._config.contact_message_receivers['to']
+		)
 
 		return {
 			'was_confirmed': was_confirmed,

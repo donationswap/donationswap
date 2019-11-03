@@ -155,7 +155,7 @@
 		ui.idCountry.value = obj.country || fallback.country;
 		ui.intAmount.value = obj.amount || fallback.amount;
 		ui.idCharity.value = obj.charity || fallback.charity;
-		ui.intMinAmount.value = obj.min_amount;
+		ui.intMinAmount.value = obj.min_amount || fallback.min_amount;
 		ui.intExpirationDay.value = (obj.expires || {}).day || fallback.expires.day;
 		ui.intExpirationMonth.value = (obj.expires || {}).month || fallback.expires.month;
 		ui.intExpirationYear.value = (obj.expires || {}).year || fallback.expires.year;
@@ -190,6 +190,19 @@
 			populateDropdowns(info);
 			attachEventHandlers();
 
+			var day = info.today.day;
+			var month = info.today.month;
+			var year = info.today.year;
+
+			month += 3;
+			if (month > 12) {
+				month -= 12;
+				year += 1;
+			}
+
+			// month coming in and going out is 1-12, javascript Date takes 0-11 but day 0 gives last day of previous month
+			day = Math.min(day, new Date(year, month, 0).getDate());
+
 			const defaults = {
 				name: '',
 				country: info.client_country,
@@ -198,9 +211,9 @@
 				charity: 30, // Animal Equality (first in alphabet)
 				email: '',
 				expires: {
-					day: info.today.day,
-					month: info.today.month,
-					year: info.today.year + 1
+					day: day,
+					month: month,
+					year: year
 				},
 			};
 			try {
