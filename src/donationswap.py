@@ -232,6 +232,7 @@ class Donationswap:
 			'{%CURRENCY%}': offer.country.currency.iso,
 			'{%CHARITY%}': offer.charity.name,
 			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': offer.name,
 				'country': offer.country_id,
 				'amount': offer.amount,
 				'min_amount': offer.min_amount,
