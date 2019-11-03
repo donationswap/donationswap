@@ -272,6 +272,7 @@ class Donationswap:
 		return count
 
 	def _send_mail_about_expired_offer(self, offer):
+		newExpirey = offer.expires_ts + (offer.expires_ts - offer.created_ts)
 		replacements = {
 			'{%NAME%}': offer.name,
 			'{%AMOUNT%}': offer.amount,
@@ -286,9 +287,9 @@ class Donationswap:
 				'charity': offer.charity_id,
 				'email': offer.email,
 				'expires': {
-					'day': offer.expires_ts.day,
-					'month': offer.expires_ts.month,
-					'year': offer.expires_ts.year,
+					'day': newExpirey.day,
+					'month': newExpirey.month,
+					'year': newExpirey.year,
 				}
 			}))
 		}
