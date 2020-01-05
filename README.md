@@ -118,8 +118,9 @@ with the following line
 Here are all the cronjobs that are set up:
 
 	# minute  hour  dayOfMonth  month  dayOfWeek  command
-	  0       *     *           *      *          /srv/web/backup.py /srv/backup/ marc dev
+	  0       *     *           *      *          python3 /srv/web/backup.py /srv/backup/ marc dev
 	  1       6     *           *      *          certbot renew --webroot --webroot-path /srv/web/static/ >> /srv/certlog.txt 2>&1
 	  27      *     *           *      *          curl --insecure --request POST https://localhost/housekeeping
-	  5       19    *           *      wed        /srv/web/download-geoip.sh
-	  42      */6   *           *      *          /srv/web/watchdog.py
+	  5       19    *           *      wed        python3 /srv/web/download-geoip.sh
+	  42      */6   *           *      *          python3 /srv/web/watchdog.py
+	  21      1     2           *      *          python3 /srv/web/statsupdate.py
