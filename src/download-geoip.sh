@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
 # download latest GeoLite database
-URL=https://geolite.maxmind.com/download/geoip/database/GeoLite2-Country.tar.gz
+URL="https://download.maxmind.com/app/geoip_download?edition_id=GeoLite2-Country&license_key=9MZWC7YpDlczgNoC&suffix=tar.gz"
 wget $URL -O /tmp/geoip.tar.gz
 
 # decompress
