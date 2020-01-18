@@ -122,7 +122,7 @@
 				ui.intMinAmount.value = Math.floor(ui.intAmount.value / 2);
 			}
 		};
-		
+
 		ui.intAmount.onchange = () => validate();
 
 		ui.intMinAmount.onchange = () => {
@@ -177,7 +177,7 @@
 			month: ui.intExpirationMonth.value,
 			year: ui.intExpirationYear.value,
 		};
-		
+
 		ajax('/ajax/validate_offer', offer)
 			.then(errorMessage => {
 				offerValid = !errorMessage;
@@ -206,8 +206,8 @@
 			const defaults = {
 				name: '',
 				country: info.client_country,
-				amount: 100,
-				min_amount: 50,
+				amount: null,
+				min_amount: null,
 				charity: 30, // Animal Equality (first in alphabet)
 				email: '',
 				expires: {
@@ -220,7 +220,7 @@
 				const args = JSON.parse(decodeURIComponent(window.location.hash.substr(1)));
 				initialize(args, defaults);
 			}
-			catch(e) {
+			catch (e) {
 				initialize(defaults, defaults);
 			}
 
