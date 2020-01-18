@@ -25,10 +25,10 @@ ________________________________________________________________
 
 This is how the amounts were calculated:
 
-{%CHARITY_B%} recieves {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} from {%NAME_A%}.
+{%CHARITY_B%} receives {%ACTUAL_AMOUNT_A%} {%CURRENCY_A%} from {%NAME_A%}.
 {%GIFT_AID_INSERT_A_TXT%}
 
-{%CHARITY_A%} recieves {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} from {%NAME_B%}.
+{%CHARITY_A%} receives {%ACTUAL_AMOUNT_B%} {%CURRENCY_B%} from {%NAME_B%}.
 {%GIFT_AID_INSERT_B_TXT%}
 
 The exchange rate is currently 1 {%CURRENCY_A%} = {%ONE_CURRENCY_A_AS_B%} {%CURRENCY_B%}.
