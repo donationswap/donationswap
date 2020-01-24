@@ -497,6 +497,16 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			ooid=old_offer_id)
 		return cls._load_entity(row)
 
+	@classmethod
+	def get_unconfirmed_matches(cls, db):
+		query = '''
+		SELECT * FROM matches
+		WHERE
+			new_agrees is null AND
+			old_agrees is null'''
+		row = db.write_read_one(query)
+		return cls._load_entity(row)
+
 	def agree_old(self, db):
 		query = '''
 		UPDATE matches

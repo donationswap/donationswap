@@ -1,0 +1,1 @@
+INSERT INTO event_types (id, name) VALUES (25, 'match unconfirmed');

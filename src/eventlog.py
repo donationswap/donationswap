@@ -50,6 +50,9 @@ def offer_expired(db, offer):
 def offer_unconfirmed(db, offer):
 	_log_permanently(db, 5, _offer_to_obj(offer))
 
+def match_unconfirmed(db, match):
+	_log_permanently(db, 25, _match_to_obj(match))
+
 def match_generated(db, match):
 	_log_permanently(db, 21, _match_to_obj(match))
 
