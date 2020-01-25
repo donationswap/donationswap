@@ -319,7 +319,6 @@ class Donationswap:
 		return count
 
 	def _send_mail_about_unconfirmed_matches(self, match):
-
 		new_offer = entities.Offer.by_id(match.new_offer_id)
 		old_offer = entities.Offer.by_id(match.old_offer_id)
 
@@ -405,7 +404,47 @@ class Donationswap:
 		return count
 
 	def _send_feedback_email(self, match):
+		new_offer = entities.Offer.by_id(match.new_offer_id)
+		old_offer = entities.Offer.by_id(match.old_offer_id)
+
 		#TODO
+		TODO="We need to find these values cause we didn't save them! :scream:"
+
+		new_replacements = {
+			'{%NAME%}': new_offer.name,
+			'{%NAME_OTHER%}': old_offer.name,
+			'{%AMOUNT%}': TODO,
+			'{%CURRENCY%}': new_offer.country.currency.iso,
+			'{%CHARITY%}': new_offer.charity.name,
+			'{%AMOUNT_OTHER%}': TODO,
+			'{%CURRENCY_OTHER%}': old_offer.country.currency.iso,
+			'{%CHARITY_OTHER%}': old_offer.charity.name,
+			'{%OFFER_SECRET%}': new_offer.secret
+		}
+
+		old_replacements = {
+			'{%NAME%}': old_offer.name,
+			'{%NAME_OTHER%}': new_offer.name,
+			'{%AMOUNT%}': TODO,
+			'{%CURRENCY%}': old_offer.country.currency.iso,
+			'{%CHARITY%}': old_offer.charity.name,
+			'{%AMOUNT_OTHER%}': TODO,
+			'{%CURRENCY_OTHER%}': new_offer.country.currency.iso,
+			'{%CHARITY_OTHER%}': new_offer.charity.name,
+			'{%OFFER_SECRET%}': old_offer.secret
+		}
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('feedback-email'),
+			util.Template('feedback-email.txt').replace(new_replacements).content,
+			html=util.Template('feedback-email.html').replace(new_replacements).content,
+			to=new_offer.email)
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('feedback-email'),
+			util.Template('feedback-email.txt').replace(old_replacements).content,
+			html=util.Template('feedback-email.html').replace(old_replacements).content,
+			to=old_offer.email)
 
 	def _delete_expired_matches(self):
 		'''Send a feedback email one month after creation.'''
