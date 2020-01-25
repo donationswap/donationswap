@@ -458,6 +458,7 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 		self.new_agrees = row['new_agrees']
 		self.old_agrees = row['old_agrees']
 		self.created_ts = row['created_ts']
+		self.feedback_requested = row['feedback_requested']
 
 	def __repr__(self):
 		return '{id}:{new_offer_id}:{old_offer_id}'.format(**self.__dict__)
@@ -507,6 +508,17 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 		row = db.write_read_one(query)
 		return cls._load_entity(row)
 
+	@classmethod
+	def get_feedback_ready_matches(cls, db):
+		query = '''
+		SELECT * FROM matches
+		WHERE
+			new_agrees = True AND
+			old_agrees = True AND
+			feedback_requested = False'''
+		row = db.write_read_one(query)
+		return cls._load_entity(row)
+
 	def agree_old(self, db):
 		query = '''
 		UPDATE matches
@@ -528,6 +540,16 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 	def delete(self, db):
 		query = '''
 			DELETE FROM matches
+			WHERE id = %(id)s;
+		'''
+		db.write(query, id=self.id)
+		self._by_id.pop(self.id, None)
+		self._by_secret.pop(self.secret, None)
+
+	def set_feedback_requested(self, db):
+		query = '''
+			UPDATE matches
+			SET feedback_requested = true
 			WHERE id = %(id)s;
 		'''
 		db.write(query, id=self.id)

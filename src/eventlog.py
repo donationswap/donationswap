@@ -56,6 +56,9 @@ def match_unconfirmed(db, match):
 def match_generated(db, match):
 	_log_permanently(db, 21, _match_to_obj(match))
 
+def match_feedback(db, match):
+	_log_permanently(db, 26, _match_to_obj(match))
+
 def approved_match(db, match, offer):
 	obj = _match_to_obj(match)
 	obj['offer_id'] = offer.id

@@ -404,13 +404,25 @@ class Donationswap:
 
 		return count
 
+	def _send_feedback_email(self, match):
+		#TODO
+
 	def _delete_expired_matches(self):
 		'''Send a feedback email one month after creation.'''
-		#xxx add "feedback_ts" column
-		#xxx send email to matches older than 4 weeks with empty "feedback_ts"
-		#xxx update feedback_ts
-		#xxx delete two offers and one match one week after feedback_ts
-		return 0 #xxx
+		return 0 #TODO: Test
+		count = 0
+		one_month_ago = datetime.datetime.utcnow() - datetime.timedelta(days=31)
+
+		while self._database.connect() as db:
+			for match in entities.Match.get_feedback_ready_matches(db):
+				if (match.created_ts < one_month_ago):
+					logging.info('Requesting feedback for match %s', match.id)
+					eventlog.match_feedback(db, match)
+					match.set_feedback_requested(db)
+					self._send_feedback_email(match)
+					count += 1
+		#xxx delete two offers and one match one week after feedback_ts TODO elsewhere maybe?
+		return count
 
 	def clean_up(self):
 		'''This method gets called once per hour by a cronjob.'''
