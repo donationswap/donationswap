@@ -318,8 +318,91 @@ class Donationswap:
 
 		return count
 
+	def _send_mail_about_unconfirmed_matches(self, match):
+
+		new_offer = entities.Offer.by_id(match.new_offer_id)
+		old_offer = entities.Offer.by_id(match.old_offer_id)
+
+		new_replacements = {
+			'{%NAME%}': new_offer.name,
+			'{%OFFER_SECRET%}': new_offer.secret,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': new_offer.name,
+				'country': new_offer.country_id,
+				'amount': new_offer.amount,
+				'min_amount': new_offer.min_amount,
+				'charity': new_offer.charity_id,
+				'email': new_offer.email,
+				'expires': {
+					'day': new_offer.expires_ts.day,
+					'month': new_offer.expires_ts.month,
+					'year': new_offer.expires_ts.year,
+				}
+			}))
+		}
+
+		old_replacements = {
+			'{%NAME%}': old_offer.name,
+			'{%OFFER_SECRET%}': old_offer.secret,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': old_offer.name,
+				'country': old_offer.country_id,
+				'amount': old_offer.amount,
+				'min_amount': old_offer.min_amount,
+				'charity': old_offer.charity_id,
+				'email': old_offer.email,
+				'expires': {
+					'day': old_offer.expires_ts.day,
+					'month': old_offer.expires_ts.month,
+					'year': old_offer.expires_ts.year,
+				}
+			}))
+		}
+
+		#TODO: needs args applied to a new offer rather than reconfirming old offer
+
+		if (match.new_agrees == True):
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmed-email'),
+				util.Template('match-unconfirmed-email.txt').replace(new_replacements).content,
+				html=util.Template('match-unconfirmed-email.html').replace(new_replacements).content,
+				to=new_offer.email)
+		else:
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmer-email'),
+				util.Template('match-unconfirmer-email.txt').replace(new_replacements).content,
+				html=util.Template('match-unconfirmer-email.html').replace(new_replacements).content,
+				to=new_offer.email)
+
+		if (match.old_agrees == True):
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmed-email'),
+				util.Template('match-unconfirmed-email.txt').replace(old_replacements).content,
+				html=util.Template('match-unconfirmed-email.html').replace(old_replacements).content,
+				to=old_offer.email)
+		else:
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmer-email'),
+				util.Template('match-unconfirmer-email.txt').replace(old_replacements).content,
+				html=util.Template('match-unconfirmer-email.html').replace(old_replacements).content,
+				to=old_offer.email)
+
 	def _delete_unconfirmed_matches(self):
-		return 0 #xxx not confirmed after 72 hours
+		return 0 #TODO: needs testing
+
+		count = 0
+		three_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=3)
+
+		while self._database.connect() as db:
+			for match in entities.Match.get_unconfirmed_matches(db):
+				if (match.created_ts < three_days_ago):
+					logging.info('Deleting unconfirmed match %s', match.id)
+					# match.delete(db) #TODO: check workflow with marc
+					eventlog.match_unconfirmed(db, match)
+					self._send_mail_about_unconfirmed_match(match)
+					count += 1
+
+		return count
 
 	def _delete_expired_matches(self):
 		'''Send a feedback email one month after creation.'''
@@ -864,6 +947,7 @@ class Donationswap:
 			my_offer.suspend(db)
 			eventlog.declined_match(db, match, my_offer, feedback)
 
+			#TODO: needs args applied to a new offer rather than reconfirming old offer
 			replacements = {
 				'{%NAME%}': my_offer.name,
 				'{%OFFER_SECRET%}': my_offer.secret,
@@ -881,6 +965,7 @@ class Donationswap:
 			elif other_offer == new_offer and match.new_agrees:
 				email_subject = 'match-approved-declined-email'
 
+			#TODO: needs args applied to a new offer rather than reconfirming old offer
 			replacements = {
 				'{%NAME%}': other_offer.name,
 				'{%OFFER_SECRET%}': other_offer.secret,
