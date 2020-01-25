@@ -4,6 +4,7 @@ This is the repository of the Effective Altruist Donation Swap project.
 
 ## Deployment for development on Linux
 
+	sudo pip3 install passlib
 	sudo pip3 install psycopg2-binary
 	sudo pip3 install geoip2
 	sudo pip3 install tornado
