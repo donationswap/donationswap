@@ -1,32 +1,38 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<link rel="icon" href="/favicon.ico">
-<link rel="stylesheet" type="text/css" href="/static/style.css">
-<meta charset="utf-8">
-<script src="/static/code.js"></script>
-<script src="https://www.google.com/recaptcha/api.js"></script>
-<style>
-#intAmount,#intMinAmount {
-	width: 6em;
-}
-#errorContainer {
-	border: 5px solid #512b52;
-	margin: 1em 0 0 0;
-	padding: 1em;
-}
-#successContainer {
-	border: 5px solid #437069;
-	margin: 1em 0 0 0;
-	padding: 1em;
-}
-</style>
-<title>Donation Swap</title>
+	<link rel="icon" href="/favicon.ico">
+	<link rel="stylesheet" type="text/css" href="/static/style.css">
+	<meta charset="utf-8">
+	<script src="/static/code.js"></script>
+	<script src="https://www.google.com/recaptcha/api.js"></script>
+	<style>
+		#intAmount,
+		#intMinAmount {
+			width: 6em;
+		}
+
+		#errorContainer {
+			border: 5px solid #512b52;
+			margin: 1em 0 0 0;
+			padding: 1em;
+		}
+
+		#successContainer {
+			border: 5px solid #437069;
+			margin: 1em 0 0 0;
+			padding: 1em;
+		}
+	</style>
+	<title>Donation Swap</title>
 </head>
+
 <body>
-{%FILE=header.snippet.html%}
+	{%FILE=header.snippet.html%}
 	<div class="body">
-		<p>Fill in this form to offer to swap your donation. This form should be used whether you need to swap to get tax credits, or if you are swapping in order to enable others to get tax credits.</p>
+		<p>Fill in this form to offer to swap your donation. This form should be used whether you need to swap to get
+			tax credits, or if you are swapping in order to enable others to get tax credits.</p>
 		<p>Please only fill out the form when you are ready to donate, as you may get matched straight away.</p>
 		<div id="form">
 			<p>
@@ -39,7 +45,7 @@
 			</p>
 			<p>
 				<label for="intAmount">and I would like to donate</label>
-				<input class="bordered" id="intAmount" min="0" type="number" value="100">
+				<input class="bordered" id="intAmount" min="0" type="number">
 				<span id="txtCurrency1">$</span>
 			</p>
 			<p>
@@ -84,7 +90,8 @@
 			<p>It is safe to close this tab.</p>
 		</div>
 	</div>
-{%FILE=footer.snippet.html%}
-<script src="/static/start.js"></script>
+	{%FILE=footer.snippet.html%}
+	<script src="/static/start.js"></script>
 </body>
+
 </html>
