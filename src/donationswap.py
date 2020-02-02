@@ -407,16 +407,15 @@ class Donationswap:
 		new_offer = entities.Offer.by_id(match.new_offer_id)
 		old_offer = entities.Offer.by_id(match.old_offer_id)
 
-		#TODO
-		TODO="We need to find these values cause we didn't save them! :scream:"
+		#TODO We need to find these values cause we didn't save them! :scream:
 
 		new_replacements = {
 			'{%NAME%}': new_offer.name,
 			'{%NAME_OTHER%}': old_offer.name,
-			'{%AMOUNT%}': TODO,
+			'{%AMOUNT%}': match.new_amount_suggested,
 			'{%CURRENCY%}': new_offer.country.currency.iso,
 			'{%CHARITY%}': new_offer.charity.name,
-			'{%AMOUNT_OTHER%}': TODO,
+			'{%AMOUNT_OTHER%}': match.old_amount_suggested,
 			'{%CURRENCY_OTHER%}': old_offer.country.currency.iso,
 			'{%CHARITY_OTHER%}': old_offer.charity.name,
 			'{%OFFER_SECRET%}': new_offer.secret
@@ -425,10 +424,10 @@ class Donationswap:
 		old_replacements = {
 			'{%NAME%}': old_offer.name,
 			'{%NAME_OTHER%}': new_offer.name,
-			'{%AMOUNT%}': TODO,
+			'{%AMOUNT%}': match.old_amount_suggested,
 			'{%CURRENCY%}': old_offer.country.currency.iso,
 			'{%CHARITY%}': old_offer.charity.name,
-			'{%AMOUNT_OTHER%}': TODO,
+			'{%AMOUNT_OTHER%}': match.new_amount_suggested,
 			'{%CURRENCY_OTHER%}': new_offer.country.currency.iso,
 			'{%CHARITY_OTHER%}': new_offer.charity.name,
 			'{%OFFER_SECRET%}': old_offer.secret
@@ -889,7 +888,7 @@ class Donationswap:
 
 		return txt, html
 
-	def _send_mail_about_approved_match(self, offer_a, offer_b):
+	def _send_mail_about_approved_match(self, match, offer_a, offer_b):
 
 		actual_amount_a, actual_amount_b = self._get_actual_amounts(offer_a, offer_b)
 		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
@@ -945,6 +944,9 @@ class Donationswap:
 
 		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
 
+		match.set_old_amount_suggested_requested(self._database, actual_amount_a)
+		match.set_new_amount_suggested_requested(self._database, actual_amount_b)
+
 		self._mail.send(
 			util.Template('email-subjects.json').json('match-approved-email'),
 			util.Template('match-approved-email.txt').replace(replacements).content,
@@ -972,7 +974,7 @@ class Donationswap:
 				eventlog.approved_match(db, match, my_offer)
 
 		if match.old_agrees and match.new_agrees:
-			self._send_mail_about_approved_match(old_offer, new_offer)
+			self._send_mail_about_approved_match(match, old_offer, new_offer)
 
 	@ajax
 	def decline_match(self, secret, feedback):
