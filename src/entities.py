@@ -507,8 +507,10 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 		WHERE
 			new_agrees is null AND
 			old_agrees is null'''
-		row = db.write_read_one(query)
-		return cls._load_entity(row)
+		return [
+			cls.by_id(i['id'])
+			for i in db.read(query)
+		]
 
 	@classmethod
 	def get_feedback_ready_matches(cls, db):
@@ -518,8 +520,10 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			new_agrees = True AND
 			old_agrees = True AND
 			feedback_requested = False'''
-		row = db.write_read_one(query)
-		return cls._load_entity(row)
+		return [
+			cls.by_id(i['id'])
+			for i in db.read(query)
+		]
 
 	def agree_old(self, db):
 		query = '''

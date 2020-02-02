@@ -418,7 +418,7 @@ class Donationswap:
 			'{%AMOUNT_OTHER%}': match.old_amount_suggested,
 			'{%CURRENCY_OTHER%}': old_offer.country.currency.iso,
 			'{%CHARITY_OTHER%}': old_offer.charity.name,
-			'{%OFFER_SECRET%}': new_offer.secret
+			'{%OFFER_SECRET%}': urllib.parse.quote(new_offer.secret)
 		}
 
 		old_replacements = {
@@ -430,7 +430,7 @@ class Donationswap:
 			'{%AMOUNT_OTHER%}': match.new_amount_suggested,
 			'{%CURRENCY_OTHER%}': new_offer.country.currency.iso,
 			'{%CHARITY_OTHER%}': new_offer.charity.name,
-			'{%OFFER_SECRET%}': old_offer.secret
+			'{%OFFER_SECRET%}': urllib.parse.quote(old_offer.secret)
 		}
 
 		self._mail.send(
@@ -447,7 +447,6 @@ class Donationswap:
 
 	def _delete_expired_matches(self):
 		'''Send a feedback email one month after creation.'''
-		return 0 #TODO: Test
 		count = 0
 		one_month_ago = datetime.datetime.utcnow() - datetime.timedelta(days=31)
 
