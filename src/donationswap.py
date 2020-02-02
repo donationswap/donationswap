@@ -392,7 +392,7 @@ class Donationswap:
 		count = 0
 		three_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=3)
 
-		while self._database.connect() as db:
+		with self._database.connect() as db:
 			for match in entities.Match.get_unconfirmed_matches(db):
 				if (match.created_ts < three_days_ago):
 					logging.info('Deleting unconfirmed match %s', match.id)
@@ -451,7 +451,7 @@ class Donationswap:
 		count = 0
 		one_month_ago = datetime.datetime.utcnow() - datetime.timedelta(days=31)
 
-		while self._database.connect() as db:
+		with self._database.connect() as db:
 			for match in entities.Match.get_feedback_ready_matches(db):
 				if (match.created_ts < one_month_ago):
 					logging.info('Requesting feedback for match %s', match.id)
@@ -944,8 +944,9 @@ class Donationswap:
 
 		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
 
-		match.set_old_amount_suggested_requested(self._database, actual_amount_a)
-		match.set_new_amount_suggested_requested(self._database, actual_amount_b)
+		with self._database.connect() as db:
+			match.set_old_amount_suggested_requested(db, actual_amount_a)
+			match.set_new_amount_suggested_requested(db, actual_amount_b)
 
 		self._mail.send(
 			util.Template('email-subjects.json').json('match-approved-email'),
