@@ -407,15 +407,15 @@ class Donationswap:
 		new_offer = entities.Offer.by_id(match.new_offer_id)
 		old_offer = entities.Offer.by_id(match.old_offer_id)
 
-		#TODO We need to find these values cause we didn't save them! :scream:
+		new_actual_amount, old_actual_amount = self._get_actual_amounts(match, new_offer, old_offer)
 
 		new_replacements = {
 			'{%NAME%}': new_offer.name,
 			'{%NAME_OTHER%}': old_offer.name,
-			'{%AMOUNT%}': match.new_amount_suggested,
+			'{%AMOUNT%}': new_actual_amount,
 			'{%CURRENCY%}': new_offer.country.currency.iso,
 			'{%CHARITY%}': new_offer.charity.name,
-			'{%AMOUNT_OTHER%}': match.old_amount_suggested,
+			'{%AMOUNT_OTHER%}': old_actual_amount,
 			'{%CURRENCY_OTHER%}': old_offer.country.currency.iso,
 			'{%CHARITY_OTHER%}': old_offer.charity.name,
 			'{%OFFER_SECRET%}': urllib.parse.quote(new_offer.secret)
@@ -424,10 +424,10 @@ class Donationswap:
 		old_replacements = {
 			'{%NAME%}': old_offer.name,
 			'{%NAME_OTHER%}': new_offer.name,
-			'{%AMOUNT%}': match.old_amount_suggested,
+			'{%AMOUNT%}':old_actual_amount,
 			'{%CURRENCY%}': old_offer.country.currency.iso,
 			'{%CHARITY%}': old_offer.charity.name,
-			'{%AMOUNT_OTHER%}': match.new_amount_suggested,
+			'{%AMOUNT_OTHER%}': new_actual_amount,
 			'{%CURRENCY_OTHER%}': new_offer.country.currency.iso,
 			'{%CHARITY_OTHER%}': new_offer.charity.name,
 			'{%OFFER_SECRET%}': urllib.parse.quote(old_offer.secret)
@@ -813,24 +813,60 @@ class Donationswap:
 		score = round(score, 4)
 		return score, reason
 
-	def _get_actual_amounts(self, my_offer, their_offer):
-		if self._currency.is_more_money(
+	def _get_actual_amounts(self, match, my_offer, their_offer):
+
+		# DB check
+		if (match.new_actual_amount > 0 and match.old_actual_amount > 0):
+			if (match.new_offer_id == my_offer.id and match.old_offer_id == their_offer.id):
+				return match.new_actual_amount, match.old_actual_amount
+			elif (match.old_offer_id == my_offer.id and match.new_offer_id == their_offer.id):
+				return match.old_actual_amount, match.new_actual_amount
+
+		currencyData = self._currency
+
+		try:
+			one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+			if (match.created_ts < one_day_ago) :
+				url = 'http://data.fixer.io/api/{:04d}-{:02d}-{:02d}?access_key=%s' % (match.created_ts.year, match.created_ts.month, match.created_ts.day, self._secret)
+				with urllib.request.urlopen(url) as f:
+					content = f.read()
+					data = json.loads(content.decode('utf-8'))
+					if data.get('success', False):
+						currencyData = currency.HistoricCurrency(data)
+		except:
+			pass # just use now currency if we can't get historic
+
+		match.new_amount_suggested
+		match.old_amount_suggested
+		match.created_ts
+
+		if currencyData.is_more_money(
 			my_offer.amount * my_offer.country.gift_aid_multiplier,
 			my_offer.country.currency.iso,
 			their_offer.amount * their_offer.country.gift_aid_multiplier,
 			their_offer.country.currency.iso
 		):
-			my_actual_amount = self._currency.convert(
+			my_actual_amount = currencyData.convert(
 				their_offer.amount * their_offer.country.gift_aid_multiplier / my_offer.country.gift_aid_multiplier,
 				their_offer.country.currency.iso,
 				my_offer.country.currency.iso)
 			their_actual_amount = their_offer.amount
 		else:
 			my_actual_amount = my_offer.amount
-			their_actual_amount = self._currency.convert(
+			their_actual_amount = currencyData.convert(
 				my_offer.amount  * my_offer.country.gift_aid_multiplier / their_offer.country.gift_aid_multiplier,
 				my_offer.country.currency.iso,
 				their_offer.country.currency.iso)
+
+		# save to DB
+		if (match.new_offer_id == my_offer.id and match.old_offer_id == their_offer.id):
+			with self._database.connect() as db:
+				match.set_new_amount_suggested_requested(db, my_actual_amount)
+				match.set_old_amount_suggested_requested(db, their_actual_amount)
+		elif (match.old_offer_id == my_offer.id and match.new_offer_id == their_offer.id):
+			with self._database.connect() as db:
+				match.set_old_amount_suggested_requested(db, my_actual_amount)
+				match.set_new_amount_suggested_requested(db, their_actual_amount)
 
 		return my_actual_amount, their_actual_amount
 
@@ -840,7 +876,7 @@ class Donationswap:
 		if my_offer is None or their_offer is None:
 			return None
 
-		my_actual_amount, their_actual_amount = self._get_actual_amounts(my_offer, their_offer)
+		my_actual_amount, their_actual_amount = self._get_actual_amounts(match, my_offer, their_offer)
 
 		can_edit = False
 		if my_offer.id == new_offer.id:
@@ -889,7 +925,7 @@ class Donationswap:
 
 	def _send_mail_about_approved_match(self, match, offer_a, offer_b):
 
-		actual_amount_a, actual_amount_b = self._get_actual_amounts(offer_a, offer_b)
+		actual_amount_a, actual_amount_b = self._get_actual_amounts(match, offer_a, offer_b)
 		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
 		to_charity_b = actual_amount_b * offer_b.country.gift_aid_multiplier
 
@@ -942,10 +978,6 @@ class Donationswap:
 		}
 
 		logging.info('Sending deal email to %s and %s.', offer_a.email, offer_b.email)
-
-		with self._database.connect() as db:
-			match.set_old_amount_suggested_requested(db, actual_amount_a)
-			match.set_new_amount_suggested_requested(db, actual_amount_b)
 
 		self._mail.send(
 			util.Template('email-subjects.json').json('match-approved-email'),
@@ -1289,7 +1321,7 @@ class Donationswap:
 					try:
 						newOffer = entities.Offer.by_id(event["details"]["new_offer_id"])
 						oldOffer = entities.Offer.by_id(event["details"]["old_offer_id"])
-						newval, _ = self._get_actual_amounts(newOffer, oldOffer)
+						newval, _ = self._get_actual_amounts(entities.Match.by_id(event["detail"]["match_id"]), newOffer, oldOffer)
 						newval = newval * newOffer.country.gift_aid_multiplier
 						event["value"] = self._currency.convert(newval, newOffer.country.currency.iso, "USD")
 					except:
@@ -1373,7 +1405,7 @@ class Donationswap:
 			}
 
 	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		my_actual_amount, _ = self._get_actual_amounts(my_offer, their_offer)
+		my_actual_amount, _ = self._get_actual_amounts(entities.Match.by_secret(match_secret), my_offer, their_offer)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,

@@ -71,3 +71,20 @@ class Currency:
 		amount_b = self.convert(amount_b, currency_b, data['base'])
 
 		return amount_a > amount_b
+
+class HistoricCurrency(Currency):
+	def __init__(self, data):
+		super(HistoricCurrency, self).__init__(None, None)
+		self._data = data
+
+	def _get_data(self):
+		return self._data
+
+	def _read_cache(self):
+		pass
+
+	def _write_cache(self):
+		pass
+
+	def _read_live(self):
+		pass
