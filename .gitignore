@@ -1,4 +1,4 @@
-src/data/GeoLite2-Country.mmdb
+src/data
 src/__pycache__/
 *.pyc
 .vscode/*
