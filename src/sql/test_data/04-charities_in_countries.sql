@@ -9,4 +9,3 @@ values
     (3,          2,         'Donate through Effective Alruism Funds.'),
     (2,          0,         'Donate through Oxford University.'),
     (2,          1,         'Donate through Oxford University.');
-
