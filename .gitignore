@@ -4,3 +4,4 @@ src/__pycache__/
 .vscode/*
 src/log/*
 *.backup.*
+app-config.json
