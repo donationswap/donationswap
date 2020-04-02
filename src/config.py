@@ -22,6 +22,7 @@ class Config:
 		data = json.loads(content)
 
 		self.captcha_secret = data['captcha_secret']
+		self.captcha_site_key = data['captcha_site_key']
 		self.contact_message_receivers = data['contact_message_receivers']
 		self.cookie_key = data['cookie_key']
 		self.currency_cache = data['currency_cache']
