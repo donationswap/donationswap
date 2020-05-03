@@ -1,21 +1,11 @@
 Hello {%NAME%},
 
-A while ago you used the donation swap website and were matched with {%NAME_OTHER%} to do a donation swap. 
+A while ago you used the donation swap website and were matched with {%NAME_OTHER%} to do a donation swap.
 
-{%NAME_OTHER%} was going to donate {%AMOUNT_OTHER%} {%CURRENCY_OTHER%} to {%CHARITY%}.
-
-You were going to donate {%AMOUNT%} {%CURRENCY%} to {%CHARITY_OTHER%}.
-
-We're just following up:
-- whether you donated
-- whether you received confirmation that the other donor donated
-- what you would have done without the donation swap system
-- whether you have any suggestions for improvements.
-
-Please fill in this short form:
+We are conducting an ongoing evaluation of the effectiveness of the donation swap tool. We would love if you could fill in this short form to help us understand how it worked for you:
 https://docs.google.com/forms/d/e/1FAIpQLSdBUD0ig80KvRoCB6Dtct3XPPKE4vpxrY6Z7v7ZnxnpKgBXug/viewform?entry.2070973991={%OFFER_SECRET%}&entry.797208049={%NAME_OTHER%}+was+going+to+donate+{%AMOUNT_OTHER%}+{%CURRENCY_OTHER%}+to+{%CHARITY%}.+You+were+going+to+donate+{%AMOUNT%}+{%CURRENCY%}+to+{%CHARITY_OTHER%}
-The form is pre-filled with the information about your swap, so please leave those fields as they are.  
+The form is pre-filled with the information about your swap, so please leave those fields as they are.
 
-If you did more than one donation swap you will get more than one email. Please fill in the form on each email!
+If you did more than one donation swap you will get more than one email. We'd really appreciate it if you could fill in the form for each swap.
 
 - Thanks from the EA donation swap team
