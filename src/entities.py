@@ -559,8 +559,7 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			WHERE id = %(id)s;
 		'''
 		db.write(query, id=self.id)
-		self._by_id.pop(self.id, None)
-		self._by_secret.pop(self.secret, None)
+		self.feedback_requested = True
 
 	def set_new_amount_suggested_requested(self, db, value):
 		query = '''
@@ -568,10 +567,8 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			SET new_amount_suggested = %(val)s
 			WHERE id = %(id)s;
 		'''
-		self.new_amount_suggested = value
 		db.write(query, id=self.id, val=self.new_amount_suggested)
-		self._by_id.pop(self.id, None)
-		self._by_secret.pop(self.secret, None)
+		self.new_amount_suggested = value
 
 	def set_old_amount_suggested_requested(self, db, value):
 		query = '''
@@ -579,10 +576,8 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			SET old_amount_suggested = %(val)s
 			WHERE id = %(id)s;
 		'''
-		self.old_amount_suggested = value
 		db.write(query, id=self.id, val=self.old_amount_suggested)
-		self._by_id.pop(self.id, None)
-		self._by_secret.pop(self.secret, None)
+		self.old_amount_suggested = value
 
 def load(db):
 	Currency.load(db)

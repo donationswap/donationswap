@@ -403,11 +403,11 @@ class Donationswap:
 
 		return count
 
-	def _send_feedback_email(self, match):
+	def _send_feedback_email(self, match, db):
 		new_offer = entities.Offer.by_id(match.new_offer_id)
 		old_offer = entities.Offer.by_id(match.old_offer_id)
 
-		new_actual_amount, old_actual_amount = self._get_actual_amounts(match, new_offer, old_offer)
+		new_actual_amount, old_actual_amount = self._get_actual_amounts(match, new_offer, old_offer, db)
 
 		new_replacements = {
 			'{%NAME%}': new_offer.name,
@@ -456,7 +456,7 @@ class Donationswap:
 					logging.info('Requesting feedback for match %s', match.id)
 					eventlog.match_feedback(db, match)
 					match.set_feedback_requested(db)
-					self._send_feedback_email(match)
+					self._send_feedback_email(match, db)
 					count += 1
 		#xxx delete two offers and one match one week after feedback_ts TODO elsewhere maybe?
 		return count
@@ -813,9 +813,9 @@ class Donationswap:
 		score = round(score, 4)
 		return score, reason
 
-	def _get_actual_amounts(self, match, my_offer, their_offer):
+	def _get_actual_amounts(self, match, my_offer, their_offer, db):
 
-		# DB check
+		# cache check
 		if (match.new_amount_suggested > 0 and match.old_amount_suggested > 0):
 			if (match.new_offer_id == my_offer.id and match.old_offer_id == their_offer.id):
 				return match.new_amount_suggested, match.old_amount_suggested
@@ -856,13 +856,11 @@ class Donationswap:
 
 		# save to DB
 		if (match.new_offer_id == my_offer.id and match.old_offer_id == their_offer.id):
-			with self._database.connect() as db:
-				match.set_new_amount_suggested_requested(db, my_actual_amount)
-				match.set_old_amount_suggested_requested(db, their_actual_amount)
+			match.set_new_amount_suggested_requested(db, my_actual_amount)
+			match.set_old_amount_suggested_requested(db, their_actual_amount)
 		elif (match.old_offer_id == my_offer.id and match.new_offer_id == their_offer.id):
-			with self._database.connect() as db:
-				match.set_old_amount_suggested_requested(db, my_actual_amount)
-				match.set_new_amount_suggested_requested(db, their_actual_amount)
+			match.set_old_amount_suggested_requested(db, my_actual_amount)
+			match.set_new_amount_suggested_requested(db, their_actual_amount)
 
 		return my_actual_amount, their_actual_amount
 
@@ -872,7 +870,8 @@ class Donationswap:
 		if my_offer is None or their_offer is None:
 			return None
 
-		my_actual_amount, their_actual_amount = self._get_actual_amounts(match, my_offer, their_offer)
+		with self._database.connect() as db:
+			my_actual_amount, their_actual_amount = self._get_actual_amounts(match, my_offer, their_offer, db)
 
 		can_edit = False
 		if my_offer.id == new_offer.id:
@@ -919,9 +918,9 @@ class Donationswap:
 
 		return txt, html
 
-	def _send_mail_about_approved_match(self, match, offer_a, offer_b):
+	def _send_mail_about_approved_match(self, match, offer_a, offer_b, db):
 
-		actual_amount_a, actual_amount_b = self._get_actual_amounts(match, offer_a, offer_b)
+		actual_amount_a, actual_amount_b = self._get_actual_amounts(match, offer_a, offer_b, db)
 		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
 		to_charity_b = actual_amount_b * offer_b.country.gift_aid_multiplier
 
@@ -992,17 +991,16 @@ class Donationswap:
 				util.Template('errors-and-warnings.json').json('match not found')
 			)
 
-		if my_offer == old_offer:
-			with self._database.connect() as db:
+		with self._database.connect() as db:
+			if my_offer == old_offer:
 				match.agree_old(db)
 				eventlog.approved_match(db, match, my_offer)
-		elif my_offer == new_offer:
-			with self._database.connect() as db:
+			elif my_offer == new_offer:
 				match.agree_new(db)
 				eventlog.approved_match(db, match, my_offer)
 
-		if match.old_agrees and match.new_agrees:
-			self._send_mail_about_approved_match(match, old_offer, new_offer)
+			if match.old_agrees and match.new_agrees:
+				self._send_mail_about_approved_match(match, old_offer, new_offer, db)
 
 	@ajax
 	def decline_match(self, secret, feedback):
@@ -1317,7 +1315,7 @@ class Donationswap:
 					try:
 						newOffer = entities.Offer.by_id(event["details"]["new_offer_id"])
 						oldOffer = entities.Offer.by_id(event["details"]["old_offer_id"])
-						newval, _ = self._get_actual_amounts(entities.Match.by_id(event["detail"]["match_id"]), newOffer, oldOffer)
+						newval, _ = self._get_actual_amounts(entities.Match.by_id(event["detail"]["match_id"]), newOffer, oldOffer, db)
 						newval = newval * newOffer.country.gift_aid_multiplier
 						event["value"] = self._currency.convert(newval, newOffer.country.currency.iso, "USD")
 					except:
@@ -1400,8 +1398,8 @@ class Donationswap:
 				for offer_b in self._get_unmatched_offers()
 			}
 
-	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		my_actual_amount, _ = self._get_actual_amounts(entities.Match.by_secret(match_secret), my_offer, their_offer)
+	def _send_mail_about_match(self, my_offer, their_offer, match_secret, db):
+		my_actual_amount, _ = self._get_actual_amounts(entities.Match.by_secret(match_secret), my_offer, their_offer, db)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
@@ -1440,5 +1438,5 @@ class Donationswap:
 		with self._database.connect() as db:
 			match = entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
 			eventlog.match_generated(db, match)
-			self._send_mail_about_match(old_offer, new_offer, match_secret)
-			self._send_mail_about_match(new_offer, old_offer, match_secret)
+			self._send_mail_about_match(old_offer, new_offer, match_secret, db)
+			self._send_mail_about_match(new_offer, old_offer, match_secret, db)
