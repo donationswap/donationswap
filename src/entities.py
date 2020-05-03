@@ -567,7 +567,7 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			SET new_amount_suggested = %(val)s
 			WHERE id = %(id)s;
 		'''
-		db.write(query, id=self.id, val=self.new_amount_suggested)
+		db.write(query, id=self.id, val=value)
 		self.new_amount_suggested = value
 
 	def set_old_amount_suggested_requested(self, db, value):
@@ -576,7 +576,7 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			SET old_amount_suggested = %(val)s
 			WHERE id = %(id)s;
 		'''
-		db.write(query, id=self.id, val=self.old_amount_suggested)
+		db.write(query, id=self.id, val=value)
 		self.old_amount_suggested = value
 
 def load(db):
