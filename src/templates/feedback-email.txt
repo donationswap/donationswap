@@ -2,7 +2,7 @@ Hello {%NAME%},
 
 A while ago you used the donation swap website and were matched with {%NAME_OTHER%} to do a donation swap.
 
-We are conducting an ongoing evaluation of the effectiveness of the donation swap tool. We would love if you could fill in this short form to help us understand how it worked for you:
+We are conducting an ongoing evaluation of the effectiveness of the donation swap tool. We would love if you could fill in this short form to help us understand your experience:
 https://docs.google.com/forms/d/e/1FAIpQLSdBUD0ig80KvRoCB6Dtct3XPPKE4vpxrY6Z7v7ZnxnpKgBXug/viewform?entry.2070973991={%OFFER_SECRET%}&entry.797208049={%NAME_OTHER%}+was+going+to+donate+{%AMOUNT_OTHER%}+{%CURRENCY_OTHER%}+to+{%CHARITY%}.+You+were+going+to+donate+{%AMOUNT%}+{%CURRENCY%}+to+{%CHARITY_OTHER%}
 The form is pre-filled with the information about your swap, so please leave those fields as they are.
 
