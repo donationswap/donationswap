@@ -816,11 +816,11 @@ class Donationswap:
 	def _get_actual_amounts(self, match, my_offer, their_offer):
 
 		# DB check
-		if (match.new_actual_amount > 0 and match.old_actual_amount > 0):
+		if (match.new_amount_suggested > 0 and match.old_amount_suggested > 0):
 			if (match.new_offer_id == my_offer.id and match.old_offer_id == their_offer.id):
-				return match.new_actual_amount, match.old_actual_amount
+				return match.new_amount_suggested, match.old_amount_suggested
 			elif (match.old_offer_id == my_offer.id and match.new_offer_id == their_offer.id):
-				return match.old_actual_amount, match.new_actual_amount
+				return match.old_amount_suggested, match.new_amount_suggested
 
 		currencyData = self._currency
 
