@@ -836,10 +836,6 @@ class Donationswap:
 		except:
 			pass # just use now currency if we can't get historic
 
-		match.new_amount_suggested
-		match.old_amount_suggested
-		match.created_ts
-
 		if currencyData.is_more_money(
 			my_offer.amount * my_offer.country.gift_aid_multiplier,
 			my_offer.country.currency.iso,
