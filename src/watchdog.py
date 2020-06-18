@@ -42,7 +42,8 @@ def _print_file_info(filename):
 
 def _send_mail(msg, to):
 	cfg = config.Config(CONFIG_FILENAME)
-	m = mail.Mail(cfg.email_user, cfg.email_password, cfg.email_smtp, cfg.email_sender_name)
+    m = mail.Mail(cfg.watchdog_email_user, cfg.watchdog_email_password,
+                  cfg.watchdog_email_smtp, cfg.watchdog_email_sender_name)
 	m.send('Donation Swap Watchdog', msg, to=to, send_async=False)
 
 def check_backups():

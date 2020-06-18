@@ -33,6 +33,10 @@ class Config:
 		self.email_user = data['email_user']
 		self.fixer_apikey = data['fixer_apikey']
 		self.geoip_datafile = data['geoip_datafile']
+		self.watchdog_email_password = data['watchdog_email_password']
+		self.watchdog_email_sender_name = data['watchdog_email_sender_name']
+		self.watchdog_email_smtp = data['watchdog_email_smtp']
+		self.watchdog_email_user = data['watchdog_email_user']
 		self.watchdog_receivers = data['watchdog_receivers']
 
 		# could just do this, but explicit is better than implicit
