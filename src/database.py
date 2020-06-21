@@ -31,6 +31,10 @@ class Database: # pylint: disable=too-few-public-methods
 		self._connection_string = connection_string
 
 	def connect(self):
+		'''
+		Gets a connection to the database.
+		Seems to hang if a connection already exists.
+		'''
 		return Connection(self._connection_string)
 
 class Connection:

@@ -458,6 +458,9 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 		self.new_agrees = row['new_agrees']
 		self.old_agrees = row['old_agrees']
 		self.created_ts = row['created_ts']
+		self.feedback_requested = row['feedback_requested']
+		self.new_amount_suggested = row['new_amount_suggested']
+		self.old_amount_suggested = row['old_amount_suggested']
 
 	def __repr__(self):
 		return '{id}:{new_offer_id}:{old_offer_id}'.format(**self.__dict__)
@@ -497,6 +500,31 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 			ooid=old_offer_id)
 		return cls._load_entity(row)
 
+	@classmethod
+	def get_unconfirmed_matches(cls, db):
+		query = '''
+		SELECT * FROM matches
+		WHERE
+			new_agrees is null AND
+			old_agrees is null'''
+		return [
+			cls.by_id(i['id'])
+			for i in db.read(query)
+		]
+
+	@classmethod
+	def get_feedback_ready_matches(cls, db):
+		query = '''
+		SELECT * FROM matches
+		WHERE
+			new_agrees = True AND
+			old_agrees = True AND
+			feedback_requested = False'''
+		return [
+			cls.by_id(i['id'])
+			for i in db.read(query)
+		]
+
 	def agree_old(self, db):
 		query = '''
 		UPDATE matches
@@ -523,6 +551,33 @@ class Match(EntityMixin, IdMixin, SecretMixin):
 		db.write(query, id=self.id)
 		self._by_id.pop(self.id, None)
 		self._by_secret.pop(self.secret, None)
+
+	def set_feedback_requested(self, db):
+		query = '''
+			UPDATE matches
+			SET feedback_requested = true
+			WHERE id = %(id)s;
+		'''
+		db.write(query, id=self.id)
+		self.feedback_requested = True
+
+	def set_new_amount_suggested_requested(self, db, value):
+		query = '''
+			UPDATE matches
+			SET new_amount_suggested = %(val)s
+			WHERE id = %(id)s;
+		'''
+		db.write(query, id=self.id, val=value)
+		self.new_amount_suggested = value
+
+	def set_old_amount_suggested_requested(self, db, value):
+		query = '''
+			UPDATE matches
+			SET old_amount_suggested = %(val)s
+			WHERE id = %(id)s;
+		'''
+		db.write(query, id=self.id, val=value)
+		self.old_amount_suggested = value
 
 def load(db):
 	Currency.load(db)

@@ -1,0 +1,7 @@
+Dear {%NAME%},
+
+The donor you have matched with has not responded to the swap. Your information remains on our database and you will be matched with another compatible donor as soon as one arrives. 
+
+Here's a link to your offer, in case you want to make changes: https://donationswap.eahub.org/offer/#{%OFFER_SECRET%}
+
+Thanks from the EA donation swap team. 

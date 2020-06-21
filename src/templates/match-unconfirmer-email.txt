@@ -1,0 +1,7 @@
+Dear {%NAME%},
+
+You have not reponded to a match of your donation swap offer.
+
+If you want to your offer to go back in the pool to be matched with a different donor, please visit https://donationswap.eahub.org/offer/#{%OFFER_SECRET%} and re-confirm it.
+
+Thanks from the EA donation swap team.

@@ -323,16 +323,148 @@ class Donationswap:
 
 		return count
 
+	def _send_mail_about_unconfirmed_matches(self, match):
+		new_offer = entities.Offer.by_id(match.new_offer_id)
+		old_offer = entities.Offer.by_id(match.old_offer_id)
+
+		new_replacements = {
+			'{%NAME%}': new_offer.name,
+			'{%OFFER_SECRET%}': new_offer.secret,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': new_offer.name,
+				'country': new_offer.country_id,
+				'amount': new_offer.amount,
+				'min_amount': new_offer.min_amount,
+				'charity': new_offer.charity_id,
+				'email': new_offer.email,
+				'expires': {
+					'day': new_offer.expires_ts.day,
+					'month': new_offer.expires_ts.month,
+					'year': new_offer.expires_ts.year,
+				}
+			}))
+		}
+
+		old_replacements = {
+			'{%NAME%}': old_offer.name,
+			'{%OFFER_SECRET%}': old_offer.secret,
+			'{%ARGS%}': '#%s' % urllib.parse.quote(json.dumps({
+				'name': old_offer.name,
+				'country': old_offer.country_id,
+				'amount': old_offer.amount,
+				'min_amount': old_offer.min_amount,
+				'charity': old_offer.charity_id,
+				'email': old_offer.email,
+				'expires': {
+					'day': old_offer.expires_ts.day,
+					'month': old_offer.expires_ts.month,
+					'year': old_offer.expires_ts.year,
+				}
+			}))
+		}
+
+		#TODO: needs args applied to a new offer rather than reconfirming old offer
+
+		if (match.new_agrees == True):
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmed-email'),
+				util.Template('match-unconfirmed-email.txt').replace(new_replacements).content,
+				html=util.Template('match-unconfirmed-email.html').replace(new_replacements).content,
+				to=new_offer.email)
+		else:
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmer-email'),
+				util.Template('match-unconfirmer-email.txt').replace(new_replacements).content,
+				html=util.Template('match-unconfirmer-email.html').replace(new_replacements).content,
+				to=new_offer.email)
+
+		if (match.old_agrees == True):
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmed-email'),
+				util.Template('match-unconfirmed-email.txt').replace(old_replacements).content,
+				html=util.Template('match-unconfirmed-email.html').replace(old_replacements).content,
+				to=old_offer.email)
+		else:
+			self._mail.send(
+				util.Template('email-subjects.json').json('match-unconfirmer-email'),
+				util.Template('match-unconfirmer-email.txt').replace(old_replacements).content,
+				html=util.Template('match-unconfirmer-email.html').replace(old_replacements).content,
+				to=old_offer.email)
+
 	def _delete_unconfirmed_matches(self):
-		return 0 #xxx not confirmed after 72 hours
+		return 0 #TODO: needs testing
+
+		count = 0
+		three_days_ago = datetime.datetime.utcnow() - datetime.timedelta(days=3)
+
+		with self._database.connect() as db:
+			for match in entities.Match.get_unconfirmed_matches(db):
+				if (match.created_ts < three_days_ago):
+					logging.info('Deleting unconfirmed match %s', match.id)
+					# match.delete(db) #TODO: check workflow with marc
+					eventlog.match_unconfirmed(db, match)
+					self._send_mail_about_unconfirmed_match(match)
+					count += 1
+
+		return count
+
+	def _send_feedback_email(self, match, db):
+		new_offer = entities.Offer.by_id(match.new_offer_id)
+		old_offer = entities.Offer.by_id(match.old_offer_id)
+
+		new_actual_amount, old_actual_amount = self._get_actual_amounts(match, new_offer, old_offer, db)
+
+		new_replacements = {
+			'{%NAME%}': new_offer.name,
+			'{%NAME_OTHER%}': old_offer.name,
+			'{%AMOUNT%}': new_actual_amount,
+			'{%CURRENCY%}': new_offer.country.currency.iso,
+			'{%CHARITY%}': new_offer.charity.name,
+			'{%AMOUNT_OTHER%}': old_actual_amount,
+			'{%CURRENCY_OTHER%}': old_offer.country.currency.iso,
+			'{%CHARITY_OTHER%}': old_offer.charity.name,
+			'{%OFFER_SECRET%}': urllib.parse.quote(new_offer.secret)
+		}
+
+		old_replacements = {
+			'{%NAME%}': old_offer.name,
+			'{%NAME_OTHER%}': new_offer.name,
+			'{%AMOUNT%}':old_actual_amount,
+			'{%CURRENCY%}': old_offer.country.currency.iso,
+			'{%CHARITY%}': old_offer.charity.name,
+			'{%AMOUNT_OTHER%}': new_actual_amount,
+			'{%CURRENCY_OTHER%}': new_offer.country.currency.iso,
+			'{%CHARITY_OTHER%}': new_offer.charity.name,
+			'{%OFFER_SECRET%}': urllib.parse.quote(old_offer.secret)
+		}
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('feedback-email'),
+			util.Template('feedback-email.txt').replace(new_replacements).content,
+			html=util.Template('feedback-email.html').replace(new_replacements).content,
+			to=new_offer.email)
+
+		self._mail.send(
+			util.Template('email-subjects.json').json('feedback-email'),
+			util.Template('feedback-email.txt').replace(old_replacements).content,
+			html=util.Template('feedback-email.html').replace(old_replacements).content,
+			to=old_offer.email)
 
 	def _delete_expired_matches(self):
 		'''Send a feedback email one month after creation.'''
-		#xxx add "feedback_ts" column
-		#xxx send email to matches older than 4 weeks with empty "feedback_ts"
-		#xxx update feedback_ts
-		#xxx delete two offers and one match one week after feedback_ts
-		return 0 #xxx
+		count = 0
+		one_month_ago = datetime.datetime.utcnow() - datetime.timedelta(days=31)
+
+		with self._database.connect() as db:
+			for match in entities.Match.get_feedback_ready_matches(db):
+				if (match.created_ts < one_month_ago):
+					logging.info('Requesting feedback for match %s', match.id)
+					eventlog.match_feedback(db, match)
+					match.set_feedback_requested(db)
+					self._send_feedback_email(match, db)
+					count += 1
+		#xxx delete two offers and one match one week after feedback_ts TODO elsewhere maybe?
+		return count
 
 	def clean_up(self):
 		'''This method gets called once per hour by a cronjob.'''
@@ -686,24 +818,54 @@ class Donationswap:
 		score = round(score, 4)
 		return score, reason
 
-	def _get_actual_amounts(self, my_offer, their_offer):
-		if self._currency.is_more_money(
+	def _get_actual_amounts(self, match, my_offer, their_offer, db):
+
+		# cache check
+		if (match.new_amount_suggested > 0 and match.old_amount_suggested > 0):
+			if (match.new_offer_id == my_offer.id and match.old_offer_id == their_offer.id):
+				return match.new_amount_suggested, match.old_amount_suggested
+			elif (match.old_offer_id == my_offer.id and match.new_offer_id == their_offer.id):
+				return match.old_amount_suggested, match.new_amount_suggested
+
+		currencyData = self._currency
+
+		try:
+			one_day_ago = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+			if (match.created_ts < one_day_ago) :
+				url = 'http://data.fixer.io/api/{:04d}-{:02d}-{:02d}?access_key=%s' % (match.created_ts.year, match.created_ts.month, match.created_ts.day, self._secret)
+				with urllib.request.urlopen(url) as f:
+					content = f.read()
+					data = json.loads(content.decode('utf-8'))
+					if data.get('success', False):
+						currencyData = currency.HistoricCurrency(data)
+		except:
+			pass # just use now currency if we can't get historic
+
+		if currencyData.is_more_money(
 			my_offer.amount * my_offer.country.gift_aid_multiplier,
 			my_offer.country.currency.iso,
 			their_offer.amount * their_offer.country.gift_aid_multiplier,
 			their_offer.country.currency.iso
 		):
-			my_actual_amount = self._currency.convert(
+			my_actual_amount = currencyData.convert(
 				their_offer.amount * their_offer.country.gift_aid_multiplier / my_offer.country.gift_aid_multiplier,
 				their_offer.country.currency.iso,
 				my_offer.country.currency.iso)
 			their_actual_amount = their_offer.amount
 		else:
 			my_actual_amount = my_offer.amount
-			their_actual_amount = self._currency.convert(
+			their_actual_amount = currencyData.convert(
 				my_offer.amount  * my_offer.country.gift_aid_multiplier / their_offer.country.gift_aid_multiplier,
 				my_offer.country.currency.iso,
 				their_offer.country.currency.iso)
+
+		# save to DB
+		if (match.new_offer_id == my_offer.id and match.old_offer_id == their_offer.id):
+			match.set_new_amount_suggested_requested(db, my_actual_amount)
+			match.set_old_amount_suggested_requested(db, their_actual_amount)
+		elif (match.old_offer_id == my_offer.id and match.new_offer_id == their_offer.id):
+			match.set_old_amount_suggested_requested(db, my_actual_amount)
+			match.set_new_amount_suggested_requested(db, their_actual_amount)
 
 		return my_actual_amount, their_actual_amount
 
@@ -713,7 +875,8 @@ class Donationswap:
 		if my_offer is None or their_offer is None:
 			return None
 
-		my_actual_amount, their_actual_amount = self._get_actual_amounts(my_offer, their_offer)
+		with self._database.connect() as db:
+			my_actual_amount, their_actual_amount = self._get_actual_amounts(match, my_offer, their_offer, db)
 
 		can_edit = False
 		if my_offer.id == new_offer.id:
@@ -760,9 +923,9 @@ class Donationswap:
 
 		return txt, html
 
-	def _send_mail_about_approved_match(self, offer_a, offer_b):
+	def _send_mail_about_approved_match(self, match, offer_a, offer_b, db):
 
-		actual_amount_a, actual_amount_b = self._get_actual_amounts(offer_a, offer_b)
+		actual_amount_a, actual_amount_b = self._get_actual_amounts(match, offer_a, offer_b, db)
 		to_charity_a = actual_amount_a * offer_a.country.gift_aid_multiplier
 		to_charity_b = actual_amount_b * offer_b.country.gift_aid_multiplier
 
@@ -833,17 +996,16 @@ class Donationswap:
 				util.Template('errors-and-warnings.json').json('match not found')
 			)
 
-		if my_offer == old_offer:
-			with self._database.connect() as db:
+		with self._database.connect() as db:
+			if my_offer == old_offer:
 				match.agree_old(db)
 				eventlog.approved_match(db, match, my_offer)
-		elif my_offer == new_offer:
-			with self._database.connect() as db:
+			elif my_offer == new_offer:
 				match.agree_new(db)
 				eventlog.approved_match(db, match, my_offer)
 
-		if match.old_agrees and match.new_agrees:
-			self._send_mail_about_approved_match(old_offer, new_offer)
+			if match.old_agrees and match.new_agrees:
+				self._send_mail_about_approved_match(match, old_offer, new_offer, db)
 
 	@ajax
 	def decline_match(self, secret, feedback):
@@ -869,6 +1031,7 @@ class Donationswap:
 			my_offer.suspend(db)
 			eventlog.declined_match(db, match, my_offer, feedback)
 
+			#TODO: needs args applied to a new offer rather than reconfirming old offer
 			replacements = {
 				'{%NAME%}': my_offer.name,
 				'{%OFFER_SECRET%}': my_offer.secret,
@@ -886,6 +1049,7 @@ class Donationswap:
 			elif other_offer == new_offer and match.new_agrees:
 				email_subject = 'match-approved-declined-email'
 
+			#TODO: needs args applied to a new offer rather than reconfirming old offer
 			replacements = {
 				'{%NAME%}': other_offer.name,
 				'{%OFFER_SECRET%}': other_offer.secret,
@@ -1156,7 +1320,7 @@ class Donationswap:
 					try:
 						newOffer = entities.Offer.by_id(event["details"]["new_offer_id"])
 						oldOffer = entities.Offer.by_id(event["details"]["old_offer_id"])
-						newval, _ = self._get_actual_amounts(newOffer, oldOffer)
+						newval, _ = self._get_actual_amounts(entities.Match.by_id(event["detail"]["match_id"]), newOffer, oldOffer, db)
 						newval = newval * newOffer.country.gift_aid_multiplier
 						event["value"] = self._currency.convert(newval, newOffer.country.currency.iso, "USD")
 					except:
@@ -1239,8 +1403,8 @@ class Donationswap:
 				for offer_b in self._get_unmatched_offers()
 			}
 
-	def _send_mail_about_match(self, my_offer, their_offer, match_secret):
-		my_actual_amount, _ = self._get_actual_amounts(my_offer, their_offer)
+	def _send_mail_about_match(self, my_offer, their_offer, match_secret, db):
+		my_actual_amount, _ = self._get_actual_amounts(entities.Match.by_secret(match_secret), my_offer, their_offer, db)
 
 		replacements = {
 			'{%YOUR_NAME%}': my_offer.name,
@@ -1279,5 +1443,5 @@ class Donationswap:
 		with self._database.connect() as db:
 			match = entities.Match.create(db, match_secret, new_offer.id, old_offer.id)
 			eventlog.match_generated(db, match)
-			self._send_mail_about_match(old_offer, new_offer, match_secret)
-			self._send_mail_about_match(new_offer, old_offer, match_secret)
+			self._send_mail_about_match(old_offer, new_offer, match_secret, db)
+			self._send_mail_about_match(new_offer, old_offer, match_secret, db)
