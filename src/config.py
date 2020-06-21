@@ -31,6 +31,7 @@ class Config:
 		self.email_sender_name = data['email_sender_name']
 		self.email_smtp = data['email_smtp']
 		self.email_user = data['email_user']
+		self.email_from = data['email_from']
 		self.fixer_apikey = data['fixer_apikey']
 		self.geoip_datafile = data['geoip_datafile']
 		self.watchdog_email_password = data['watchdog_email_password']
