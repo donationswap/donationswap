@@ -14,7 +14,7 @@ CONFIG_FILENAME = '/srv/web/app-config.json'
 CONFIG = config.Config(CONFIG_FILENAME)
 
 def send_mail(msg, to, filename, data):
-	m = mail.Mail(CONFIG.email_user, CONFIG.email_password, CONFIG.email_smtp, CONFIG.email_sender_name)
+	m = mail.Mail(CONFIG.email_user, CONFIG.email_password, CONFIG.email_smtp, CONFIG.email_user, CONFIG.email_sender_name)
 
 	smtp_msg = m._prepare_msg('Donation Swap Stats Update', msg, msg, to, None, None)
 
@@ -58,4 +58,3 @@ if __name__ == "__main__":
 		CONFIG.contact_message_receivers['to'],
 		filename,
 		makeData(data))
-

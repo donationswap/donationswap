@@ -101,7 +101,7 @@ class Donationswap:
 		self._captcha = captcha.Captcha(self._config.captcha_secret)
 		self._currency = currency.Currency(self._config.currency_cache, self._config.fixer_apikey)
 		self._geoip = geoip.GeoIpCountry(self._config.geoip_datafile)
-		self._mail = mail.Mail(self._config.email_user, self._config.email_password, self._config.email_smtp, self._config.email_sender_name)
+		self._mail = mail.Mail(self._config.email_user, self._config.email_password, self._config.email_smtp, self._config.email_from, self._config.email_sender_name)
 
 		with self._database.connect() as db:
 			entities.load(db)

@@ -8,11 +8,12 @@ import threading
 
 class Mail: # pylint: disable=too-few-public-methods
 
-	def __init__(self, user, password, smtp_host, sender_name=None):
+	def __init__(self, user, password, smtp_host, from_address, sender_name=None):
 		self._user = user
 		self._password = password
 		self._smtp_host = smtp_host
 		self._sender_name = sender_name
+		self._from_address = from_address
 
 	@staticmethod
 	def _populate(msg, key, value):
@@ -31,9 +32,9 @@ class Mail: # pylint: disable=too-few-public-methods
 			msg.attach(email.mime.text.MIMEText(html, 'html'))
 
 		if self._sender_name:
-			self._populate(msg, 'From', '%s <%s>' % (self._sender_name, self._user))
+			self._populate(msg, 'From', '%s <%s>' % (self._sender_name, self._from_address))
 		else:
-			self._populate(msg, 'From', self._user)
+			self._populate(msg, 'From', self._from_address)
 
 		self._populate(msg, 'Subject', subject)
 		self._populate(msg, 'To', to)
