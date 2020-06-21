@@ -22,6 +22,7 @@ class Config:
 		data = json.loads(content)
 
 		self.captcha_secret = data['captcha_secret']
+		self.captcha_site_key = data['captcha_site_key']
 		self.contact_message_receivers = data['contact_message_receivers']
 		self.cookie_key = data['cookie_key']
 		self.currency_cache = data['currency_cache']
@@ -32,6 +33,10 @@ class Config:
 		self.email_user = data['email_user']
 		self.fixer_apikey = data['fixer_apikey']
 		self.geoip_datafile = data['geoip_datafile']
+		self.watchdog_email_password = data['watchdog_email_password']
+		self.watchdog_email_sender_name = data['watchdog_email_sender_name']
+		self.watchdog_email_smtp = data['watchdog_email_smtp']
+		self.watchdog_email_user = data['watchdog_email_user']
 		self.watchdog_receivers = data['watchdog_receivers']
 
 		# could just do this, but explicit is better than implicit

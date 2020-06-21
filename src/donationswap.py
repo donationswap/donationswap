@@ -212,7 +212,12 @@ class Donationswap:
 			return False, str(e)
 
 	def get_page(self, name):
-		content = util.Template(name).content
+
+		replacements = {
+			'{%CAPTCHA_SITE_KEY%}': self._config.captcha_site_key,
+		}
+
+		content = util.Template(name).replace(replacements).content
 
 		# This acts as a cache breaker -- just increment
 		# self.STATIC_VERSION whenever a static file has changed,
