@@ -456,7 +456,8 @@ class Donationswap:
 		one_month_ago = datetime.datetime.utcnow() - datetime.timedelta(days=31)
 
 		with self._database.connect() as db:
-			for match in entities.Match.get_feedback_ready_matches(db):
+			feedback_ready = entities.Match.get_feedback_ready_matches(db)
+			for match in feedback_ready[:5]:
 				if (match.created_ts < one_month_ago):
 					logging.info('Requesting feedback for match %s', match.id)
 					eventlog.match_feedback(db, match)
